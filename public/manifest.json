@@ -1,0 +1,22 @@
+{
+  "name": "Owl - Educational Social Media Platform",
+  "short_name": "Owl",
+  "description": "A social media platform designed for students to share study notes, exam materials, and educational content.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+

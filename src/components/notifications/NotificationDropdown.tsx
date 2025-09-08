@@ -1,0 +1,295 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuTrigger, 
+  DropdownMenuItem 
+} from '@/components/ui/dropdown-menu';
+import { Bell, Check, Heart, MessageCircle, UserPlus, Settings } from 'lucide-react';
+
+interface Notification {
+  id: string;
+  type: 'LIKE' | 'COMMENT' | 'FOLLOW' | 'POST' | 'SYSTEM';
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  actor?: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  post?: {
+    id: string;
+    title: string;
+  };
+}
+
+interface NotificationDropdownProps {
+  onOpenSettings?: () => void;
+}
+
+export default function NotificationDropdown({ onOpenSettings }: NotificationDropdownProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications?limit=10');
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const markAsRead = async (notificationIds: string[]) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationIds }),
+      });
+
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notificationIds.includes(notification.id) 
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ markAllAsRead: true }),
+      });
+
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(notification => ({ ...notification, isRead: true }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'LIKE':
+        return <Heart className="h-4 w-4 text-red-500" />;
+      case 'COMMENT':
+        return <MessageCircle className="h-4 w-4 text-blue-500" />;
+      case 'FOLLOW':
+        return <UserPlus className="h-4 w-4 text-green-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes}m`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d`;
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
+
+  const unreadNotifications = notifications.filter(n => !n.isRead);
+
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="relative">
+          <Bell className="h-4 w-4" />
+          {unreadCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between p-4 border-b">
+          <div>
+            <h3 className="font-semibold">Notifications</h3>
+            <p className="text-sm text-muted-foreground">
+              {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+            </p>
+          </div>
+          <div className="flex gap-1">
+            {unreadNotifications.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={markAllAsRead}
+                title="Mark all as read"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onOpenSettings}
+              title="Notification settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <div className="max-h-96 overflow-y-auto">
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No notifications yet</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className="flex items-start gap-3 p-4 cursor-pointer border-b last:border-b-0"
+                onClick={() => {
+                  if (!notification.isRead) {
+                    markAsRead([notification.id]);
+                  }
+                }}
+              >
+                <div className="flex-shrink-0 mt-1">
+                  {getNotificationIcon(notification.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${!notification.isRead ? 'font-semibold' : ''}`}>
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {notification.message}
+                      </p>
+                    </div>
+                    {!notification.isRead && (
+                      <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1" />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      {notification.actor && (
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={notification.actor.avatar} alt={notification.actor.name} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(notification.actor.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {formatTimeAgo(notification.createdAt)}
+                      </span>
+                    </div>
+                    {!notification.isRead && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead([notification.id]);
+                        }}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            ))
+          )}
+        </div>
+        
+        {notifications.length > 0 && (
+          <div className="p-2 border-t text-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => {
+                // Navigate to full notifications page
+                window.location.href = '/notifications';
+              }}
+            >
+              View all notifications
+            </Button>
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

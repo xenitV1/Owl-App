@@ -1,0 +1,424 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  name               String?
+  avatar             String?
+  role               UserRole           @default(STUDENT)
+  school             String?
+  grade              String?
+  favoriteSubject    String?
+  bio                String?
+  isVerified         Boolean            @default(false)
+  theme              String             @default("light")
+  fontSize           String             @default("normal")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  adminActivityLogs  AdminActivityLog[]
+  reviewedAppeals    Appeal[]           @relation("AppealReviewer")
+  appeals            Appeal[]
+  comments           Comment[]
+  communityMembers   CommunityMember[]
+  followers          Follow[]           @relation("UserFollowers")
+  following          Follow[]           @relation("UserFollowing")
+  groupMembers       GroupMember[]
+  likes              Like[]
+  moderationActions  ModerationAction[]
+  actorNotifications Notification[]     @relation("NotificationActor")
+  notifications      Notification[]
+  poolCategories     PoolCategory[]
+  pools              Pool[]
+  posts              Post[]
+  assignedReports    Report[]           @relation("ModeratorAssignments")
+  reports            Report[]
+  blockedBy          UserBlock[]        @relation("UserBlocked")
+  blockedUsers       UserBlock[]        @relation("UserBlocking")
+  mutedBy            UserMute[]         @relation("UserMuted")
+  mutedUsers         UserMute[]         @relation("UserMuting")
+
+  @@map("users")
+}
+
+model Post {
+  id            String         @id @default(cuid())
+  title         String
+  content       String?
+  image         String?
+  subject       String?
+  isPublic      Boolean        @default(true)
+  authorId      String
+  communityId   String?
+  groupId       String?
+  viewCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  comments      Comment[]
+  likes         Like[]
+  notifications Notification[]
+  pools         Pool[]
+  group         PrivateGroup?  @relation(fields: [groupId], references: [id])
+  community     Community?     @relation(fields: [communityId], references: [id])
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reports       Report[]
+
+  @@map("posts")
+}
+
+model PostImage {
+  id            String   @id @default(cuid())
+  postId        String   @unique
+  originalName  String
+  mimeType      String
+  size          Int
+  optimizedData Bytes
+  smallData     Bytes?
+  mediumData    Bytes?
+  largeData     Bytes?
+  width         Int
+  height        Int
+  placeholder   String?
+  responsive    Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("post_images")
+}
+
+model Community {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  avatar      String?
+  isPublic    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     CommunityMember[]
+  posts       Post[]
+
+  @@map("communities")
+}
+
+model PrivateGroup {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  members     GroupMember[]
+  posts       Post[]
+
+  @@map("private_groups")
+}
+
+model CommunityMember {
+  id          String    @id @default(cuid())
+  userId      String
+  communityId String
+  role        String    @default("member")
+  joinedAt    DateTime  @default(now())
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@map("community_members")
+}
+
+model GroupMember {
+  id       String       @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String       @default("member")
+  joinedAt DateTime     @default(now())
+  group    PrivateGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("group_members")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reports   Report[]
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Pool {
+  id         String        @id @default(cuid())
+  userId     String
+  postId     String
+  categoryId String?
+  createdAt  DateTime      @default(now())
+  category   PoolCategory? @relation(fields: [categoryId], references: [id])
+  post       Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("pools")
+}
+
+model PoolCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  icon        String   @default("Bookmark")
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pools       Pool[]
+
+  @@unique([userId, name])
+  @@map("pool_categories")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  userId    String
+  actorId   String?
+  postId    String?
+  createdAt DateTime         @default(now())
+  post      Post?            @relation(fields: [postId], references: [id])
+  actor     User?            @relation("NotificationActor", fields: [actorId], references: [id])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Report {
+  id                String             @id @default(cuid())
+  type              ReportType
+  reason            String
+  description       String?
+  status            ReportStatus       @default(PENDING)
+  priority          ReportPriority     @default(MEDIUM)
+  evidence          String?
+  reporterId        String
+  targetId          String
+  targetType        String
+  postId            String?
+  commentId         String?
+  assignedTo        String?
+  resolvedAt        DateTime?
+  resolution        String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  appeals           Appeal[]
+  moderationActions ModerationAction[]
+  assignedToUser    User?              @relation("ModeratorAssignments", fields: [assignedTo], references: [id])
+  comment           Comment?           @relation(fields: [commentId], references: [id])
+  post              Post?              @relation(fields: [postId], references: [id])
+  reporter          User               @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+  blocked   User     @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blocker   User     @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("user_blocks")
+}
+
+model UserMute {
+  id        String    @id @default(cuid())
+  muterId   String
+  mutedId   String
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  muted     User      @relation("UserMuted", fields: [mutedId], references: [id], onDelete: Cascade)
+  muter     User      @relation("UserMuting", fields: [muterId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, mutedId])
+  @@map("user_mutes")
+}
+
+model ModerationAction {
+  id          String               @id @default(cuid())
+  type        ModerationActionType
+  targetId    String
+  targetType  String
+  reason      String
+  moderatorId String
+  reportId    String?
+  duration    String?
+  expiresAt   DateTime?
+  createdAt   DateTime             @default(now())
+  report      Report?              @relation(fields: [reportId], references: [id])
+  moderator   User                 @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@map("moderation_actions")
+}
+
+model Appeal {
+  id          String       @id @default(cuid())
+  reportId    String
+  userId      String
+  reason      String
+  description String
+  status      AppealStatus @default(PENDING)
+  reviewedBy  String?
+  decision    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  reviewer    User?        @relation("AppealReviewer", fields: [reviewedBy], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report      Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("appeals")
+}
+
+model ContentFilter {
+  id          String       @id @default(cuid())
+  type        FilterType
+  pattern     String
+  action      FilterAction
+  isActive    Boolean      @default(true)
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("content_filters")
+}
+
+model AdminActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  targetType String
+  targetId   String
+  adminId    String
+  details    String
+  createdAt  DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_activity_logs")
+}
+
+enum UserRole {
+  GUEST
+  STUDENT
+  TEACHER
+  ACADEMICIAN
+  ADMIN
+}
+
+enum ReportType {
+  INAPPROPRIATE_CONTENT
+  SPAM
+  HARASSMENT
+  BULLYING
+  COPYRIGHT
+  HATE_SPEECH
+  THREATS
+  PERSONAL_INFO
+  IMPERSONATION
+  SCAM
+  OTHER
+}
+
+enum ReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+  ESCALATED
+}
+
+enum ModerationActionType {
+  WARNING
+  CONTENT_REMOVAL
+  ACCOUNT_SUSPENSION
+  ACCOUNT_BAN
+  COMMENT_REMOVAL
+  POST_REMOVAL
+  TEMPORARY_SUSPENSION
+}
+
+enum AppealStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum FilterType {
+  KEYWORD
+  PATTERN
+  URL
+  EMAIL
+  PHONE
+}
+
+enum FilterAction {
+  FLAG
+  BLOCK
+  REMOVE
+  ESCALATE
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  POST
+  SYSTEM
+}

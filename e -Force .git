@@ -1,0 +1,10 @@
+[33m79cfeec[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Initial commit: OWL Academic Social Learning Platform
+[33m8c000a9[m security: Fix critical security vulnerabilities in Docker configuration
+[33m63c9e8c[m docs: Comprehensive README update for OWL Academic Social Learning Platform - Complete project analysis and documentation - Detailed feature descriptions and technology stack - Installation and development guides - Admin and moderation features documentation - Internationalization and security features - Performance optimizations and deployment instructions
+[33mb9eeed9[m Fix FilterType and FilterAction enum imports causing Docker build failure - Replace Prisma enum imports with string literals in content-filters route, component, and service - Update all enum references to use type-safe string literals - Ensure Docker build compatibility across all filter-related files
+[33m144ccaf[m Fix AppealStatus import error causing Docker build failure - Replace Prisma enum imports with string literals to resolve client generation issues - Update appeals route and AppealsManager component to use type-safe string literals
+[33m9bdc494[m Fix Turkish character encoding in PostCreationForm headers
+[33m1b8fd99[m Fix profile image upload - images now persist after page refresh
+[33mb82dbfa[m Fix Unicode encoding and CORS issues
+[33maab6bd6[m Improve post interaction UI and profile layout
+[33m20b9772[m feat: Enhance discover page with draggable/resizable layout system

@@ -1,0 +1,275 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  schedule:
+    - cron: '0 2 * * 1'
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.1.34'
+
+    - name: Install dependencies
+      run: bun install --no-save
+      
+    - name: Run linting
+      run: bun run lint
+      
+    - name: Run type checking
+      run: bun x tsc --noEmit
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.1.34'
+      
+    - name: Run npm audit (via bun x)
+      run: bun x npm audit --audit-level moderate
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.1.34'
+        
+    - name: Install dependencies
+      run: bun install --no-save
+      
+    - name: Build application
+      run: bun run build
+      env:
+        NODE_ENV: production
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: |
+          .next/
+          public/
+          package.json
+          package-lock.json
+
+  container-build:
+    name: Build Container Image
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push container image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, container-build]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files
+        
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Example: SSH into staging server and deploy
+        
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests..."
+        # Add your smoke test commands here
+        # Example: curl -f https://your-staging-url.com/health || echo "Health check failed"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, container-build]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    environment: production
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files
+        
+    - name: Create backup before deployment
+      run: |
+        echo "Creating backup..."
+        # Add backup commands here
+        
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        # Example: Using the deploy script
+        # chmod +x deploy.sh
+        # ./deploy.sh
+        
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        # Add health check commands here
+        # Example: curl -f https://your-production-url.com/health || echo "Health check failed"
+        # Example: curl -f https://your-production-url.com/ready || echo "Ready check failed"
+        
+    - name: Run post-deployment tests
+      run: |
+        echo "Running post-deployment tests..."
+        # Add post-deployment test commands here
+        
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure')
+    needs: [deploy-production, deploy-staging]
+    
+    steps:
+    - name: Rollback deployment
+      run: |
+        echo "Initiating rollback..."
+        # Add rollback commands here
+        # Example: ./deploy.sh rollback
+        
+
+
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.1.34'
+        
+    - name: Install dependencies
+      run: bun install --no-save
+      
+    - name: Check for outdated dependencies
+      run: bun x npm outdated || true
+      
+    - name: Check for security vulnerabilities
+      run: bun x npm audit --audit-level moderate || true
+      
+    - name: Create issue for outdated dependencies
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          let stdout = ''
+          const exitCode = await exec.exec('bun', ['x', 'npm', 'outdated', '--json'], {
+            ignoreReturnCode: true,
+            listeners: {
+              stdout: (data) => { stdout += data.toString() }
+            }
+          })
+
+          if (!stdout.trim()) {
+            core.info('No outdated dependencies output received')
+            return
+          }
+
+          const outdated = JSON.parse(stdout)
+          if (Object.keys(outdated).length > 0) {
+            const body = Object.entries(outdated).map(([pkg, info]) => {
+              const current = info.current || info.wanted || 'unknown'
+              const latest = info.latest || 'unknown'
+              const type = info.type || 'dependency'
+              return `**${pkg}**: ${current} → ${latest} (${type})`
+            }).join('\n')
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Update Outdated Dependencies',
+              body: body,
+              labels: ['dependencies', 'maintenance']
+            })
+          }

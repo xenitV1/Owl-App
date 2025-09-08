@@ -1,0 +1,28 @@
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+
+User-agent: Twitterbot
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+
+User-agent: facebookexternalhit
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+# Logo and favicon
+Allow: /logo.png
+Allow: /favicon.ico
+Allow: /manifest.json
