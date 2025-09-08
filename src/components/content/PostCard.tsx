@@ -14,6 +14,7 @@ import { ReportDialog } from '@/components/moderation/ReportDialog';
 import { ContentPreview } from './ContentPreview';
 import { LazyOptimizedImage } from '@/components/ui/optimized-image';
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog';
+import { SimpleImageLightbox } from '@/components/ui/image-lightbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Heart, MessageCircle, Bookmark, Clock, Eye, MoreVertical, Flag, Trash2 } from 'lucide-react';
@@ -89,6 +90,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const locale = useLocale();
   const [showComments, setShowComments] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImageLightbox, setShowImageLightbox] = useState(false);
   const tr = useTranslations('roles');
   const t = useTranslations('posts');
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -204,10 +206,15 @@ export const PostCard: React.FC<PostCardProps> = ({
     router.push(`/${locale}/posts/${post.id}`);
   };
 
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    setShowImageLightbox(true);
+  };
+
   return (
     <>
       <Card 
-        className="w-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden" 
+        className="w-full cursor-pointer overflow-hidden" 
         onClick={handleCardClick}
       >
         <CardHeader className="pb-3 overflow-hidden">
@@ -318,13 +325,18 @@ export const PostCard: React.FC<PostCardProps> = ({
           
           {/* Image */}
           {post.image && (
-            <div className="relative">
+            <div className="relative cursor-pointer group" onClick={handleImageClick}>
               <LazyOptimizedImage
                 src={`/api/images/${post.image}`}
                 alt={post.title}
-                className="w-full max-h-96 rounded-lg"
+                className="w-full max-h-96 rounded-lg transition-all duration-200 group-hover:brightness-95"
                 imageMetadata={post.imageMetadata}
               />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 rounded-lg">
+                <div className="bg-white/90 rounded-full p-2 shadow-lg">
+                  <Eye className="h-5 w-5 text-gray-700" />
+                </div>
+              </div>
             </div>
           )}
           
@@ -358,6 +370,18 @@ export const PostCard: React.FC<PostCardProps> = ({
         onConfirm={handleDelete}
         isLoading={isDeleteLoading}
       />
+
+      {/* Image Lightbox */}
+      {post.image && (
+        <SimpleImageLightbox
+          isOpen={showImageLightbox}
+          onClose={() => setShowImageLightbox(false)}
+          src={`/api/images/${post.image}`}
+          alt={post.title}
+          title={post.title}
+          imageMetadata={post.imageMetadata}
+        />
+      )}
     </>
   );
 };

@@ -7,9 +7,25 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        // Base card styling
+        "text-card-foreground flex flex-col gap-6 rounded-xl py-6",
+        // Glassmorphism effect
+        "backdrop-blur-xl bg-white/10 dark:bg-white/5",
+        "border border-white/20 dark:border-white/10",
+        "shadow-xl shadow-black/10 dark:shadow-black/20",
+        // Hover effects
+        "hover:bg-white/15 dark:hover:bg-white/8",
+        "hover:border-white/30 dark:hover:border-white/15",
+        "transition-all duration-300 ease-in-out",
         className
       )}
+      style={{
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        background: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+      }}
       {...props}
     />
   )
