@@ -8,6 +8,8 @@ import { Plus, Move, RotateCcw, ZoomIn, ZoomOut, Maximize2, Settings, Grid, Hand
 import { WorkspaceCard } from '@/components/work-environment/WorkspaceCard';
 import { AddCardDialog } from '@/components/work-environment/AddCardDialog';
 import { InfiniteCanvas } from '@/components/work-environment/InfiniteCanvas';
+import { VirtualizedCardRenderer } from '@/components/work-environment/VirtualizedCardRenderer';
+import { PerformanceMonitor } from '@/components/work-environment/PerformanceMonitor';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 
 export default function WorkEnvironmentPage() {
@@ -227,18 +229,17 @@ export default function WorkEnvironmentPage() {
         onZoomChange={setZoom}
         className="w-full h-full"
       >
-        {/* Render Cards */}
-        {cards.map((card) => (
-          <WorkspaceCard
-            key={card.id}
-            card={card}
-            isSelected={selectedCardId === card.id}
-            onSelect={() => setSelectedCardId(card.id)}
-            onUpdate={(updates) => updateCard(card.id, updates)}
-            onDelete={() => deleteCard(card.id)}
-            gridSnap={gridSnap}
-          />
-        ))}
+        {/* Render Cards with Virtualization */}
+        <VirtualizedCardRenderer
+          cards={cards}
+          zoom={zoom}
+          pan={pan}
+          selectedCardId={selectedCardId}
+          onSelect={setSelectedCardId}
+          onUpdate={updateCard}
+          onDelete={deleteCard}
+          gridSnap={gridSnap}
+        />
       </InfiniteCanvas>
 
       {/* Add Card Dialog */}
@@ -247,6 +248,9 @@ export default function WorkEnvironmentPage() {
         onOpenChange={setIsAddCardOpen}
         onAddCard={handleAddCard}
       />
+
+      {/* Performance Monitor */}
+      <PerformanceMonitor cardCount={cards.length} />
     </div>
   );
 }
