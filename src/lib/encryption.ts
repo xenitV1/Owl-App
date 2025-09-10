@@ -5,7 +5,8 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toSt
 
 export function encrypt(text: string): { encrypted: string; iv: string; tag: string } {
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
@@ -20,7 +21,8 @@ export function encrypt(text: string): { encrypted: string; iv: string; tag: str
 }
 
 export function decrypt(encrypted: string, iv: string, tag: string): string {
-  const decipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'hex'));
   decipher.setAuthTag(Buffer.from(tag, 'hex'));
   
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
