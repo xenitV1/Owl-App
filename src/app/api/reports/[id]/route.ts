@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ReportStatus, ModerationActionType } from '@prisma/client';
+// Import types as string literals to avoid TypeScript cache issues
+type ReportStatus = 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'DISMISSED' | 'ESCALATED';
+type ModerationActionType = 'WARNING' | 'CONTENT_REMOVAL' | 'ACCOUNT_SUSPENSION' | 'ACCOUNT_BAN' | 'COMMENT_REMOVAL' | 'POST_REMOVAL' | 'TEMPORARY_SUSPENSION';
 
 interface RouteContext {
   params: Promise<{
@@ -58,7 +60,7 @@ export async function PATCH(
         status: status || report.status,
         assignedTo: assignedTo || report.assignedTo,
         resolution: resolution || report.resolution,
-        resolvedAt: status === ReportStatus.RESOLVED || status === ReportStatus.DISMISSED ? new Date() : null
+        resolvedAt: status === 'RESOLVED' || status === 'DISMISSED' ? new Date() : null
       },
       include: {
         reporter: {
@@ -97,10 +99,10 @@ export async function PATCH(
       let targetType = report.targetType;
 
       // If action is on post or comment, use those IDs
-      if (report.postId && (action === ModerationActionType.POST_REMOVAL || action === ModerationActionType.CONTENT_REMOVAL)) {
+      if (report.postId && (action === 'POST_REMOVAL' || action === 'CONTENT_REMOVAL')) {
         targetId = report.postId;
         targetType = 'POST';
-      } else if (report.commentId && (action === ModerationActionType.COMMENT_REMOVAL || action === ModerationActionType.CONTENT_REMOVAL)) {
+      } else if (report.commentId && (action === 'COMMENT_REMOVAL' || action === 'CONTENT_REMOVAL')) {
         targetId = report.commentId;
         targetType = 'COMMENT';
       }
@@ -117,11 +119,20 @@ export async function PATCH(
       });
 
       // Execute the action
-      if (action === ModerationActionType.POST_REMOVAL && report.postId) {
-        await db.post.delete({
-          where: { id: report.postId }
+      if (action === 'POST_REMOVAL' && report.postId) {
+        // Delete the post and its associated image in a transaction
+        await db.$transaction(async (tx) => {
+          // Delete the image associated with this post (if exists)
+          await tx.postImage.deleteMany({
+            where: { postId: report.postId! },
+          });
+          
+          // Delete the post itself (this will cascade delete related data like likes, comments due to foreign key constraints)
+          await tx.post.delete({
+            where: { id: report.postId! }
+          });
         });
-      } else if (action === ModerationActionType.COMMENT_REMOVAL && report.commentId) {
+      } else if (action === 'COMMENT_REMOVAL' && report.commentId) {
         await db.comment.delete({
           where: { id: report.commentId }
         });
@@ -129,7 +140,7 @@ export async function PATCH(
     }
 
     // Notify the reporter about the resolution
-    if (status === ReportStatus.RESOLVED || status === ReportStatus.DISMISSED) {
+    if (status === 'RESOLVED' || status === 'DISMISSED') {
       await db.notification.create({
         data: {
           type: 'SYSTEM',

@@ -214,7 +214,7 @@ export async function DELETE(
       );
     }
 
-    // Delete the post and all related data (likes, comments, pools, etc.)
+    // Delete the post and all related data (likes, comments, pools, images, etc.)
     // Using a transaction to ensure data consistency
     await db.$transaction(async (tx) => {
       // Delete all likes for this post
@@ -235,6 +235,11 @@ export async function DELETE(
       // Delete all reports for this post
       await tx.report.deleteMany({
         where: { targetId: id, targetType: 'POST' },
+      });
+
+      // Delete the image associated with this post (if exists)
+      await tx.postImage.deleteMany({
+        where: { postId: id },
       });
 
       // Finally, delete the post itself

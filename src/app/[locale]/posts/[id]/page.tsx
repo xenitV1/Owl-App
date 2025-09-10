@@ -14,7 +14,7 @@ import { LazyOptimizedImage } from '@/components/ui/optimized-image';
 import { MostReadNotes } from '@/components/content/MostReadNotes';
 import { DiscoverNotes } from '@/components/content/DiscoverNotes';
 import { TrendingSubjects } from '@/components/content/TrendingSubjects';
-import { Heart, MessageCircle, Bookmark, Clock, ArrowLeft, Flag, MoreVertical } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Clock, ArrowLeft, Flag, MoreVertical, Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ReportDialog } from '@/components/moderation/ReportDialog';
+import { SimpleImageLightbox } from '@/components/ui/image-lightbox';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Post {
@@ -66,6 +67,7 @@ export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showComments, setShowComments] = useState(false);
+  const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -146,6 +148,10 @@ export default function PostDetailPage() {
 
   const handleComment = () => {
     setShowComments(true);
+  };
+
+  const handleImageClick = () => {
+    setShowImageLightbox(true);
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -318,13 +324,18 @@ export default function PostDetailPage() {
               )}
               
               {post.image && (
-                <div className="relative">
+                <div className="relative cursor-pointer group" onClick={handleImageClick}>
                   <LazyOptimizedImage
                     src={`/api/images/${post.image}`}
                     alt={post.title}
-                    className="w-full max-h-[600px] rounded-lg"
+                    className="w-full max-h-[600px] rounded-lg transition-all duration-200 group-hover:brightness-95"
                     imageMetadata={post.imageMetadata}
                   />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 rounded-lg">
+                    <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                      <Eye className="h-6 w-6 text-gray-700" />
+                    </div>
+                  </div>
                 </div>
               )}
               
@@ -374,6 +385,18 @@ export default function PostDetailPage() {
         onOpenChange={setShowComments}
         postId={post.id}
       />
+
+      {/* Image Lightbox */}
+      {post.image && (
+        <SimpleImageLightbox
+          isOpen={showImageLightbox}
+          onClose={() => setShowImageLightbox(false)}
+          src={`/api/images/${post.image}`}
+          alt={post.title}
+          title={post.title}
+          imageMetadata={post.imageMetadata}
+        />
+      )}
     </div>
   );
 }
