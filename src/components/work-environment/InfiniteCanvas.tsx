@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useRef, useEffect, useState, ReactNode } from 'react';
+import { forwardRef, useCallback, useRef, useEffect, useState, ReactNode, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface InfiniteCanvasProps {
@@ -20,10 +20,24 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+    const animationFrameRef = useRef<number | null>(null);
 
-    // Grid size calculation
-    const gridSize = 40 * zoom;
-    const shouldShowGrid = zoom > 0.3;
+    // Memoize grid calculations to prevent recalculation on every render
+    const gridConfig = useMemo(() => {
+      const gridSize = 40 * zoom;
+      const shouldShowGrid = zoom > 0.3;
+      return { gridSize, shouldShowGrid };
+    }, [zoom]);
+
+    // Throttled pan update to prevent excessive re-renders
+    const throttledPanUpdate = useCallback((newPan: { x: number; y: number }) => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      animationFrameRef.current = requestAnimationFrame(() => {
+        onPanChange(newPan);
+      });
+    }, [onPanChange]);
 
     // Handle mouse down for panning
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -35,26 +49,30 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
       }
     }, [panMode, pan]);
 
-    // Handle mouse move for panning
+    // Handle mouse move for panning with throttling
     const handleMouseMove = useCallback((e: MouseEvent) => {
       if (isDragging) {
         const deltaX = e.clientX - dragStart.x;
         const deltaY = e.clientY - dragStart.y;
-        onPanChange({
+        throttledPanUpdate({
           x: panStart.x + deltaX,
           y: panStart.y + deltaY,
         });
       }
-    }, [isDragging, dragStart, panStart, onPanChange]);
+    }, [isDragging, dragStart, panStart, throttledPanUpdate]);
 
     // Handle mouse up
     const handleMouseUp = useCallback(() => {
       setIsDragging(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     }, []);
 
-  // Handle wheel for zooming
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    const container = containerRef.current;
+    // Handle wheel for zooming with throttling
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+      e.preventDefault();
+      const container = containerRef.current;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
@@ -76,69 +94,79 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
       };
 
       onZoomChange(newZoom);
-      onPanChange(newPan);
-    }, [zoom, pan, onZoomChange, onPanChange]);
+      throttledPanUpdate(newPan);
+    }, [zoom, pan, onZoomChange, throttledPanUpdate]);
 
-    // Setup mouse event listeners
+    // Setup mouse event listeners with proper cleanup
     useEffect(() => {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      const handleMouseMoveEvent = (e: MouseEvent) => handleMouseMove(e);
+      const handleMouseUpEvent = () => handleMouseUp();
+
+      document.addEventListener('mousemove', handleMouseMoveEvent);
+      document.addEventListener('mouseup', handleMouseUpEvent);
       
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleMouseMoveEvent);
+        document.removeEventListener('mouseup', handleMouseUpEvent);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
       };
     }, [handleMouseMove, handleMouseUp]);
 
-    // Create minimal modern dot pattern
-    const gridPattern = shouldShowGrid ? (
-      <defs>
-        <pattern
-          id="grid"
-          width={gridSize}
-          height={gridSize}
-          patternUnits="userSpaceOnUse"
-        >
-          {/* Main center dot - more prominent but not overwhelming */}
-          <circle
-            cx={gridSize / 2}
-            cy={gridSize / 2}
-            r="2.5"
-            fill="currentColor"
-            opacity="0.12"
-          />
-          {/* Subtle corner accent dots */}
-          <circle
-            cx={gridSize * 0.25}
-            cy={gridSize * 0.25}
-            r="1"
-            fill="currentColor"
-            opacity="0.06"
-          />
-          <circle
-            cx={gridSize * 0.75}
-            cy={gridSize * 0.25}
-            r="1"
-            fill="currentColor"
-            opacity="0.06"
-          />
-          <circle
-            cx={gridSize * 0.25}
-            cy={gridSize * 0.75}
-            r="1"
-            fill="currentColor"
-            opacity="0.06"
-          />
-          <circle
-            cx={gridSize * 0.75}
-            cy={gridSize * 0.75}
-            r="1"
-            fill="currentColor"
-            opacity="0.06"
-          />
-        </pattern>
-      </defs>
-    ) : null;
+    // Memoize grid pattern to prevent recreation on every render
+    const gridPattern = useMemo(() => {
+      if (!gridConfig.shouldShowGrid) return null;
+      
+      return (
+        <defs>
+          <pattern
+            id="grid"
+            width={gridConfig.gridSize}
+            height={gridConfig.gridSize}
+            patternUnits="userSpaceOnUse"
+          >
+            {/* Main center dot - more prominent but not overwhelming */}
+            <circle
+              cx={gridConfig.gridSize / 2}
+              cy={gridConfig.gridSize / 2}
+              r="2.5"
+              fill="currentColor"
+              opacity="0.12"
+            />
+            {/* Subtle corner accent dots */}
+            <circle
+              cx={gridConfig.gridSize * 0.25}
+              cy={gridConfig.gridSize * 0.25}
+              r="1"
+              fill="currentColor"
+              opacity="0.06"
+            />
+            <circle
+              cx={gridConfig.gridSize * 0.75}
+              cy={gridConfig.gridSize * 0.25}
+              r="1"
+              fill="currentColor"
+              opacity="0.06"
+            />
+            <circle
+              cx={gridConfig.gridSize * 0.25}
+              cy={gridConfig.gridSize * 0.75}
+              r="1"
+              fill="currentColor"
+              opacity="0.06"
+            />
+            <circle
+              cx={gridConfig.gridSize * 0.75}
+              cy={gridConfig.gridSize * 0.75}
+              r="1"
+              fill="currentColor"
+              opacity="0.06"
+            />
+          </pattern>
+        </defs>
+      );
+    }, [gridConfig]);
 
     return (
       <div
@@ -151,13 +179,14 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
         onMouseDown={handleMouseDown}
         onWheel={handleWheel}
         style={{ touchAction: 'none' }}
+        data-workspace-container="true"
       >
-        {/* Grid Background */}
-        {shouldShowGrid && (
+        {/* Grid Background - only render when needed */}
+        {gridConfig.shouldShowGrid && (
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none text-muted-foreground"
             style={{
-              transform: `translate(${pan.x % gridSize}px, ${pan.y % gridSize}px)`,
+              transform: `translate(${pan.x % gridConfig.gridSize}px, ${pan.y % gridConfig.gridSize}px)`,
             }}
           >
             {gridPattern}
