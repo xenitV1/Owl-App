@@ -14,7 +14,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink } from 'lucide-react';
 
 interface AddCardDialogProps {
   open: boolean;
@@ -29,6 +36,17 @@ interface AddCardDialogProps {
     pomodoroData?: any;
     taskBoardData?: any;
     flashcardData?: any;
+    platformContentConfig?: {
+      contentType: 'posts' | 'communities' | 'users' | 'trending' | 'following' | 'discover';
+      filters?: {
+        subject?: string;
+        communityId?: string;
+        userId?: string;
+        search?: string;
+      };
+      refreshInterval?: number;
+      autoRefresh?: boolean;
+    };
   }) => void;
 }
 
@@ -37,6 +55,15 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
   const [cardType, setCardType] = useState<'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards'>('note');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  
+  // Platform Content specific state
+  const [platformContentType, setPlatformContentType] = useState<'posts' | 'communities' | 'users' | 'trending' | 'following' | 'discover'>('posts');
+  const [platformFilters, setPlatformFilters] = useState({
+    subject: '',
+    search: '',
+  });
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(5);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +155,17 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
           categories: [],
         };
         break;
+      case 'platformContent':
+        cardData.platformContentConfig = {
+          contentType: platformContentType,
+          filters: {
+            subject: platformFilters.subject || undefined,
+            search: platformFilters.search || undefined,
+          },
+          refreshInterval: refreshInterval,
+          autoRefresh: autoRefresh,
+        };
+        break;
     }
 
     onAddCard(cardData);
@@ -136,6 +174,10 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
     setTitle('');
     setContent('');
     setCardType('note');
+    setPlatformContentType('posts');
+    setPlatformFilters({ subject: '', search: '' });
+    setAutoRefresh(false);
+    setRefreshInterval(5);
   };
 
   const handleClose = () => {
@@ -144,6 +186,10 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
     setTitle('');
     setContent('');
     setCardType('note');
+    setPlatformContentType('posts');
+    setPlatformFilters({ subject: '', search: '' });
+    setAutoRefresh(false);
+    setRefreshInterval(5);
   };
 
   const isValidForm = () => {
@@ -276,12 +322,111 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
             </div>
           )}
 
-          {/* Platform Content Info */}
+          {/* Platform Content Configuration */}
           {cardType === 'platformContent' && (
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Platform content integration allows you to embed feeds, posts, and other content from this platform directly into your workspace.
-              </p>
+            <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Platform content integration allows you to embed feeds, posts, and other content from this platform directly into your workspace.
+                </p>
+              </div>
+              
+              {/* Content Type Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Content Type</Label>
+                <Select value={platformContentType} onValueChange={(value: any) => setPlatformContentType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="posts">
+                      <div className="flex items-center gap-2">
+                        <Hash className="h-4 w-4" />
+                        Posts
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="communities">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Communities
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="users">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Users
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="trending">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Trending
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="following">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Following
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="discover">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        Discover
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filters */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Filters (Optional)</Label>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Search term..."
+                    value={platformFilters.search}
+                    onChange={(e) => setPlatformFilters(prev => ({ ...prev, search: e.target.value }))}
+                  />
+                  {platformContentType === 'posts' && (
+                    <Input
+                      placeholder="Subject filter..."
+                      value={platformFilters.subject}
+                      onChange={(e) => setPlatformFilters(prev => ({ ...prev, subject: e.target.value }))}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Auto Refresh Settings */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="autoRefresh"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="autoRefresh" className="text-sm">
+                    Auto Refresh
+                  </Label>
+                </div>
+                {autoRefresh && (
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-sm text-muted-foreground">Interval:</Label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={refreshInterval}
+                      onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                      className="w-20 px-2 py-1 text-sm border rounded"
+                    />
+                    <span className="text-sm text-muted-foreground">minutes</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
