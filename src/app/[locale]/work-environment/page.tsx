@@ -19,7 +19,7 @@ export default function WorkEnvironmentPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [gridSnap, setGridSnap] = useState(true);
   
-  const { cards, addCard, updateCard, deleteCard, loadWorkspace } = useWorkspaceStore();
+  const { cards, addCard, updateCard, deleteCard, loadWorkspace, isIndexedDBReady, isLoading } = useWorkspaceStore();
   
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +96,18 @@ export default function WorkEnvironmentPage() {
     setIsAddCardOpen(false);
   }, [addCard, cards.length, pan, zoom]);
 
+  // Show loading state while IndexedDB initializes
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">Çalışma ortamı yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen w-full overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 relative">
       {/* Header */}
@@ -103,7 +115,14 @@ export default function WorkEnvironmentPage() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('subtitle')}
+              {isIndexedDBReady && (
+                <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  IndexedDB
+                </span>
+              )}
+            </p>
           </div>
         </div>
         

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { workspaceDB, migrateFromLocalStorage, isIndexedDBSupported } from '@/lib/indexedDB';
 
 interface WorkspaceCard {
   id: string;
@@ -100,58 +101,105 @@ interface WorkspaceData {
   lastModified: number;
 }
 
-const STORAGE_KEY = 'owl-workspace';
-const CURRENT_VERSION = '1.0.0';
+const CURRENT_VERSION = '2.0.0'; // IndexedDB version
 
 export function useWorkspaceStore() {
   const [cards, setCards] = useState<WorkspaceCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isIndexedDBReady, setIsIndexedDBReady] = useState(false);
 
-  // Load workspace from localStorage
-  const loadWorkspace = useCallback(() => {
+  // Initialize IndexedDB and migrate if needed
+  const initializeDB = useCallback(async () => {
     try {
-      if (typeof window === 'undefined') return;
-      
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data: WorkspaceData = JSON.parse(stored);
-        setCards(data.cards || []);
+      if (!isIndexedDBSupported()) {
+        console.warn('⚠️ IndexedDB desteklenmiyor, localStorage kullanılıyor');
+        setIsIndexedDBReady(false);
+        setIsLoading(false);
+        return;
       }
+
+      await workspaceDB.init();
+      
+      // Try to migrate from localStorage
+      await migrateFromLocalStorage();
+      
+      setIsIndexedDBReady(true);
     } catch (error) {
-      console.error('Failed to load workspace:', error);
-      setCards([]);
+      console.error('❌ IndexedDB başlatma hatası:', error);
+      setIsIndexedDBReady(false);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Save workspace to localStorage
-  const saveWorkspace = useCallback((newCards: WorkspaceCard[]) => {
+  // Load workspace from IndexedDB
+  const loadWorkspace = useCallback(async () => {
     try {
-      if (typeof window === 'undefined') return;
-      
-      const data: WorkspaceData = {
-        cards: newCards,
+      if (!isIndexedDBReady) {
+        // Fallback to localStorage if IndexedDB not ready
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('owl-workspace');
+          if (stored) {
+            const data: WorkspaceData = JSON.parse(stored);
+            setCards(data.cards || []);
+          }
+        }
+        return;
+      }
+
+      const cardsData = await workspaceDB.getAll<WorkspaceCard>('cards');
+      setCards(cardsData || []);
+    } catch (error) {
+      console.error('❌ Veriler yüklenemedi:', error);
+      setCards([]);
+    }
+  }, [isIndexedDBReady]);
+
+  // Save workspace to IndexedDB
+  const saveWorkspace = useCallback(async (newCards: WorkspaceCard[]) => {
+    try {
+      if (!isIndexedDBReady) {
+        // Fallback to localStorage if IndexedDB not ready
+        if (typeof window !== 'undefined') {
+          const data: WorkspaceData = {
+            cards: newCards,
+            version: CURRENT_VERSION,
+            lastModified: Date.now(),
+          };
+          localStorage.setItem('owl-workspace', JSON.stringify(data));
+        }
+        return;
+      }
+
+      // Save workspace metadata (silent)
+      await workspaceDB.put('workspace', {
+        id: 'main',
         version: CURRENT_VERSION,
         lastModified: Date.now(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        cardCount: newCards.length
+      }, true);
+
+      // Save each card individually (silent)
+      for (const card of newCards) {
+        await workspaceDB.put('cards', card, true);
+      }
     } catch (error) {
       console.error('Failed to save workspace:', error);
     }
-  }, []);
+  }, [isIndexedDBReady]);
 
   // Add a new card
-  const addCard = useCallback((card: WorkspaceCard) => {
+  const addCard = useCallback(async (card: WorkspaceCard) => {
     setCards(prev => {
       const newCards = [...prev, card];
       saveWorkspace(newCards);
       return newCards;
     });
+    console.log('➕ Yeni kart eklendi:', card.title);
   }, [saveWorkspace]);
 
   // Update an existing card
-  const updateCard = useCallback((cardId: string, updates: Partial<WorkspaceCard>) => {
+  const updateCard = useCallback(async (cardId: string, updates: Partial<WorkspaceCard>) => {
     setCards(prev => {
       const newCards = prev.map(card => 
         card.id === cardId ? { ...card, ...updates } : card
@@ -162,24 +210,57 @@ export function useWorkspaceStore() {
   }, [saveWorkspace]);
 
   // Delete a card
-  const deleteCard = useCallback((cardId: string) => {
+  const deleteCard = useCallback(async (cardId: string) => {
+    const cardToDelete = cards.find(card => card.id === cardId);
+    
+    // Remove from state
     setCards(prev => {
       const newCards = prev.filter(card => card.id !== cardId);
-      saveWorkspace(newCards);
       return newCards;
     });
-  }, [saveWorkspace]);
+
+    // Delete from IndexedDB
+    try {
+      if (isIndexedDBReady) {
+        await workspaceDB.delete('cards', cardId);
+        console.log('🗑️ Kart silindi:', cardToDelete?.title);
+      } else if (typeof window !== 'undefined') {
+        // Fallback to localStorage
+        const stored = localStorage.getItem('owl-workspace');
+        if (stored) {
+          const data: WorkspaceData = JSON.parse(stored);
+          const updatedCards = data.cards.filter(card => card.id !== cardId);
+          const updatedData = {
+            ...data,
+            cards: updatedCards,
+            lastModified: Date.now()
+          };
+          localStorage.setItem('owl-workspace', JSON.stringify(updatedData));
+          console.log('🗑️ Kart silindi:', cardToDelete?.title);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Kart silme hatası:', error);
+    }
+  }, [isIndexedDBReady, cards]);
 
   // Clear all cards
-  const clearWorkspace = useCallback(() => {
+  const clearWorkspace = useCallback(async () => {
     setCards([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
+    try {
+      if (isIndexedDBReady) {
+        await workspaceDB.clear('cards');
+        await workspaceDB.clear('workspace');
+      } else if (typeof window !== 'undefined') {
+        localStorage.removeItem('owl-workspace');
+      }
+    } catch (error) {
+      console.error('Failed to clear workspace:', error);
     }
-  }, []);
+  }, [isIndexedDBReady]);
 
   // Move card to front (increase z-index)
-  const bringToFront = useCallback((cardId: string) => {
+  const bringToFront = useCallback(async (cardId: string) => {
     setCards(prev => {
       const maxZ = Math.max(...prev.map(c => c.zIndex), 0);
       const newCards = prev.map(card => 
@@ -201,12 +282,12 @@ export function useWorkspaceStore() {
   }, [cards]);
 
   // Import workspace data
-  const importWorkspace = useCallback((jsonData: string) => {
+  const importWorkspace = useCallback(async (jsonData: string) => {
     try {
       const data: WorkspaceData = JSON.parse(jsonData);
       if (data.cards && Array.isArray(data.cards)) {
         setCards(data.cards);
-        saveWorkspace(data.cards);
+        await saveWorkspace(data.cards);
         return true;
       }
       return false;
@@ -248,8 +329,8 @@ export function useWorkspaceStore() {
   }, [cards]);
 
   // Rich Note specific functions
-  const saveRichNoteVersion = useCallback((cardId: string, content: string, author?: string) => {
-    updateCard(cardId, {
+  const saveRichNoteVersion = useCallback(async (cardId: string, content: string, author?: string) => {
+    await updateCard(cardId, {
       richContent: {
         markdown: content,
         html: '', // Will be converted by the component
@@ -267,12 +348,12 @@ export function useWorkspaceStore() {
   }, [cards, updateCard]);
 
   // Pomodoro specific functions
-  const startPomodoro = useCallback((cardId: string) => {
+  const startPomodoro = useCallback(async (cardId: string) => {
     const card = cards.find(c => c.id === cardId);
     if (!card?.pomodoroData) return;
 
     const workDuration = card.pomodoroData.workDuration * 60; // Convert to seconds
-    updateCard(cardId, {
+    await updateCard(cardId, {
       pomodoroData: {
         ...card.pomodoroData,
         isRunning: true,
@@ -282,11 +363,11 @@ export function useWorkspaceStore() {
     });
   }, [cards, updateCard]);
 
-  const pausePomodoro = useCallback((cardId: string) => {
+  const pausePomodoro = useCallback(async (cardId: string) => {
     const card = cards.find(c => c.id === cardId);
     if (!card?.pomodoroData) return;
 
-    updateCard(cardId, {
+    await updateCard(cardId, {
       pomodoroData: {
         ...card.pomodoroData,
         isRunning: false,
@@ -294,12 +375,12 @@ export function useWorkspaceStore() {
     });
   }, [cards, updateCard]);
 
-  const resetPomodoro = useCallback((cardId: string) => {
+  const resetPomodoro = useCallback(async (cardId: string) => {
     const card = cards.find(c => c.id === cardId);
     if (!card?.pomodoroData) return;
 
     const workDuration = card.pomodoroData.workDuration * 60;
-    updateCard(cardId, {
+    await updateCard(cardId, {
       pomodoroData: {
         ...card.pomodoroData,
         isRunning: false,
@@ -311,7 +392,7 @@ export function useWorkspaceStore() {
   }, [cards, updateCard]);
 
   // Task Board specific functions
-  const addTask = useCallback((cardId: string, columnId: string, task: {
+  const addTask = useCallback(async (cardId: string, columnId: string, task: {
     title: string;
     description?: string;
     priority?: 'low' | 'medium' | 'high' | 'urgent';
@@ -338,7 +419,7 @@ export function useWorkspaceStore() {
         : col
     );
 
-    updateCard(cardId, {
+    await updateCard(cardId, {
       taskBoardData: {
         ...card.taskBoardData,
         columns: updatedColumns,
@@ -346,7 +427,7 @@ export function useWorkspaceStore() {
     });
   }, [cards, updateCard]);
 
-  const moveTask = useCallback((cardId: string, taskId: string, fromColumnId: string, toColumnId: string) => {
+  const moveTask = useCallback(async (cardId: string, taskId: string, fromColumnId: string, toColumnId: string) => {
     const card = cards.find(c => c.id === cardId);
     if (!card?.taskBoardData) return;
 
@@ -366,7 +447,7 @@ export function useWorkspaceStore() {
       return col;
     });
 
-    updateCard(cardId, {
+    await updateCard(cardId, {
       taskBoardData: {
         ...card.taskBoardData,
         columns: updatedColumns,
@@ -374,14 +455,19 @@ export function useWorkspaceStore() {
     });
   }, [cards, updateCard]);
 
-  // Load workspace on mount
+  // Initialize DB and load workspace on mount
   useEffect(() => {
-    loadWorkspace();
-  }, [loadWorkspace]);
+    const initAndLoad = async () => {
+      await initializeDB();
+      await loadWorkspace();
+    };
+    initAndLoad();
+  }, [initializeDB, loadWorkspace]);
 
   return {
     cards,
     isLoading,
+    isIndexedDBReady,
     addCard,
     updateCard,
     deleteCard,
