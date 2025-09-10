@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,8 @@ import { PomodoroTimer } from './PomodoroTimer';
 import { TaskBoard } from './TaskBoard';
 import { CalendarView } from './CalendarView';
 import FlashcardSystem from './FlashcardSystem';
+import { PlatformContentCard } from './PlatformContentCard';
+import { useDragDrop } from '@/hooks/useDragDrop';
 
 interface WorkspaceCardType {
   id: string;
@@ -107,6 +109,18 @@ interface WorkspaceCardType {
     categories: string[];
     lastStudyDate?: Date;
   };
+  // Platform Content specific fields
+  platformContentConfig?: {
+    contentType: 'posts' | 'communities' | 'users' | 'trending' | 'following' | 'discover';
+    filters?: {
+      subject?: string;
+      communityId?: string;
+      userId?: string;
+      search?: string;
+    };
+    refreshInterval?: number;
+    autoRefresh?: boolean;
+  };
 }
 
 interface WorkspaceCardProps {
@@ -118,7 +132,7 @@ interface WorkspaceCardProps {
   gridSnap: boolean;
 }
 
-export function WorkspaceCard({
+export const WorkspaceCard = memo(function WorkspaceCard({
   card,
   isSelected,
   onSelect,
@@ -128,65 +142,30 @@ export function WorkspaceCard({
 }: WorkspaceCardProps) {
   const t = useTranslations('workEnvironment');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const snapToGrid = useCallback((value: number) => {
-    if (!gridSnap) return value;
-    const gridSize = 20;
-    return Math.round(value / gridSize) * gridSize;
-  }, [gridSnap]);
+  // Use optimized drag & drop hook
+  const {
+    isDragging,
+    style,
+    handleDragStart,
+  } = useDragDrop({
+    id: card.id,
+    position: card.position,
+    onUpdate,
+    gridSnap,
+    gridSize: 20,
+    disabled: isFullscreen,
+  });
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('drag-handle')) {
-      e.preventDefault();
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    // Only select if clicking on the card itself, not on buttons or content
+    if (e.target === e.currentTarget) {
       onSelect();
-      setIsDragging(true);
-      
-      const rect = cardRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        });
-      }
     }
   }, [onSelect]);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging && cardRef.current) {
-      const parent = cardRef.current.parentElement;
-      if (!parent) return;
-
-      const parentRect = parent.getBoundingClientRect();
-      const newX = snapToGrid(e.clientX - parentRect.left - dragOffset.x);
-      const newY = snapToGrid(e.clientY - parentRect.top - dragOffset.y);
-
-      onUpdate({
-        position: { x: newX, y: newY }
-      });
-    }
-  }, [isDragging, dragOffset, onUpdate, snapToGrid]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    setIsResizing(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging || isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
 
   const handleResize = useCallback((direction: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -200,6 +179,12 @@ export function WorkspaceCard({
     const startHeight = card.size.height;
     const startPosX = card.position.x;
     const startPosY = card.position.y;
+
+    const snapToGrid = (value: number) => {
+      if (!gridSnap) return value;
+      const gridSize = 20;
+      return Math.round(value / gridSize) * gridSize;
+    };
 
     const handleResizeMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX;
@@ -245,10 +230,9 @@ export function WorkspaceCard({
 
     document.addEventListener('mousemove', handleResizeMove);
     document.addEventListener('mouseup', handleResizeEnd);
-  }, [card.size, card.position, onUpdate, onSelect, snapToGrid]);
+  }, [card.size, card.position, onUpdate, onSelect, gridSnap]);
 
-
-  const renderCardContent = () => {
+  const renderCardContent = useCallback(() => {
     switch (card.type) {
       case 'note':
         return (
@@ -261,11 +245,10 @@ export function WorkspaceCard({
 
       case 'platformContent':
         return (
-          <div className="w-full h-full p-4 overflow-auto">
-            <div className="text-sm text-muted-foreground text-center">
-              Platform content integration coming soon...
-            </div>
-          </div>
+          <PlatformContentCard
+            cardId={card.id}
+            config={card.platformContentConfig}
+          />
         );
 
       case 'richNote':
@@ -305,7 +288,7 @@ export function WorkspaceCard({
       default:
         return null;
     }
-  };
+  }, [card.type, card.id, card.content, card.richContent?.markdown, card.platformContentConfig]);
 
   return (
     <Card
@@ -313,8 +296,9 @@ export function WorkspaceCard({
       className={cn(
         'absolute bg-background border-2 transition-all duration-200 overflow-hidden',
         isSelected ? 'border-primary shadow-lg' : 'border-border',
-        isDragging ? 'cursor-grabbing' : 'cursor-auto',
-        isFullscreen && 'fixed inset-4 z-50'
+        isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-auto',
+        isFullscreen && 'fixed inset-4 z-50',
+        isResizing && 'cursor-resize'
       )}
       style={{
         left: isFullscreen ? undefined : card.position.x,
@@ -322,22 +306,29 @@ export function WorkspaceCard({
         width: isFullscreen ? undefined : card.size.width,
         height: isFullscreen ? undefined : card.size.height,
         zIndex: isFullscreen ? 9999 : card.zIndex,
+        ...style,
       }}
-      onMouseDown={handleMouseDown}
+      onClick={handleCardClick}
     >
       {/* Card Header */}
-      <div className="drag-handle flex items-center justify-between p-2 bg-muted/30 border-b cursor-move">
+      <div 
+        className="drag-handle flex items-center justify-between p-2 bg-muted/30 border-b cursor-move select-none"
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+      >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Move className="w-3 h-3 text-muted-foreground flex-shrink-0" />
           <span className="text-sm font-medium truncate">{card.title}</span>
         </div>
         
         <div className="flex items-center gap-1">
-          
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setIsFullscreen(!isFullscreen)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsFullscreen(!isFullscreen);
+            }}
             className="h-6 w-6 p-0"
           >
             {isFullscreen ? (
@@ -350,7 +341,10 @@ export function WorkspaceCard({
           <Button
             size="sm"
             variant="ghost"
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             className="h-6 w-6 p-0 text-destructive hover:bg-destructive/20"
           >
             <X className="w-3 h-3" />
@@ -368,41 +362,41 @@ export function WorkspaceCard({
         <>
           {/* Corner handles */}
           <div
-            className="absolute -top-1 -left-1 w-3 h-3 bg-primary border border-background cursor-nw-resize"
+            className="absolute -top-1 -left-1 w-3 h-3 bg-primary border border-background cursor-nw-resize hover:bg-primary/80 transition-colors"
             onMouseDown={(e) => handleResize('top-left', e)}
           />
           <div
-            className="absolute -top-1 -right-1 w-3 h-3 bg-primary border border-background cursor-ne-resize"
+            className="absolute -top-1 -right-1 w-3 h-3 bg-primary border border-background cursor-ne-resize hover:bg-primary/80 transition-colors"
             onMouseDown={(e) => handleResize('top-right', e)}
           />
           <div
-            className="absolute -bottom-1 -left-1 w-3 h-3 bg-primary border border-background cursor-sw-resize"
+            className="absolute -bottom-1 -left-1 w-3 h-3 bg-primary border border-background cursor-sw-resize hover:bg-primary/80 transition-colors"
             onMouseDown={(e) => handleResize('bottom-left', e)}
           />
           <div
-            className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary border border-background cursor-se-resize"
+            className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary border border-background cursor-se-resize hover:bg-primary/80 transition-colors"
             onMouseDown={(e) => handleResize('bottom-right', e)}
           />
 
           {/* Edge handles */}
           <div
-            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-n-resize"
+            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-n-resize hover:bg-primary transition-colors"
             onMouseDown={(e) => handleResize('top', e)}
           />
           <div
-            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-s-resize"
+            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-s-resize hover:bg-primary transition-colors"
             onMouseDown={(e) => handleResize('bottom', e)}
           />
           <div
-            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-w-resize"
+            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-w-resize hover:bg-primary transition-colors"
             onMouseDown={(e) => handleResize('left', e)}
           />
           <div
-            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-e-resize"
+            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-e-resize hover:bg-primary transition-colors"
             onMouseDown={(e) => handleResize('right', e)}
           />
         </>
       )}
     </Card>
   );
-}
+});
