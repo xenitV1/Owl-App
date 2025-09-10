@@ -12,7 +12,7 @@ import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { UserProfile } from '@/components/auth/UserProfile';
 import { Logo } from '@/components/ui/Logo';
-import { Home, Search, Users, User, BookOpen, Droplets, Settings } from 'lucide-react';
+import { Home, Search, Users, User, BookOpen, Droplets, Settings, Monitor } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
   const t = useTranslations('navigation');
@@ -24,6 +24,7 @@ export const Navigation: React.FC = () => {
     { name: t('discover'), href: `/${locale}/discover`, icon: Search },
     { name: t('following'), href: `/${locale}/following`, icon: Users },
     { name: t('saved'), href: `/${locale}/saved`, icon: Droplets },
+    { name: t('workEnvironment'), href: `/${locale}/work-environment`, icon: Monitor },
     { name: t('profile'), href: `/${locale}/profile`, icon: User },
     { name: t('communities'), href: `/${locale}/communities`, icon: BookOpen },
   ];

@@ -11,8 +11,15 @@ interface MiniChartProps {
 }
 
 export function MiniChart({ type, data, className, color = 'currentColor' }: MiniChartProps) {
+  // Handle edge cases for data
+  if (!data || data.length === 0) {
+    data = [0];
+  }
+  
   const maxValue = Math.max(...data);
-  const normalizedData = data.map(value => (value / maxValue) * 20); // Scale to max height of 20px
+  // Prevent division by zero or infinity
+  const safeMaxValue = maxValue > 0 ? maxValue : 1;
+  const normalizedData = data.map(value => (value / safeMaxValue) * 20); // Scale to max height of 20px
 
   if (type === 'line') {
     const points = normalizedData.map((value, index) => 

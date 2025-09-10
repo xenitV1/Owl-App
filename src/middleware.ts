@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const intlMiddleware = createMiddleware({
   locales: ['en', 'tr'],
   defaultLocale: 'en',
-  localePrefix: 'always'
+  localePrefix: 'as-needed' // Changed from 'always' to 'as-needed' to prevent undefined locale
 });
 
 // Security headers middleware
@@ -27,6 +27,9 @@ export async function middleware(request: NextRequest) {
     finalPath: response.headers.get('Location') || path
   });
   
+  // Check if this is the work-environment page
+  const isWorkEnvironment = path.includes('/work-environment');
+  
   // Apply security headers
   const securityHeaders = {
     // Frame options to prevent clickjacking
@@ -37,8 +40,23 @@ export async function middleware(request: NextRequest) {
     'X-XSS-Protection': '1; mode=block',
     // Referrer policy
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    // Content Security Policy (allow Firebase/Google for auth)
-    'Content-Security-Policy': [
+    // Content Security Policy - more permissive for work environment
+    'Content-Security-Policy': isWorkEnvironment ? [
+      "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: https: http:",
+      "script-src * 'unsafe-inline' 'unsafe-eval' data: blob: https: http: 'self'",
+      "style-src * 'unsafe-inline' data: blob: https: http: 'self'",
+      "img-src * data: blob: https: http: 'self'",
+      "font-src * data: blob: https: http: 'self'",
+      "connect-src * data: blob: https: http: ws: wss: 'self'",
+      "media-src * data: blob: https: http: 'self'",
+      "frame-src * data: blob: https: http: 'self'",
+      "child-src * data: blob: https: http: 'self'",
+      "worker-src * blob: 'self'",
+      "object-src * data: blob: https: http: 'self'",
+      "base-uri 'self' https: http:",
+      "form-action 'self' https: http:",
+      "frame-ancestors 'self' https: http:"
+    ].join('; ') : [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
       "style-src 'self' 'unsafe-inline'",

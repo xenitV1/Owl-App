@@ -132,8 +132,16 @@ export class ContentFilterService {
         case 'BLOCK':
           // Block the content (delete it)
           if (contentType === 'POST') {
-            await db.post.delete({
-              where: { id: contentId }
+            await db.$transaction(async (tx) => {
+              // Delete the image associated with this post (if exists)
+              await tx.postImage.deleteMany({
+                where: { postId: contentId },
+              });
+              
+              // Delete the post itself
+              await tx.post.delete({
+                where: { id: contentId }
+              });
             });
           } else {
             await db.comment.delete({
@@ -145,8 +153,16 @@ export class ContentFilterService {
         case 'REMOVE':
           // Remove the content (delete it)
           if (contentType === 'POST') {
-            await db.post.delete({
-              where: { id: contentId }
+            await db.$transaction(async (tx) => {
+              // Delete the image associated with this post (if exists)
+              await tx.postImage.deleteMany({
+                where: { postId: contentId },
+              });
+              
+              // Delete the post itself
+              await tx.post.delete({
+                where: { id: contentId }
+              });
             });
           } else {
             await db.comment.delete({
