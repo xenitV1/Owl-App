@@ -668,6 +668,35 @@
         "escape": "Escape: Deselect all",
         "delete": "Delete: Remove selected card"
       }
+    },
+    "progressDashboard": {
+      "title": "Progress Dashboard",
+      "subtitle": "Track your learning progress and achievements",
+      "overview": "Overview",
+      "analytics": "Analytics",
+      "achievements": "Achievements",
+      "todayProgress": "Today's Progress",
+      "thisWeek": "This Week",
+      "studyTime": "Study Time",
+      "tasksCompleted": "Tasks Completed",
+      "flashcardsReviewed": "Flashcards Reviewed",
+      "pomodoroSessions": "Pomodoro Sessions",
+      "streak": "Streak",
+      "totalTime": "Total Time",
+      "allTime": "all time",
+      "days": "days",
+      "subjectBreakdown": "Subject Breakdown",
+      "weeklyTrend": "Weekly Trend",
+      "achievements": "Achievements",
+      "noAchievements": "No achievements yet",
+      "keepStudying": "Keep studying to unlock achievements!",
+      "sevenDayStreak": "7-Day Streak",
+      "threeHoursToday": "3+ Hours Today",
+      "taskMaster": "Task Master",
+      "studyChampion": "Study Champion",
+      "goals": "Goals",
+      "setGoals": "Set Goals",
+      "detailedView": "Detailed View"
     }
   }
 }
