@@ -21,7 +21,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink } from 'lucide-react';
+import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink, BarChart3 } from 'lucide-react';
 
 interface AddCardDialogProps {
   open: boolean;
@@ -291,6 +291,7 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
                   <span className="text-sm">Flashcards</span>
                 </Label>
               </div>
+
             </RadioGroup>
           </div>
 
