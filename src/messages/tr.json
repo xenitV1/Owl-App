@@ -633,7 +633,7 @@
     "addCard": "Kart Ekle",
     "cardTypes": {
       "platformContent": "Platform İçeriği",
-      "note": "Not"
+      "richNote": "Zengin Not"
     },
     "cardTitle": "Kart Başlığı",
     "enterTitle": "Kart başlığını girin...",
@@ -700,6 +700,69 @@
       "goals": "Hedefler",
       "setGoals": "Hedef Belirle",
       "detailedView": "Detaylı Görünüm"
+    },
+    "richNote": {
+      "title": "Zengin Not Editörü",
+      "subtitle": "Gelişmiş özelliklerle notlarınızı oluşturun ve düzenleyin",
+      "placeholder": "Notunuzu yazmaya başlayın...",
+      "saving": "Kaydediliyor...",
+      "saved": "Kaydedildi",
+      "lastSaved": "Son kayıt: {time}",
+      "versionHistory": "Sürüm Geçmişi",
+      "export": "Dışa Aktar",
+      "exportOptions": {
+        "pdf": "PDF olarak dışa aktar",
+        "word": "Word olarak dışa aktar",
+        "markdown": "Markdown olarak dışa aktar"
+      },
+      "ocr": {
+        "title": "OCR Metin Tanıma",
+        "uploadImage": "Resim Yükle",
+        "recognizeText": "Metni Tanı",
+        "processing": "İşleniyor...",
+        "noTextFound": "Resimde metin bulunamadı",
+        "textRecognized": "Metin başarıyla tanındı",
+        "supportedFormats": "Desteklenen formatlar: PNG, JPG, JPEG"
+      },
+      "organization": {
+        "createFolder": "Klasör Oluştur",
+        "folderName": "Klasör Adı",
+        "createSubfolder": "Alt Klasör Oluştur",
+        "moveToFolder": "Klasöre Taşı",
+        "organizeNotes": "Notları Düzenle",
+        "hierarchicalView": "Hiyerarşik Görünüm",
+        "flatView": "Düz Görünüm"
+      },
+      "crossReference": {
+        "title": "Çapraz Referanslar",
+        "linkToNote": "Note Bağla",
+        "linkedNotes": "Bağlı Notlar",
+        "createLink": "Bağlantı Oluştur",
+        "removeLink": "Bağlantıyı Kaldır",
+        "searchNotes": "Bağlanacak notları ara..."
+      },
+      "formatting": {
+        "bold": "Kalın",
+        "italic": "İtalik",
+        "underline": "Altı Çizili",
+        "strikethrough": "Üstü Çizili",
+        "code": "Kod",
+        "link": "Bağlantı",
+        "heading": "Başlık",
+        "bulletList": "Madde İşaretli Liste",
+        "numberedList": "Numaralı Liste",
+        "quote": "Alıntı",
+        "codeBlock": "Kod Bloğu",
+        "image": "Resim",
+        "table": "Tablo"
+      },
+      "toolbar": {
+        "formatting": "Biçimlendirme",
+        "insert": "Ekle",
+        "organize": "Düzenle",
+        "export": "Dışa Aktar",
+        "ocr": "OCR"
+      }
     }
   }
 }
