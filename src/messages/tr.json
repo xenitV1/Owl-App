@@ -671,6 +671,35 @@
         "escape": "Escape: Tüm seçimleri kaldır",
         "delete": "Delete: Seçili kartı kaldır"
       }
+    },
+    "progressDashboard": {
+      "title": "İlerleme Paneli",
+      "subtitle": "Öğrenme ilerlemenizi ve başarılarınızı takip edin",
+      "overview": "Genel Bakış",
+      "analytics": "Analitikler",
+      "achievements": "Başarılar",
+      "todayProgress": "Bugünkü İlerleme",
+      "thisWeek": "Bu Hafta",
+      "studyTime": "Çalışma Süresi",
+      "tasksCompleted": "Tamamlanan Görevler",
+      "flashcardsReviewed": "İncelenen Flaş Kartlar",
+      "pomodoroSessions": "Pomodoro Oturumları",
+      "streak": "Seri",
+      "totalTime": "Toplam Süre",
+      "allTime": "tüm zamanlar",
+      "days": "gün",
+      "subjectBreakdown": "Ders Dağılımı",
+      "weeklyTrend": "Haftalık Trend",
+      "achievements": "Başarılar",
+      "noAchievements": "Henüz başarı yok",
+      "keepStudying": "Başarıları açmak için çalışmaya devam edin!",
+      "sevenDayStreak": "7 Günlük Seri",
+      "threeHoursToday": "Bugün 3+ Saat",
+      "taskMaster": "Görev Ustası",
+      "studyChampion": "Çalışma Şampiyonu",
+      "goals": "Hedefler",
+      "setGoals": "Hedef Belirle",
+      "detailedView": "Detaylı Görünüm"
     }
   }
 }
