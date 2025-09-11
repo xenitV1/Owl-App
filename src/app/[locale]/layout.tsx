@@ -12,6 +12,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { SkipLinks } from '@/lib/accessibility';
 import DebugPanel from '@/components/DebugPanel';
+import { ResizeObserverErrorHandler } from '@/components/ResizeObserverErrorHandler';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -107,6 +108,7 @@ export default async function LocaleLayout({
             </div>
             <Toaster />
             <DebugPanel />
+            <ResizeObserverErrorHandler />
           </FontSizeProvider>
         </ThemeProvider>
       </AuthProvider>
