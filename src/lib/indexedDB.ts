@@ -24,10 +24,20 @@ class IndexedDBManager {
 
   async init(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // First, try to open with current version
       const request = indexedDB.open(this.config.name, this.config.version);
 
       request.onerror = () => {
-        reject(new Error(`IndexedDB error: ${request.error}`));
+        const error = request.error;
+        console.error('IndexedDB error:', error);
+        
+        // If it's a version error, try to delete and recreate
+        if (error?.name === 'VersionError') {
+          console.log('Version conflict detected, recreating database...');
+          this.recreateDatabase().then(resolve).catch(reject);
+        } else {
+          reject(new Error(`IndexedDB error: ${error}`));
+        }
       };
 
       request.onsuccess = () => {
@@ -53,6 +63,29 @@ class IndexedDBManager {
             });
           }
         });
+      };
+    });
+  }
+
+  private async recreateDatabase(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Close existing connection
+      if (this.db) {
+        this.db.close();
+        this.db = null;
+      }
+
+      // Delete existing database
+      const deleteRequest = indexedDB.deleteDatabase(this.config.name);
+      
+      deleteRequest.onsuccess = () => {
+        console.log('Database deleted successfully, recreating...');
+        // Now create new database
+        this.init().then(resolve).catch(reject);
+      };
+      
+      deleteRequest.onerror = () => {
+        reject(new Error(`Failed to delete database: ${deleteRequest.error}`));
       };
     });
   }
@@ -175,7 +208,7 @@ class IndexedDBManager {
 // Workspace için IndexedDB konfigürasyonu
 const workspaceConfig: IDBConfig = {
   name: 'owl-workspace',
-  version: 3, // Flashcard entegrasyonu için versiyon artırıldı
+  version: 4, // Rich Note editor için versiyon artırıldı
   stores: [
     {
       name: 'workspace',
@@ -225,6 +258,15 @@ const workspaceConfig: IDBConfig = {
       indexes: [
         { name: 'startTime', keyPath: 'startTime' },
         { name: 'sessionDate', keyPath: 'sessionDate' }
+      ]
+    },
+    {
+      name: 'richNotes',
+      keyPath: 'id',
+      indexes: [
+        { name: 'cardId', keyPath: 'cardId' },
+        { name: 'lastModified', keyPath: 'lastModified' },
+        { name: 'folder', keyPath: 'folder' }
       ]
     }
   ]
