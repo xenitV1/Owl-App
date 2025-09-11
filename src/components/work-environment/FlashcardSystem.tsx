@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
+import { checkIndexedDBFlashcards } from '@/lib/indexedDB';
 import {
   Plus,
   Play,
@@ -34,6 +36,7 @@ import {
 
 interface Flashcard {
   id: string;
+  cardId?: string; // Workspace card ID that owns this flashcard
   front: string;
   back: string;
   type: 'text' | 'image' | 'audio' | 'video';
@@ -56,36 +59,58 @@ interface StudySession {
   correctAnswers: number;
   averageResponseTime: number;
   sessionDuration: number;
+  sessionDate: Date;
 }
 
 interface FlashcardStats {
+  id: string;
   totalCards: number;
   cardsDue: number;
   averageDifficulty: number;
   studyStreak: number;
   totalStudyTime: number;
   accuracy: number;
+  lastUpdated: Date;
 }
 
-export default function FlashcardSystem() {
+interface FlashcardSystemProps {
+  cardId?: string;
+}
+
+export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
   const t = useTranslations('flashcards');
+  const {
+    getAllFlashcards,
+    saveFlashcard,
+    deleteFlashcard,
+    getFlashcardStats,
+    saveFlashcardStats,
+    saveStudySession,
+    getStudySessions,
+    isIndexedDBReady
+  } = useWorkspaceStore();
+
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [studyMode, setStudyMode] = useState(false);
   const [currentSession, setCurrentSession] = useState<StudySession | null>(null);
   const [stats, setStats] = useState<FlashcardStats>({
+    id: 'main',
     totalCards: 0,
     cardsDue: 0,
     averageDifficulty: 0,
     studyStreak: 0,
     totalStudyTime: 0,
-    accuracy: 0
+    accuracy: 0,
+    lastUpdated: new Date()
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
-  const [newCard, setNewCard] = useState({
+
+  // Separate state for create and edit operations
+  const [createCardForm, setCreateCardForm] = useState({
     front: '',
     back: '',
     type: 'text' as 'text' | 'image' | 'audio' | 'video',
@@ -94,6 +119,25 @@ export default function FlashcardSystem() {
     mediaFile: null as File | null,
     mediaPreview: '' as string
   });
+
+  const [editCardForm, setEditCardForm] = useState({
+    front: '',
+    back: '',
+    type: 'text' as 'text' | 'image' | 'audio' | 'video',
+    category: '',
+    tags: '',
+    mediaFile: null as File | null,
+    mediaPreview: '' as string
+  });
+
+  // Helper functions for form management
+  const resetCreateForm = useCallback(() => {
+    setCreateCardForm({ front: '', back: '', type: 'text', category: '', tags: '', mediaFile: null, mediaPreview: '' });
+  }, []);
+
+  const resetEditForm = useCallback(() => {
+    setEditCardForm({ front: '', back: '', type: 'text', category: '', tags: '', mediaFile: null, mediaPreview: '' });
+  }, []);
 
   // SM-2 Algorithm implementation
   const calculateNextReview = useCallback((card: Flashcard, quality: number) => {
@@ -133,95 +177,64 @@ export default function FlashcardSystem() {
     };
   }, []);
 
-  // Initialize IndexedDB
+  // Load flashcards and stats from workspace store
   useEffect(() => {
-    const initDB = () => {
-      const request = indexedDB.open('FlashcardSystem', 1);
+    const loadData = async () => {
+      if (!isIndexedDBReady) return;
 
-      request.onerror = () => console.error('IndexedDB error');
+      try {
+        // Debug: IndexedDB durumunu kontrol et
+        const indexedDBCheck = await checkIndexedDBFlashcards();
+        console.log('🔍 Flashcard Debug Bilgileri:');
+        console.log('- IndexedDB:', indexedDBCheck);
+        console.log('- Card ID:', cardId);
 
-      request.onsuccess = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        loadFlashcards(db);
-        loadStats(db);
-      };
+        const cards = await getAllFlashcards(cardId);
+        setFlashcards(cards);
+        updateStats(cards);
 
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
-        if (!db.objectStoreNames.contains('flashcards')) {
-          const store = db.createObjectStore('flashcards', { keyPath: 'id' });
-          store.createIndex('nextReview', 'nextReview');
-          store.createIndex('category', 'category');
+        const savedStats = await getFlashcardStats();
+        if (savedStats) {
+          setStats(savedStats);
         }
-
-        if (!db.objectStoreNames.contains('stats')) {
-          db.createObjectStore('stats', { keyPath: 'id' });
-        }
-
-        if (!db.objectStoreNames.contains('sessions')) {
-          db.createObjectStore('sessions', { keyPath: 'id' });
-        }
-      };
-    };
-
-    initDB();
-  }, []);
-
-  const loadFlashcards = useCallback((db: IDBDatabase) => {
-    const transaction = db.transaction(['flashcards'], 'readonly');
-    const store = transaction.objectStore('flashcards');
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      const cards = request.result.map(card => ({
-        ...card,
-        nextReview: new Date(card.nextReview),
-        createdAt: new Date(card.createdAt),
-        lastReviewed: card.lastReviewed ? new Date(card.lastReviewed) : undefined
-      }));
-      setFlashcards(cards);
-      updateStats(cards);
-    };
-  }, []);
-
-  const loadStats = useCallback((db: IDBDatabase) => {
-    const transaction = db.transaction(['stats'], 'readonly');
-    const store = transaction.objectStore('stats');
-    const request = store.get('main');
-
-    request.onsuccess = () => {
-      if (request.result) {
-        setStats(request.result);
+      } catch (error) {
+        console.error('❌ Flashcard verileri yüklenemedi:', error);
       }
     };
-  }, []);
 
-  const updateStats = useCallback((cards: Flashcard[]) => {
+    loadData();
+  }, [isIndexedDBReady, getAllFlashcards, getFlashcardStats, cardId]);
+
+  const updateStats = useCallback(async (cards: Flashcard[]) => {
     const now = new Date();
     const cardsDue = cards.filter(card => card.nextReview <= now).length;
     const averageDifficulty = cards.length > 0
       ? cards.reduce((sum, card) => sum + card.difficulty, 0) / cards.length
       : 0;
 
-    setStats(prev => ({
-      ...prev,
+    const newStats: FlashcardStats = {
+      id: 'main',
       totalCards: cards.length,
       cardsDue,
-      averageDifficulty
-    }));
-  }, []);
-
-  const saveCardToDB = useCallback((card: Flashcard) => {
-    const request = indexedDB.open('FlashcardSystem', 1);
-
-    request.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      const transaction = db.transaction(['flashcards'], 'readwrite');
-      const store = transaction.objectStore('flashcards');
-      store.put(card);
+      averageDifficulty,
+      studyStreak: stats.studyStreak,
+      totalStudyTime: stats.totalStudyTime,
+      accuracy: stats.accuracy,
+      lastUpdated: now
     };
-  }, []);
+
+    setStats(newStats);
+    
+    if (isIndexedDBReady) {
+      await saveFlashcardStats(newStats);
+    }
+  }, [stats.studyStreak, stats.totalStudyTime, stats.accuracy, isIndexedDBReady, saveFlashcardStats]);
+
+  const saveCardToDB = useCallback(async (card: Flashcard) => {
+    if (isIndexedDBReady) {
+      await saveFlashcard(card);
+    }
+  }, [isIndexedDBReady, saveFlashcard]);
 
   const getMediaTypeFromFile = useCallback((file: File): 'image' | 'audio' | 'video' => {
     if (file.type.startsWith('image/')) return 'image';
@@ -231,25 +244,26 @@ export default function FlashcardSystem() {
   }, []);
 
   const handleCreateCard = useCallback(async () => {
-    if (!newCard.front.trim() || !newCard.back.trim()) return;
+    if (!createCardForm.front.trim() || !createCardForm.back.trim()) return;
 
     let mediaUrl = '';
 
     // Handle media file if present
-    if (newCard.mediaFile) {
+    if (createCardForm.mediaFile) {
       // Convert file to base64 for storage
       const reader = new FileReader();
       mediaUrl = await new Promise((resolve) => {
         reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(newCard.mediaFile as Blob);
+        reader.readAsDataURL(createCardForm.mediaFile as Blob);
       });
     }
 
     const card: Flashcard = {
       id: Date.now().toString(),
-      front: newCard.front,
-      back: newCard.back,
-      type: newCard.mediaFile ? getMediaTypeFromFile(newCard.mediaFile) : newCard.type,
+      cardId: cardId, // Associate with the workspace card
+      front: createCardForm.front,
+      back: createCardForm.back,
+      type: createCardForm.mediaFile ? getMediaTypeFromFile(createCardForm.mediaFile) : createCardForm.type,
       mediaUrl: mediaUrl || undefined,
       difficulty: 3,
       nextReview: new Date(),
@@ -257,22 +271,22 @@ export default function FlashcardSystem() {
       easeFactor: 2.5,
       repetitions: 0,
       createdAt: new Date(),
-      tags: newCard.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      category: newCard.category
+      tags: createCardForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+      category: createCardForm.category
     };
 
     const updatedCards = [...flashcards, card];
     setFlashcards(updatedCards);
-    saveCardToDB(card);
-    updateStats(updatedCards);
+    await saveCardToDB(card);
+    await updateStats(updatedCards);
 
-    setNewCard({ front: '', back: '', type: 'text', category: '', tags: '', mediaFile: null, mediaPreview: '' });
+    // Close dialog (form will be cleared by onOpenChange)
     setIsCreateDialogOpen(false);
-  }, [newCard, flashcards, saveCardToDB, updateStats, getMediaTypeFromFile]);
+  }, [createCardForm, flashcards, saveCardToDB, updateStats, getMediaTypeFromFile]);
 
   const handleEditCard = useCallback((card: Flashcard) => {
     setEditingCard(card);
-    setNewCard({
+    setEditCardForm({
       front: card.front,
       back: card.back,
       type: card.type,
@@ -285,27 +299,27 @@ export default function FlashcardSystem() {
   }, []);
 
   const handleUpdateCard = useCallback(async () => {
-    if (!editingCard || !newCard.front.trim() || !newCard.back.trim()) return;
+    if (!editingCard || !editCardForm.front.trim() || !editCardForm.back.trim()) return;
 
     let mediaUrl = editingCard.mediaUrl || '';
 
     // Handle new media file if present
-    if (newCard.mediaFile) {
+    if (editCardForm.mediaFile) {
       const reader = new FileReader();
       mediaUrl = await new Promise((resolve) => {
         reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(newCard.mediaFile as Blob);
+        reader.readAsDataURL(editCardForm.mediaFile as Blob);
       });
     }
 
     const updatedCard: Flashcard = {
       ...editingCard,
-      front: newCard.front,
-      back: newCard.back,
-      type: newCard.mediaFile ? getMediaTypeFromFile(newCard.mediaFile) : newCard.type,
+      front: editCardForm.front,
+      back: editCardForm.back,
+      type: editCardForm.mediaFile ? getMediaTypeFromFile(editCardForm.mediaFile) : editCardForm.type,
       mediaUrl: mediaUrl || undefined,
-      tags: newCard.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      category: newCard.category
+      tags: editCardForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+      category: editCardForm.category
     };
 
     const updatedCards = flashcards.map(card =>
@@ -313,43 +327,32 @@ export default function FlashcardSystem() {
     );
 
     setFlashcards(updatedCards);
-    saveCardToDB(updatedCard);
-    updateStats(updatedCards);
+    await saveCardToDB(updatedCard);
+    await updateStats(updatedCards);
 
-    setNewCard({ front: '', back: '', type: 'text', category: '', tags: '', mediaFile: null, mediaPreview: '' });
+    // Close dialog (form will be cleared by onOpenChange)
     setEditingCard(null);
     setIsEditDialogOpen(false);
-  }, [editingCard, newCard, flashcards, saveCardToDB, updateStats, getMediaTypeFromFile]);
+  }, [editingCard, editCardForm, flashcards, saveCardToDB, updateStats, getMediaTypeFromFile]);
 
-  const handleDeleteCard = useCallback((cardId: string) => {
+  const handleDeleteCard = useCallback(async (cardId: string) => {
     if (!confirm(t('confirmDelete'))) return;
 
     const updatedCards = flashcards.filter(card => card.id !== cardId);
     setFlashcards(updatedCards);
 
-    // Remove from IndexedDB
-    const request = indexedDB.open('FlashcardSystem', 1);
-    request.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      const transaction = db.transaction(['flashcards'], 'readwrite');
-      const store = transaction.objectStore('flashcards');
-      store.delete(cardId);
-    };
+    // Remove from workspace IndexedDB
+    await deleteFlashcard(cardId);
+    await updateStats(updatedCards);
+  }, [flashcards, t, updateStats, deleteFlashcard]);
 
-    updateStats(updatedCards);
-  }, [flashcards, t, updateStats]);
+  const saveSessionToDB = useCallback(async (session: StudySession) => {
+    if (isIndexedDBReady) {
+      await saveStudySession(session);
+    }
+  }, [isIndexedDBReady, saveStudySession]);
 
-  const saveSessionToDB = useCallback((session: StudySession) => {
-    const request = indexedDB.open('FlashcardSystem', 1);
-    request.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      const transaction = db.transaction(['sessions'], 'readwrite');
-      const store = transaction.objectStore('sessions');
-      store.put(session);
-    };
-  }, []);
-
-  const handleCardResponse = useCallback((quality: number) => {
+  const handleCardResponse = useCallback(async (quality: number) => {
     const currentCard = flashcards[currentCardIndex];
     if (!currentCard) return;
 
@@ -359,8 +362,8 @@ export default function FlashcardSystem() {
     );
 
     setFlashcards(updatedCards);
-    saveCardToDB(updatedCard);
-    updateStats(updatedCards);
+    await saveCardToDB(updatedCard);
+    await updateStats(updatedCards);
 
     // Update session statistics
     if (currentSession) {
@@ -385,7 +388,7 @@ export default function FlashcardSystem() {
           correctAnswers: currentSession.correctAnswers + (quality >= 3 ? 1 : 0),
           sessionDuration: (new Date().getTime() - currentSession.startTime.getTime()) / 1000
         };
-        saveSessionToDB(finalSession);
+        await saveSessionToDB(finalSession);
 
         // Update overall stats
         setStats(prev => ({
@@ -419,7 +422,8 @@ export default function FlashcardSystem() {
       cardsStudied: 0,
       correctAnswers: 0,
       averageResponseTime: 0,
-      sessionDuration: 0
+      sessionDuration: 0,
+      sessionDate: new Date()
     };
 
     setCurrentSession(session);
@@ -429,7 +433,7 @@ export default function FlashcardSystem() {
     setIsFlipped(false);
   }, [flashcards]);
 
-  const handleMediaFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCreateMediaFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -447,20 +451,54 @@ export default function FlashcardSystem() {
       return;
     }
 
-    setNewCard(prev => ({ ...prev, mediaFile: file }));
+    setCreateCardForm(prev => ({ ...prev, mediaFile: file }));
 
     // Create preview for images
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setNewCard(prev => ({ ...prev, mediaPreview: e.target?.result as string }));
+        setCreateCardForm(prev => ({ ...prev, mediaPreview: e.target?.result as string }));
       };
       reader.readAsDataURL(file);
     }
   }, [t]);
 
-  const removeMediaFile = useCallback(() => {
-    setNewCard(prev => ({ ...prev, mediaFile: null, mediaPreview: '' }));
+  const handleEditMediaFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'audio/mpeg', 'audio/wav', 'video/mp4'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!validTypes.includes(file.type)) {
+      alert(t('invalidFileType'));
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert(t('fileTooLarge'));
+      return;
+    }
+
+    setEditCardForm(prev => ({ ...prev, mediaFile: file }));
+
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setEditCardForm(prev => ({ ...prev, mediaPreview: e.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [t]);
+
+  const removeCreateMediaFile = useCallback(() => {
+    setCreateCardForm(prev => ({ ...prev, mediaFile: null, mediaPreview: '' }));
+  }, []);
+
+  const removeEditMediaFile = useCallback(() => {
+    setEditCardForm(prev => ({ ...prev, mediaFile: null, mediaPreview: '' }));
   }, []);
 
   const exportFlashcards = useCallback(() => {
@@ -489,12 +527,12 @@ export default function FlashcardSystem() {
     URL.revokeObjectURL(url);
   }, [flashcards]);
 
-  const importFlashcards = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const importFlashcards = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const importData = JSON.parse(e.target?.result as string);
 
@@ -523,19 +561,12 @@ export default function FlashcardSystem() {
         const updatedCards = [...flashcards, ...newCards];
         setFlashcards(updatedCards);
 
-        // Save to database
-        const request = indexedDB.open('FlashcardSystem', 1);
-        request.onsuccess = (event) => {
-          const db = (event.target as IDBOpenDBRequest).result;
-          const transaction = db.transaction(['flashcards'], 'readwrite');
-          const store = transaction.objectStore('flashcards');
+        // Save to workspace database
+        for (const card of newCards) {
+          await saveCardToDB(card);
+        }
 
-          newCards.forEach(card => {
-            store.put(card);
-          });
-        };
-
-        updateStats(updatedCards);
+        await updateStats(updatedCards);
         alert(t('importSuccess').replace('{count}', newCards.length.toString()));
       } catch (error) {
         alert(t('importError'));
@@ -558,7 +589,11 @@ export default function FlashcardSystem() {
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            // Dialog açılırken veya kapanırken form'u temizle
+            resetCreateForm();
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -570,7 +605,7 @@ export default function FlashcardSystem() {
                 <DialogTitle>{t('createNewCard')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <Select value={newCard.type} onValueChange={(value: any) => setNewCard(prev => ({ ...prev, type: value }))}>
+                <Select value={createCardForm.type} onValueChange={(value: any) => setCreateCardForm(prev => ({ ...prev, type: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('selectType')} />
                   </SelectTrigger>
@@ -583,54 +618,54 @@ export default function FlashcardSystem() {
 
                 <Input
                   placeholder={t('frontPlaceholder')}
-                  value={newCard.front}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, front: e.target.value }))}
+                  value={createCardForm.front}
+                  onChange={(e) => setCreateCardForm(prev => ({ ...prev, front: e.target.value }))}
                 />
 
                 <Textarea
                   placeholder={t('backPlaceholder')}
-                  value={newCard.back}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, back: e.target.value }))}
+                  value={createCardForm.back}
+                  onChange={(e) => setCreateCardForm(prev => ({ ...prev, back: e.target.value }))}
                   rows={3}
                 />
 
                 <Input
                   placeholder={t('categoryPlaceholder')}
-                  value={newCard.category}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, category: e.target.value }))}
+                  value={createCardForm.category}
+                  onChange={(e) => setCreateCardForm(prev => ({ ...prev, category: e.target.value }))}
                 />
 
                 <Input
                   placeholder={t('tagsPlaceholder')}
-                  value={newCard.tags}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, tags: e.target.value }))}
+                  value={createCardForm.tags}
+                  onChange={(e) => setCreateCardForm(prev => ({ ...prev, tags: e.target.value }))}
                 />
 
                 {/* Media Upload Section */}
                 <div className="space-y-2">
                   <Label>{t('mediaUpload')}</Label>
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                    {newCard.mediaFile ? (
+                    {createCardForm.mediaFile ? (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {newCard.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
-                            {newCard.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
-                            {newCard.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
-                            <span className="text-sm">{newCard.mediaFile.name}</span>
+                            {createCardForm.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
+                            {createCardForm.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
+                            {createCardForm.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
+                            <span className="text-sm">{createCardForm.mediaFile.name}</span>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={removeMediaFile}
+                            onClick={() => setCreateCardForm(prev => ({ ...prev, mediaFile: null, mediaPreview: '' }))}
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
-                        {newCard.mediaPreview && (
+                        {createCardForm.mediaPreview && (
                           <div className="mt-2">
                             <img
-                              src={newCard.mediaPreview}
+                              src={createCardForm.mediaPreview}
                               alt="Preview"
                               className="max-w-full max-h-32 object-cover rounded"
                             />
@@ -646,7 +681,7 @@ export default function FlashcardSystem() {
                         <Input
                           type="file"
                           accept="image/*,audio/*,video/*"
-                          onChange={handleMediaFileSelect}
+                          onChange={handleCreateMediaFileSelect}
                           className="hidden"
                           id="media-upload"
                         />
@@ -668,7 +703,12 @@ export default function FlashcardSystem() {
                   <Button onClick={handleCreateCard} className="flex-1">
                     {t('create')}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreateDialogOpen(false);
+                    }}
+                  >
                     {t('cancel')}
                   </Button>
                 </div>
@@ -677,13 +717,20 @@ export default function FlashcardSystem() {
           </Dialog>
 
           {/* Edit Card Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              // Dialog kapandığında editing state'i temizle
+              setEditingCard(null);
+              resetEditForm();
+            }
+          }}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{t('editCard')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <Select value={newCard.type} onValueChange={(value: any) => setNewCard(prev => ({ ...prev, type: value }))}>
+                <Select value={editCardForm.type} onValueChange={(value: any) => setEditCardForm(prev => ({ ...prev, type: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('selectType')} />
                   </SelectTrigger>
@@ -696,54 +743,54 @@ export default function FlashcardSystem() {
 
                 <Input
                   placeholder={t('frontPlaceholder')}
-                  value={newCard.front}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, front: e.target.value }))}
+                  value={editCardForm.front}
+                  onChange={(e) => setEditCardForm(prev => ({ ...prev, front: e.target.value }))}
                 />
 
                 <Textarea
                   placeholder={t('backPlaceholder')}
-                  value={newCard.back}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, back: e.target.value }))}
+                  value={editCardForm.back}
+                  onChange={(e) => setEditCardForm(prev => ({ ...prev, back: e.target.value }))}
                   rows={3}
                 />
 
                 <Input
                   placeholder={t('categoryPlaceholder')}
-                  value={newCard.category}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, category: e.target.value }))}
+                  value={editCardForm.category}
+                  onChange={(e) => setEditCardForm(prev => ({ ...prev, category: e.target.value }))}
                 />
 
                 <Input
                   placeholder={t('tagsPlaceholder')}
-                  value={newCard.tags}
-                  onChange={(e) => setNewCard(prev => ({ ...prev, tags: e.target.value }))}
+                  value={editCardForm.tags}
+                  onChange={(e) => setEditCardForm(prev => ({ ...prev, tags: e.target.value }))}
                 />
 
                 {/* Media Upload Section */}
                 <div className="space-y-2">
                   <Label>{t('mediaUpload')}</Label>
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                    {newCard.mediaFile ? (
+                    {editCardForm.mediaFile ? (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {newCard.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
-                            {newCard.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
-                            {newCard.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
-                            <span className="text-sm">{newCard.mediaFile.name}</span>
+                            {editCardForm.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
+                            {editCardForm.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
+                            {editCardForm.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
+                            <span className="text-sm">{editCardForm.mediaFile.name}</span>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={removeMediaFile}
+                            onClick={removeEditMediaFile}
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
-                        {newCard.mediaPreview && (
+                        {editCardForm.mediaPreview && (
                           <div className="mt-2">
                             <img
-                              src={newCard.mediaPreview}
+                              src={editCardForm.mediaPreview}
                               alt="Preview"
                               className="max-w-full max-h-32 object-cover rounded"
                             />
@@ -759,7 +806,7 @@ export default function FlashcardSystem() {
                         <Input
                           type="file"
                           accept="image/*,audio/*,video/*"
-                          onChange={handleMediaFileSelect}
+                          onChange={handleEditMediaFileSelect}
                           className="hidden"
                           id="edit-media-upload"
                         />
@@ -781,7 +828,12 @@ export default function FlashcardSystem() {
                   <Button onClick={handleUpdateCard} className="flex-1">
                     {t('update')}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                    }}
+                  >
                     {t('cancel')}
                   </Button>
                 </div>
