@@ -4,14 +4,20 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBS5e8Wr-xgtPJSNUWaGo7uH84jp8hbsB0",
-  authDomain: "owll-514ef.firebaseapp.com",
-  projectId: "owll-514ef",
-  storageBucket: "owll-514ef.firebasestorage.app",
-  messagingSenderId: "128036695370",
-  appId: "1:128036695370:web:06cb1321aaf8afb73ba5b3",
-  measurementId: "G-ZPYPYLSM5H"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID
 };
+
+// Validate Firebase configuration
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+  console.error('Firebase configuration is incomplete. Please check your environment variables.');
+  throw new Error('Firebase configuration is missing required fields');
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
