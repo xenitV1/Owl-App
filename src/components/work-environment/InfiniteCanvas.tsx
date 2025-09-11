@@ -41,6 +41,15 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
 
     // Handle mouse down for panning
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
+      // Check if the target is a card or its children
+      const target = e.target as HTMLElement;
+      const isCardElement = target.closest('[data-workspace-card="true"]');
+      
+      // If clicking on a card, don't handle panning
+      if (isCardElement) {
+        return;
+      }
+
       if (panMode || e.button === 1) { // Middle mouse button or pan mode
         e.preventDefault();
         setIsDragging(true);
@@ -71,6 +80,15 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
 
     // Handle wheel for zooming with throttling
     const handleWheel = useCallback((e: WheelEvent) => {
+      // Check if the target is a card or its children
+      const target = e.target as HTMLElement;
+      const isCardElement = target.closest('[data-workspace-card="true"]');
+      
+      // If hovering over a card, don't handle zoom/pan
+      if (isCardElement) {
+        return;
+      }
+
       e.preventDefault();
       const container = containerRef.current;
       if (!container) return;
