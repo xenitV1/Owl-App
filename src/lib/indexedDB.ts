@@ -174,8 +174,8 @@ class IndexedDBManager {
 
 // Workspace için IndexedDB konfigürasyonu
 const workspaceConfig: IDBConfig = {
-  name: 'OwlWorkspace',
-  version: 1,
+  name: 'owl-workspace',
+  version: 3, // Flashcard entegrasyonu için versiyon artırıldı
   stores: [
     {
       name: 'workspace',
@@ -193,6 +193,39 @@ const workspaceConfig: IDBConfig = {
         { name: 'zIndex', keyPath: 'zIndex' },
         { name: 'createdAt', keyPath: 'createdAt' }
       ]
+    },
+    {
+      name: 'progress',
+      keyPath: 'id',
+      indexes: [
+        { name: 'lastUpdated', keyPath: 'lastUpdated' },
+        { name: 'cardId', keyPath: 'cardId' }
+      ]
+    },
+    {
+      name: 'flashcards',
+      keyPath: 'id',
+      indexes: [
+        { name: 'nextReview', keyPath: 'nextReview' },
+        { name: 'category', keyPath: 'category' },
+        { name: 'type', keyPath: 'type' },
+        { name: 'createdAt', keyPath: 'createdAt' }
+      ]
+    },
+    {
+      name: 'flashcardStats',
+      keyPath: 'id',
+      indexes: [
+        { name: 'lastUpdated', keyPath: 'lastUpdated' }
+      ]
+    },
+    {
+      name: 'studySessions',
+      keyPath: 'id',
+      indexes: [
+        { name: 'startTime', keyPath: 'startTime' },
+        { name: 'sessionDate', keyPath: 'sessionDate' }
+      ]
     }
   ]
 };
@@ -200,50 +233,23 @@ const workspaceConfig: IDBConfig = {
 // Singleton instance
 export const workspaceDB = new IndexedDBManager(workspaceConfig);
 
-// Migration utility - localStorage'dan IndexedDB'ye geçiş
-export async function migrateFromLocalStorage(): Promise<boolean> {
-  try {
-    if (typeof window === 'undefined') return false;
-
-    const STORAGE_KEY = 'owl-workspace';
-    const stored = localStorage.getItem(STORAGE_KEY);
-    
-    if (!stored) {
-      return false;
-    }
-
-    console.log('🔄 IndexedDB: Veriler taşınıyor...');
-    const data = JSON.parse(stored);
-    
-    // IndexedDB'ye workspace verilerini kaydet
-    await workspaceDB.put('workspace', {
-      id: 'main',
-      ...data,
-      migratedAt: Date.now()
-    }, true);
-
-    // Kartları ayrı store'a kaydet
-    if (data.cards && Array.isArray(data.cards)) {
-      for (const card of data.cards) {
-        await workspaceDB.put('cards', {
-          ...card,
-          createdAt: card.createdAt || Date.now()
-        }, true);
-      }
-    }
-
-    // localStorage'dan temizle
-    localStorage.removeItem(STORAGE_KEY);
-    
-    console.log('✅ IndexedDB: Veriler başarıyla taşındı!');
-    return true;
-  } catch (error) {
-    console.error('❌ IndexedDB: Taşıma hatası:', error);
-    return false;
-  }
-}
 
 // IndexedDB desteği kontrolü
 export function isIndexedDBSupported(): boolean {
   return typeof window !== 'undefined' && 'indexedDB' in window;
+}
+
+
+// Debug utility: IndexedDB'deki flashcard sayısını kontrol et
+export async function checkIndexedDBFlashcards(): Promise<{ count: number; error?: string }> {
+  try {
+    if (!isIndexedDBSupported()) {
+      return { count: 0, error: 'IndexedDB desteklenmiyor' };
+    }
+
+    const count = await workspaceDB.count('flashcards');
+    return { count };
+  } catch (error) {
+    return { count: 0, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
+  }
 }
