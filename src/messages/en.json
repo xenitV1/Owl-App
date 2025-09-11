@@ -630,7 +630,7 @@
     "addCard": "Add Card",
     "cardTypes": {
       "platformContent": "Platform Content",
-      "note": "Note"
+      "richNote": "Rich Note"
     },
     "cardTitle": "Card Title",
     "enterTitle": "Enter card title...",
@@ -697,6 +697,69 @@
       "goals": "Goals",
       "setGoals": "Set Goals",
       "detailedView": "Detailed View"
+    },
+    "richNote": {
+      "title": "Rich Note Editor",
+      "subtitle": "Create and organize your notes with advanced features",
+      "placeholder": "Start writing your note...",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "lastSaved": "Last saved: {time}",
+      "versionHistory": "Version History",
+      "export": "Export",
+      "exportOptions": {
+        "pdf": "Export as PDF",
+        "word": "Export as Word",
+        "markdown": "Export as Markdown"
+      },
+      "ocr": {
+        "title": "OCR Text Recognition",
+        "uploadImage": "Upload Image",
+        "recognizeText": "Recognize Text",
+        "processing": "Processing...",
+        "noTextFound": "No text found in image",
+        "textRecognized": "Text recognized successfully",
+        "supportedFormats": "Supported formats: PNG, JPG, JPEG"
+      },
+      "organization": {
+        "createFolder": "Create Folder",
+        "folderName": "Folder Name",
+        "createSubfolder": "Create Subfolder",
+        "moveToFolder": "Move to Folder",
+        "organizeNotes": "Organize Notes",
+        "hierarchicalView": "Hierarchical View",
+        "flatView": "Flat View"
+      },
+      "crossReference": {
+        "title": "Cross References",
+        "linkToNote": "Link to Note",
+        "linkedNotes": "Linked Notes",
+        "createLink": "Create Link",
+        "removeLink": "Remove Link",
+        "searchNotes": "Search notes to link..."
+      },
+      "formatting": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "strikethrough": "Strikethrough",
+        "code": "Code",
+        "link": "Link",
+        "heading": "Heading",
+        "bulletList": "Bullet List",
+        "numberedList": "Numbered List",
+        "quote": "Quote",
+        "codeBlock": "Code Block",
+        "image": "Image",
+        "table": "Table"
+      },
+      "toolbar": {
+        "formatting": "Formatting",
+        "insert": "Insert",
+        "organize": "Organize",
+        "export": "Export",
+        "ocr": "OCR"
+      }
     }
   }
 }
