@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChangedListener(async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       if (firebaseUser?.email) {
         // Fetch database user info
         try {
@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setDbUser(null);
       }
-      
+
       setLoading(false);
     });
 
