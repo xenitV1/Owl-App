@@ -2,7 +2,7 @@ import { getRequestConfig } from 'next-intl/server';
 
 export default getRequestConfig(async ({ locale }) => {
   // Ensure locale is defined and valid
-  if (!locale || !['en', 'tr'].includes(locale)) {
+  if (!locale || typeof locale !== 'string' || !['en', 'tr'].includes(locale)) {
     console.warn(`[i18n] Invalid or missing locale: ${locale}, falling back to 'en'`);
     locale = 'en';
   }
