@@ -70,7 +70,7 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
     }, []);
 
     // Handle wheel for zooming with throttling
-    const handleWheel = useCallback((e: React.WheelEvent) => {
+    const handleWheel = useCallback((e: WheelEvent) => {
       e.preventDefault();
       const container = containerRef.current;
       if (!container) return;
@@ -97,22 +97,25 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
       throttledPanUpdate(newPan);
     }, [zoom, pan, onZoomChange, throttledPanUpdate]);
 
-    // Setup mouse event listeners with proper cleanup
+    // Setup mouse and wheel event listeners with proper cleanup
     useEffect(() => {
       const handleMouseMoveEvent = (e: MouseEvent) => handleMouseMove(e);
       const handleMouseUpEvent = () => handleMouseUp();
+      const handleWheelEvent = (e: WheelEvent) => handleWheel(e);
 
       document.addEventListener('mousemove', handleMouseMoveEvent);
       document.addEventListener('mouseup', handleMouseUpEvent);
+      document.addEventListener('wheel', handleWheelEvent, { passive: false });
       
       return () => {
         document.removeEventListener('mousemove', handleMouseMoveEvent);
         document.removeEventListener('mouseup', handleMouseUpEvent);
+        document.removeEventListener('wheel', handleWheelEvent);
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-    }, [handleMouseMove, handleMouseUp]);
+    }, [handleMouseMove, handleMouseUp, handleWheel]);
 
     // Memoize grid pattern to prevent recreation on every render
     const gridPattern = useMemo(() => {
@@ -177,7 +180,6 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
           className
         )}
         onMouseDown={handleMouseDown}
-        onWheel={handleWheel}
         style={{ touchAction: 'none' }}
         data-workspace-container="true"
       >
