@@ -5,7 +5,7 @@ import { workspaceDB, isIndexedDBSupported } from '@/lib/indexedDB';
 
 interface WorkspaceCard {
   id: string;
-  type: 'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -312,7 +312,6 @@ export function useWorkspaceStore() {
     const stats = {
       totalCards: cards.length,
       cardTypes: {
-        note: cards.filter(c => c.type === 'note').length,
         platformContent: cards.filter(c => c.type === 'platformContent').length,
         richNote: cards.filter(c => c.type === 'richNote').length,
         calendar: cards.filter(c => c.type === 'calendar').length,
@@ -340,12 +339,14 @@ export function useWorkspaceStore() {
 
   // Rich Note specific functions
   const saveRichNoteVersion = useCallback(async (cardId: string, content: string, author?: string) => {
+    const currentCard = cards.find(c => c.id === cardId);
     await updateCard(cardId, {
+      content: content, // Save the JSON content
       richContent: {
         markdown: content,
         html: '', // Will be converted by the component
         versionHistory: [
-          ...(cards.find(c => c.id === cardId)?.richContent?.versionHistory || []),
+          ...(currentCard?.richContent?.versionHistory || []),
           {
             timestamp: Date.now(),
             content,
@@ -355,6 +356,7 @@ export function useWorkspaceStore() {
         lastSaved: Date.now(),
       }
     });
+    console.log('💾 Rich note kaydedildi:', cardId);
   }, [cards, updateCard]);
 
   // Pomodoro specific functions
