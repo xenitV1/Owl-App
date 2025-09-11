@@ -287,6 +287,12 @@ class DebugLogger {
 
     // Handle uncaught errors
     window.addEventListener('error', (event) => {
+      // Filter out ResizeObserver errors as they are harmless browser quirks
+      if (event.message && event.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+        // Silently ignore ResizeObserver errors - they are not actual errors
+        return;
+      }
+      
       this.error('general', 'Uncaught error', {
         message: event.message,
         filename: event.filename,
