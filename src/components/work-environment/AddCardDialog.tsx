@@ -27,7 +27,7 @@ interface AddCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddCard: (cardData: {
-    type: 'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
     title: string;
     content?: string;
     // Additional data for specific card types
@@ -52,7 +52,7 @@ interface AddCardDialogProps {
 
 export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogProps) {
   const t = useTranslations('workEnvironment');
-  const [cardType, setCardType] = useState<'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards'>('note');
+  const [cardType, setCardType] = useState<'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards'>('richNote');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   
@@ -81,11 +81,6 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
     let cardData: any = { ...baseCardData };
 
     switch (cardType) {
-      case 'note':
-        if (content.trim()) {
-          cardData.content = content.trim();
-        }
-        break;
       case 'richNote':
         cardData.richContent = {
           markdown: content || '',
@@ -173,7 +168,7 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
     // Reset form
     setTitle('');
     setContent('');
-    setCardType('note');
+    setCardType('richNote');
     setPlatformContentType('posts');
     setPlatformFilters({ subject: '', search: '' });
     setAutoRefresh(false);
@@ -185,7 +180,7 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
     // Reset form
     setTitle('');
     setContent('');
-    setCardType('note');
+    setCardType('richNote');
     setPlatformContentType('posts');
     setPlatformFilters({ subject: '', search: '' });
     setAutoRefresh(false);
@@ -215,16 +210,6 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
               onValueChange={(value) => setCardType(value as any)}
               className="grid grid-cols-2 gap-4"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="note" id="note" />
-                <Label
-                  htmlFor="note"
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm">{t('cardTypes.note')}</span>
-                </Label>
-              </div>
 
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="platformContent" id="platformContent" />
@@ -244,7 +229,7 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4" />
-                  <span className="text-sm">Rich Note</span>
+                  <span className="text-sm">{t('cardTypes.richNote')}</span>
                 </Label>
               </div>
 
@@ -309,19 +294,6 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
           </div>
 
 
-          {/* Note Content (only for note cards) */}
-          {cardType === 'note' && (
-            <div className="space-y-2">
-              <Label htmlFor="content">Content</Label>
-              <Textarea
-                id="content"
-                placeholder="Enter your note content..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={4}
-              />
-            </div>
-          )}
 
           {/* Platform Content Configuration */}
           {cardType === 'platformContent' && (
