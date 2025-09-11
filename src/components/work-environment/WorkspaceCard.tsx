@@ -21,7 +21,7 @@ import { useDragDrop } from '@/hooks/useDragDrop';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -130,6 +130,7 @@ interface WorkspaceCardProps {
   onUpdate: (updates: Partial<WorkspaceCardType>) => void;
   onDelete: () => void;
   gridSnap: boolean;
+  onHover?: (isHovering: boolean) => void;
 }
 
 export const WorkspaceCard = memo(function WorkspaceCard({
@@ -138,7 +139,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   onSelect,
   onUpdate,
   onDelete,
-  gridSnap
+  gridSnap,
+  onHover
 }: WorkspaceCardProps) {
   const t = useTranslations('workEnvironment');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -166,6 +168,14 @@ export const WorkspaceCard = memo(function WorkspaceCard({
       onSelect();
     }
   }, [onSelect]);
+
+  const handleMouseEnter = useCallback(() => {
+    onHover?.(true);
+  }, [onHover]);
+
+  const handleMouseLeave = useCallback(() => {
+    onHover?.(false);
+  }, [onHover]);
 
   const handleResize = useCallback((direction: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -234,14 +244,6 @@ export const WorkspaceCard = memo(function WorkspaceCard({
 
   const renderCardContent = useCallback(() => {
     switch (card.type) {
-      case 'note':
-        return (
-          <div className="w-full h-full p-4 overflow-auto">
-            <div className="prose prose-sm max-w-none">
-              {card.content || 'Empty note'}
-            </div>
-          </div>
-        );
 
       case 'platformContent':
         return (
@@ -294,12 +296,14 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   return (
     <Card
       ref={cardRef}
+      data-workspace-card="true"
       className={cn(
         'absolute bg-background border-2 transition-all duration-200 overflow-hidden',
         isSelected ? 'border-primary shadow-lg' : 'border-border',
         isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-auto',
         isFullscreen && 'fixed inset-4 z-50',
-        isResizing && 'cursor-resize'
+        isResizing && 'cursor-resize',
+        'hover:shadow-md hover:border-primary/50'
       )}
       style={{
         left: isFullscreen ? undefined : card.position.x,
@@ -310,6 +314,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         ...style,
       }}
       onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Card Header */}
       <div className="flex items-center justify-between p-2 bg-muted/30 border-b">
