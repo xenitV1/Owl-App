@@ -16,7 +16,7 @@ export const LoginButton: React.FC = () => {
       toast.success('Successfully signed in!');
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       // Handle specific Firebase errors
       if (error.code === 'auth/unauthorized-domain') {
         toast.error(
