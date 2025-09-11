@@ -20,6 +20,7 @@ export default function WorkEnvironmentPage() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [gridSnap, setGridSnap] = useState(true);
+  const [isHoveringCard, setIsHoveringCard] = useState(false);
   
   const { cards, addCard, updateCard, deleteCard, loadWorkspace, isIndexedDBReady, isLoading } = useWorkspaceStore();
   
@@ -44,21 +45,37 @@ export default function WorkEnvironmentPage() {
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Check if the target is inside a rich note editor or any input/textarea
+    const target = e.target as HTMLElement;
+    const isInEditor = target.closest('[data-workspace-card="true"]') && 
+                      (target.closest('.ProseMirror') || 
+                       target.tagName === 'INPUT' || 
+                       target.tagName === 'TEXTAREA' ||
+                       target.contentEditable === 'true');
+    
     if (e.key === 'Escape') {
       setSelectedCardId(null);
     }
-    if (e.key === 'Delete' && selectedCardId) {
+    if (e.key === 'Delete' && selectedCardId && !isInEditor) {
       deleteCard(selectedCardId);
       setSelectedCardId(null);
     }
-    if (e.key === ' ') {
+    if (e.key === ' ' && !isInEditor) {
       e.preventDefault();
       setPanMode(true);
     }
   }, [selectedCardId, deleteCard]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.key === ' ') {
+    // Check if the target is inside a rich note editor or any input/textarea
+    const target = e.target as HTMLElement;
+    const isInEditor = target.closest('[data-workspace-card="true"]') && 
+                      (target.closest('.ProseMirror') || 
+                       target.tagName === 'INPUT' || 
+                       target.tagName === 'TEXTAREA' ||
+                       target.contentEditable === 'true');
+    
+    if (e.key === ' ' && !isInEditor) {
       setPanMode(false);
     }
   }, []);
@@ -73,7 +90,7 @@ export default function WorkEnvironmentPage() {
   }, [handleKeyDown, handleKeyUp]);
 
   const handleAddCard = useCallback((cardData: {
-    type: 'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
     title: string;
     url?: string;
     content?: string;
@@ -223,7 +240,7 @@ export default function WorkEnvironmentPage() {
         ref={canvasRef}
         zoom={zoom}
         pan={pan}
-        panMode={panMode}
+        panMode={panMode && !isHoveringCard}
         gridSnap={gridSnap}
         onPanChange={setPan}
         onZoomChange={setZoom}
@@ -239,6 +256,7 @@ export default function WorkEnvironmentPage() {
           onUpdate={updateCard}
           onDelete={deleteCard}
           gridSnap={gridSnap}
+          onCardHover={setIsHoveringCard}
         />
       </InfiniteCanvas>
 
