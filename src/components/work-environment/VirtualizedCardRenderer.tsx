@@ -5,7 +5,7 @@ import { WorkspaceCard } from './WorkspaceCard';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'note' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -23,6 +23,7 @@ interface VirtualizedCardRendererProps {
   onUpdate: (cardId: string, updates: Partial<WorkspaceCardType>) => void;
   onDelete: (cardId: string) => void;
   gridSnap: boolean;
+  onCardHover: (isHovering: boolean) => void;
 }
 
 // Viewport bounds calculation
@@ -58,6 +59,7 @@ export const VirtualizedCardRenderer = memo(function VirtualizedCardRenderer({
   onUpdate,
   onDelete,
   gridSnap,
+  onCardHover,
 }: VirtualizedCardRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -102,6 +104,7 @@ export const VirtualizedCardRenderer = memo(function VirtualizedCardRenderer({
           onUpdate={(updates) => onUpdate(card.id, updates)}
           onDelete={() => onDelete(card.id)}
           gridSnap={gridSnap}
+          onHover={onCardHover}
         />
       ))}
     </div>
