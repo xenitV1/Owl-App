@@ -282,8 +282,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
 
       case 'flashcards':
         return (
-          <FlashcardSystem />
+          <FlashcardSystem cardId={card.id} />
         );
+
 
       default:
         return null;
@@ -311,12 +312,12 @@ export const WorkspaceCard = memo(function WorkspaceCard({
       onClick={handleCardClick}
     >
       {/* Card Header */}
-      <div 
-        className="drag-handle flex items-center justify-between p-2 bg-muted/30 border-b cursor-move select-none"
-        onMouseDown={handleDragStart}
-        onTouchStart={handleDragStart}
-      >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex items-center justify-between p-2 bg-muted/30 border-b">
+        <div 
+          className="drag-handle flex items-center gap-2 flex-1 min-w-0 cursor-move select-none"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+        >
           <Move className="w-3 h-3 text-muted-foreground flex-shrink-0" />
           <span className="text-sm font-medium truncate">{card.title}</span>
         </div>
@@ -329,6 +330,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
               e.stopPropagation();
               setIsFullscreen(!isFullscreen);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="h-6 w-6 p-0"
           >
             {isFullscreen ? (
@@ -345,6 +348,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
               e.stopPropagation();
               onDelete();
             }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="h-6 w-6 p-0 text-destructive hover:bg-destructive/20"
           >
             <X className="w-3 h-3" />
