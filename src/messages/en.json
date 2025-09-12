@@ -687,7 +687,6 @@
       "days": "days",
       "subjectBreakdown": "Subject Breakdown",
       "weeklyTrend": "Weekly Trend",
-      "achievements": "Achievements",
       "noAchievements": "No achievements yet",
       "keepStudying": "Keep studying to unlock achievements!",
       "sevenDayStreak": "7-Day Streak",
@@ -719,7 +718,13 @@
         "processing": "Processing...",
         "noTextFound": "No text found in image",
         "textRecognized": "Text recognized successfully",
-        "supportedFormats": "Supported formats: PNG, JPG, JPEG"
+        "supportedFormats": "Supported formats: PNG, JPG, JPEG",
+        "language": "OCR Language",
+        "languageOptions": {
+          "turkishEnglish": "Turkish + English (Recommended)",
+          "turkishOnly": "Turkish Only",
+          "englishOnly": "English Only"
+        }
       },
       "organization": {
         "createFolder": "Create Folder",
