@@ -131,6 +131,8 @@ interface WorkspaceCardProps {
   onDelete: () => void;
   gridSnap: boolean;
   onHover?: (isHovering: boolean) => void;
+  pan?: { x: number; y: number };
+  zoom?: number;
 }
 
 export const WorkspaceCard = memo(function WorkspaceCard({
@@ -140,7 +142,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   onUpdate,
   onDelete,
   gridSnap,
-  onHover
+  onHover,
+  pan,
+  zoom
 }: WorkspaceCardProps) {
   const t = useTranslations('workEnvironment');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -160,6 +164,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
     gridSnap,
     gridSize: 20,
     disabled: isFullscreen,
+    pan,
+    zoom,
   });
 
   const handleCardClick = useCallback((e: React.MouseEvent) => {
