@@ -3,43 +3,67 @@
  * Provides a wrapper around ResizeObserver that handles common browser quirks
  */
 
-// Store original ResizeObserver to avoid infinite loops
-const OriginalResizeObserver = window.ResizeObserver;
+// Import React hooks for the hook function
+import { useRef, useEffect } from 'react';
+
+// Lazy initialization of OriginalResizeObserver to avoid SSR issues
+let OriginalResizeObserver: typeof ResizeObserver | undefined;
+
+function getOriginalResizeObserver(): typeof ResizeObserver | undefined {
+  if (typeof window === 'undefined') return undefined;
+  if (!OriginalResizeObserver) {
+    OriginalResizeObserver = window.ResizeObserver;
+  }
+  return OriginalResizeObserver;
+}
 
 /**
  * Safe ResizeObserver implementation that handles browser quirks
  */
 export class SafeResizeObserver {
-  private observer: ResizeObserver;
+  private observer: ResizeObserver | null = null;
   private callback: ResizeObserverCallback;
 
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
-    this.observer = new OriginalResizeObserver((entries, observer) => {
-      try {
-        callback(entries, observer);
-      } catch (error) {
-        // Handle ResizeObserver errors gracefully
-        if (error instanceof Error && error.message.includes('ResizeObserver loop completed with undelivered notifications')) {
-          // This is a harmless browser quirk, ignore it
-          return;
-        }
-        // Re-throw other errors
-        throw error;
+    
+    // Only create observer on client side
+    if (typeof window !== 'undefined') {
+      const ResizeObserverClass = getOriginalResizeObserver();
+      if (ResizeObserverClass) {
+        this.observer = new ResizeObserverClass((entries, observer) => {
+          try {
+            callback(entries, observer);
+          } catch (error) {
+            // Handle ResizeObserver errors gracefully
+            if (error instanceof Error && error.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+              // This is a harmless browser quirk, ignore it
+              return;
+            }
+            // Re-throw other errors
+            throw error;
+          }
+        });
       }
-    });
+    }
   }
 
   observe(target: Element, options?: ResizeObserverOptions): void {
-    this.observer.observe(target, options);
+    if (this.observer) {
+      this.observer.observe(target, options);
+    }
   }
 
   unobserve(target: Element): void {
-    this.observer.unobserve(target);
+    if (this.observer) {
+      this.observer.unobserve(target);
+    }
   }
 
   disconnect(): void {
-    this.observer.disconnect();
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 }
 
@@ -107,6 +131,3 @@ export function useSafeResizeObserver(callback: ResizeObserverCallback) {
 
   return observerRef.current;
 }
-
-// Import React hooks for the hook function
-import { useRef, useEffect } from 'react';
