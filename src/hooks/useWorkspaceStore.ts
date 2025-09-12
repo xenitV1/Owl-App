@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { workspaceDB, isIndexedDBSupported } from '@/lib/indexedDB';
 
 interface WorkspaceCard {
@@ -147,6 +147,7 @@ export function useWorkspaceStore() {
   const [cards, setCards] = useState<WorkspaceCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isIndexedDBReady, setIsIndexedDBReady] = useState(false);
+  const debouncedSaveRef = useRef<number | null>(null);
 
   // Initialize IndexedDB
   const initializeDB = useCallback(async () => {
@@ -210,10 +211,22 @@ export function useWorkspaceStore() {
     }
   }, [isIndexedDBReady]);
 
+  // Debounced save to avoid writing intermediate states
+  const scheduleSaveWorkspace = useCallback((newCards: WorkspaceCard[], delayMs: number = 1000) => {
+    if (debouncedSaveRef.current) {
+      clearTimeout(debouncedSaveRef.current);
+    }
+    debouncedSaveRef.current = window.setTimeout(() => {
+      debouncedSaveRef.current = null;
+      saveWorkspace(newCards);
+    }, delayMs);
+  }, [saveWorkspace]);
+
   // Add a new card
   const addCard = useCallback(async (card: WorkspaceCard) => {
     setCards(prev => {
       const newCards = [...prev, card];
+      // Add is meaningful: persist immediately
       saveWorkspace(newCards);
       return newCards;
     });
@@ -226,10 +239,11 @@ export function useWorkspaceStore() {
       const newCards = prev.map(card => 
         card.id === cardId ? { ...card, ...updates } : card
       );
-      saveWorkspace(newCards);
+      // Debounce frequent updates (dragging, resizing, typing)
+      scheduleSaveWorkspace(newCards, 1000);
       return newCards;
     });
-  }, [saveWorkspace]);
+  }, [scheduleSaveWorkspace]);
 
   // Delete a card
   const deleteCard = useCallback(async (cardId: string) => {
@@ -276,10 +290,10 @@ export function useWorkspaceStore() {
       const newCards = prev.map(card => 
         card.id === cardId ? { ...card, zIndex: maxZ + 1 } : card
       );
-      saveWorkspace(newCards);
+      scheduleSaveWorkspace(newCards, 500);
       return newCards;
     });
-  }, [saveWorkspace]);
+  }, [scheduleSaveWorkspace]);
 
   // Export workspace data
   const exportWorkspace = useCallback(() => {
@@ -567,6 +581,11 @@ export function useWorkspaceStore() {
       console.log('✅ Workspace başlatma tamamlandı');
     };
     initAndLoad();
+    return () => {
+      if (debouncedSaveRef.current) {
+        clearTimeout(debouncedSaveRef.current);
+      }
+    };
   }, []); // Dependency array'i boş bıraktık çünkü callback'ler zaten useCallback ile wrap edilmiş
 
   return {
