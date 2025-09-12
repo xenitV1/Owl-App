@@ -105,6 +105,8 @@ export const VirtualizedCardRenderer = memo(function VirtualizedCardRenderer({
           onDelete={() => onDelete(card.id)}
           gridSnap={gridSnap}
           onHover={onCardHover}
+          pan={pan}
+          zoom={zoom}
         />
       ))}
     </div>
