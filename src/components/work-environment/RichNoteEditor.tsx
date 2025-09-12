@@ -58,7 +58,7 @@ import MediaUploader, { type MediaKind, type SelectedMedia } from '@/components/
 import ImagePreview from '@/components/media/ImagePreview';
 import { VideoPlayer } from '@/components/media/VideoPlayer';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
-import { generateVideoThumbnail, mp4ToMp3, blobToObjectUrl, revokeObjectUrl } from '@/lib/formatConverter';
+import { generateVideoThumbnail, mp4ToMp3, blobToObjectUrl, revokeObjectUrl, blobUrlToDataUrl } from '@/lib/formatConverter';
 
 
 interface RichNoteEditorProps {
@@ -84,9 +84,11 @@ interface CrossReference {
 
 export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNoteEditorProps) {
   const [content, setContent] = useState(initialContent);
+  const [rightContent, setRightContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
+  const [lastSavedRightContent, setLastSavedRightContent] = useState<string>('');
   const [lastSaveAtMs, setLastSaveAtMs] = useState<number>(0);
   const MIN_SAVE_INTERVAL_MS = 30000; // 30s
   const DEBOUNCE_MS = 5000; // 5s idle debounce
@@ -116,6 +118,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
   const { saveRichNoteVersion, cards } = useWorkspaceStore();
 
+
   const card = cards.find(c => c.id === cardId);
   const richContent = card?.richContent;
 
@@ -129,33 +132,146 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
   // Load existing content when card data is available
   useEffect(() => {
-    if (richContent?.markdown && editor.document.length === 1 && editor.document[0].type === 'paragraph' && !editor.document[0].content) {
+    if (richContent?.markdown && editor.document.length === 1 && editor.document[0].type === 'paragraph' && editor.document[0].content.length === 0) {
       try {
-        const parsedContent = JSON.parse(richContent.markdown);
-        editor.replaceBlocks(editor.document, parsedContent);
-        setContent(richContent.markdown);
+        // Try to parse as new split view structure first
+        let contentData;
+        try {
+          contentData = JSON.parse(richContent.markdown);
+          
+          // Check if it's the new split view structure
+          if (contentData.leftContent !== undefined) {
+            // Restore split view state
+            setSplitView(contentData.splitView || false);
+            
+            // Load left content
+            const leftBlocks = JSON.parse(contentData.leftContent);
+            editor.replaceBlocks(editor.document, leftBlocks);
+            setContent(contentData.leftContent);
+            
+            // Load right content if it exists
+            if (contentData.rightContent && contentData.rightContent !== '[]') {
+              const rightBlocks = JSON.parse(contentData.rightContent);
+              editorRight.replaceBlocks(editorRight.document, rightBlocks);
+              setRightContent(contentData.rightContent);
+            }
+          } else {
+            // Fallback to old single editor structure
+            editor.replaceBlocks(editor.document, contentData);
+            setContent(richContent.markdown);
+          }
+        } catch (parseError) {
+          // If parsing fails, treat as legacy content
+          const parsedContent = JSON.parse(richContent.markdown);
+          editor.replaceBlocks(editor.document, parsedContent);
+          setContent(richContent.markdown);
+        }
       } catch (error) {
         console.error('Error parsing rich content:', error);
       }
     }
-  }, [richContent?.markdown, editor]);
+  }, [richContent?.markdown, editor, editorRight]);
+
+  // Convert blob URLs to data URLs in content for persistence
+  const processContentForSaving = useCallback(async (leftContent: string, rightContent: string = ''): Promise<string> => {
+    try {
+      // Process left content
+      const leftBlocks = JSON.parse(leftContent);
+      const processedLeftBlocks = await Promise.all(
+        leftBlocks.map(async (block: any) => {
+          if (block.type === 'image' && block.props?.url) {
+            const url = block.props.url;
+            if (url.startsWith('blob:')) {
+              try {
+                const dataUrl = await blobUrlToDataUrl(url);
+                return {
+                  ...block,
+                  props: {
+                    ...block.props,
+                    url: dataUrl
+                  }
+                };
+              } catch (error) {
+                console.error('Error converting blob URL to data URL:', error);
+                return block; // Keep original if conversion fails
+              }
+            }
+          }
+          return block;
+        })
+      );
+
+      // Process right content if it exists
+      let processedRightBlocks: any[] = [];
+      if (rightContent) {
+        const rightBlocks = JSON.parse(rightContent);
+        processedRightBlocks = await Promise.all(
+          rightBlocks.map(async (block: any) => {
+            if (block.type === 'image' && block.props?.url) {
+              const url = block.props.url;
+              if (url.startsWith('blob:')) {
+                try {
+                  const dataUrl = await blobUrlToDataUrl(url);
+                  return {
+                    ...block,
+                    props: {
+                      ...block.props,
+                      url: dataUrl
+                    }
+                  };
+                } catch (error) {
+                  console.error('Error converting blob URL to data URL:', error);
+                  return block; // Keep original if conversion fails
+                }
+              }
+            }
+            return block;
+          })
+        );
+      }
+
+      // Create the new content structure
+      const contentStructure = {
+        leftContent: JSON.stringify(processedLeftBlocks),
+        rightContent: JSON.stringify(processedRightBlocks),
+        splitView: splitView
+      };
+
+      return JSON.stringify(contentStructure);
+    } catch (error) {
+      console.error('Error processing content for saving:', error);
+      // Fallback to simple structure for backward compatibility
+      return leftContent;
+    }
+  }, [splitView]);
 
   // Auto-save functionality
-  const autoSave = useCallback(() => {
+  const autoSave = useCallback(async () => {
     const now = Date.now();
-    const hasContent = content && content.trim() && content !== '[]';
-    const changed = content !== lastSavedContent;
+    const hasLeftContent = content && content.trim() && content !== '[]';
+    const hasRightContent = rightContent && rightContent.trim() && rightContent !== '[]';
+    const hasContent = hasLeftContent || hasRightContent;
+    const leftChanged = content !== lastSavedContent;
+    const rightChanged = rightContent !== lastSavedRightContent;
+    const changed = leftChanged || rightChanged;
     const dueByInterval = now - lastSaveAtMs >= MIN_SAVE_INTERVAL_MS;
 
     if (hasContent && changed && dueByInterval) {
       setIsSaving(true);
-      saveRichNoteVersion(cardId, content);
-      setLastSaved(new Date());
-      setLastSavedContent(content);
-      setLastSaveAtMs(now);
-      setTimeout(() => setIsSaving(false), 1000);
+      try {
+        const processedContent = await processContentForSaving(content, rightContent);
+        await saveRichNoteVersion(cardId, processedContent);
+        setLastSaved(new Date());
+        setLastSavedContent(content);
+        setLastSavedRightContent(rightContent);
+        setLastSaveAtMs(now);
+      } catch (error) {
+        console.error('Rich note save error:', error);
+      } finally {
+        setTimeout(() => setIsSaving(false), 1000);
+      }
     }
-  }, [content, cardId, saveRichNoteVersion, lastSavedContent, lastSaveAtMs]);
+  }, [content, rightContent, cardId, saveRichNoteVersion, lastSavedContent, lastSavedRightContent, lastSaveAtMs, processContentForSaving, splitView]);
 
   // Auto-save on content change (debounced)
   useEffect(() => {
@@ -172,7 +288,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [content, autoSave]);
+  }, [content, rightContent, autoSave]);
 
   // Handle keyboard events specifically for the editor
   useEffect(() => {
@@ -197,16 +313,125 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
     };
   }, []);
 
+  // Function to detect and convert image URLs to image blocks
+  const detectAndConvertImageUrls = useCallback((blocks: any[]) => {
+    const imageUrlRegex = /https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?[^\s]*)?/gi;
+    let hasChanges = false;
+    const newBlocks: any[] = [];
+
+    for (const block of blocks) {
+      if (block.type === 'paragraph' && block.content) {
+        const textContent = block.content
+          .map((item: any) => typeof item === 'string' ? item : (item?.text || ''))
+          .join('');
+        
+        const imageUrls = textContent.match(imageUrlRegex);
+        
+        if (imageUrls && imageUrls.length > 0) {
+          // Split the text by image URLs
+          const parts = textContent.split(imageUrlRegex);
+          const urls = textContent.match(imageUrlRegex) || [];
+          
+          let currentIndex = 0;
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            
+            // Add text part if it's not empty
+            if (part.trim()) {
+              newBlocks.push({
+                type: 'paragraph',
+                content: [{ type: 'text', text: part }],
+              });
+            }
+            
+            // Add image block for each URL
+            if (urls[currentIndex]) {
+              newBlocks.push({
+                type: 'image',
+                props: { 
+                  url: urls[currentIndex], 
+                  alt: `Image from ${new URL(urls[currentIndex]).hostname}` 
+                },
+              });
+              currentIndex++;
+            }
+          }
+          hasChanges = true;
+        } else {
+          newBlocks.push(block);
+        }
+      } else {
+        newBlocks.push(block);
+      }
+    }
+
+    if (hasChanges) {
+      editor.replaceBlocks(editor.document, newBlocks);
+    }
+  }, [editor]);
+
   // Handle content changes from BlockNote (no immediate save; debounced via autoSave effect)
   const handleContentChange = useCallback(() => {
     const blocks = editor.document;
     const jsonContent = JSON.stringify(blocks);
     setContent(jsonContent);
-  }, [editor]);
+    
+    // Detect and convert image URLs
+    detectAndConvertImageUrls(blocks);
+  }, [editor, detectAndConvertImageUrls]);
 
   const handleContentChangeRight = useCallback(() => {
-    // Right editor currently not persisted; hook kept for future state sync
-  }, [editorRight]);
+    const blocks = editorRight.document;
+    const jsonContent = JSON.stringify(blocks);
+    setRightContent(jsonContent);
+    
+    // Detect and convert image URLs in right editor
+    detectAndConvertImageUrls(blocks);
+  }, [editorRight, detectAndConvertImageUrls]);
+
+  // Function to merge right panel content into left panel
+  const mergeRightContentIntoLeft = useCallback(() => {
+    if (rightContent && rightContent.trim() && rightContent !== '[]') {
+      try {
+        const rightBlocks = JSON.parse(rightContent);
+        
+        // Add a separator block if left content exists
+        const leftBlocks = editor.document;
+        const hasLeftContent = leftBlocks.length > 1 || 
+          (leftBlocks.length === 1 && leftBlocks[0].content && 
+           Array.isArray(leftBlocks[0].content) && leftBlocks[0].content.length > 0);
+        
+        if (hasLeftContent) {
+          // Insert separator paragraph first
+          editor.insertBlocks([{
+            type: 'paragraph',
+            content: [{ type: 'text', text: '---', styles: { bold: true } }],
+            id: `separator-${Date.now()}`
+          }], leftBlocks[leftBlocks.length - 1], 'after');
+          
+          // Then insert right content after the separator
+          editor.insertBlocks(rightBlocks, leftBlocks[leftBlocks.length - 1], 'after');
+        } else {
+          // If left is empty, replace with right content
+          editor.replaceBlocks(editor.document, rightBlocks);
+        }
+        
+        // Update the content state
+        const mergedContent = JSON.stringify(editor.document);
+        setContent(mergedContent);
+        
+        // Clear right content and editor
+        setRightContent('');
+        editorRight.replaceBlocks(editorRight.document, [{
+          type: 'paragraph',
+          content: [],
+          id: 'initial-paragraph'
+        }]);
+      } catch (error) {
+        console.error('Error merging right content into left:', error);
+      }
+    }
+  }, [rightContent, editor, editorRight]);
 
   // OCR functionality
   const handleOCRUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -486,7 +711,13 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
           <Button
             variant={splitView ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => setSplitView((v) => !v)}
+            onClick={() => {
+              if (splitView) {
+                // If closing split view, merge right content into left first
+                mergeRightContentIntoLeft();
+              }
+              setSplitView((v) => !v);
+            }}
             title={splitView ? 'Disable split view' : 'Enable split view'}
           >
             <Columns className="w-4 h-4" />
@@ -746,6 +977,9 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Insert {showInsertMedia}</DialogTitle>
+            <DialogDescription>
+              Upload a {showInsertMedia} file or paste a URL to insert it into your note.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {showInsertMedia && (
