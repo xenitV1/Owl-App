@@ -21,6 +21,7 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
     const animationFrameRef = useRef<number | null>(null);
+    const zoomPanRafRef = useRef<number | null>(null);
 
     // Memoize grid calculations to prevent recalculation on every render
     const gridConfig = useMemo(() => {
@@ -50,13 +51,13 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
         return;
       }
 
-      if (panMode || e.button === 1) { // Middle mouse button or pan mode
+      if (e.button === 0) { // Left click drag for panning
         e.preventDefault();
         setIsDragging(true);
         setDragStart({ x: e.clientX, y: e.clientY });
         setPanStart(pan);
       }
-    }, [panMode, pan]);
+    }, [pan]);
 
     // Handle mouse move for panning with throttling
     const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -101,36 +102,50 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
       const worldX = (mouseX - pan.x) / zoom;
       const worldY = (mouseY - pan.y) / zoom;
 
-      // Calculate new zoom
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
+      // Smooth zoom factor using an exponential scale for trackpads and wheels
+      const scaleFactor = Math.exp(-e.deltaY * 0.0015);
+      const targetZoom = Math.max(0.1, Math.min(5, zoom * scaleFactor));
 
       // Calculate new pan to keep the point under the mouse stationary
-      const newPan = {
-        x: mouseX - worldX * newZoom,
-        y: mouseY - worldY * newZoom,
+      const targetPan = {
+        x: mouseX - worldX * targetZoom,
+        y: mouseY - worldY * targetZoom,
       };
 
-      onZoomChange(newZoom);
-      throttledPanUpdate(newPan);
-    }, [zoom, pan, onZoomChange, throttledPanUpdate]);
+      // Coalesce zoom + pan updates into a single animation frame to avoid jitter
+      if (zoomPanRafRef.current) {
+        cancelAnimationFrame(zoomPanRafRef.current);
+      }
+      zoomPanRafRef.current = requestAnimationFrame(() => {
+        onZoomChange(targetZoom);
+        onPanChange(targetPan);
+      });
+    }, [zoom, pan, onZoomChange, onPanChange]);
 
     // Setup mouse and wheel event listeners with proper cleanup
     useEffect(() => {
       const handleMouseMoveEvent = (e: MouseEvent) => handleMouseMove(e);
       const handleMouseUpEvent = () => handleMouseUp();
-      const handleWheelEvent = (e: WheelEvent) => handleWheel(e);
+      const container = containerRef.current;
 
       document.addEventListener('mousemove', handleMouseMoveEvent);
       document.addEventListener('mouseup', handleMouseUpEvent);
-      document.addEventListener('wheel', handleWheelEvent, { passive: false });
+      // Attach wheel listener to the container only, with passive:false to allow preventDefault
+      if (container) {
+        container.addEventListener('wheel', handleWheel, { passive: false });
+      }
       
       return () => {
         document.removeEventListener('mousemove', handleMouseMoveEvent);
         document.removeEventListener('mouseup', handleMouseUpEvent);
-        document.removeEventListener('wheel', handleWheelEvent);
+        if (container) {
+          container.removeEventListener('wheel', handleWheel as EventListener);
+        }
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (zoomPanRafRef.current) {
+          cancelAnimationFrame(zoomPanRafRef.current);
         }
       };
     }, [handleMouseMove, handleMouseUp, handleWheel]);
@@ -194,11 +209,11 @@ export const InfiniteCanvas = forwardRef<HTMLDivElement, InfiniteCanvasProps>(
         ref={containerRef}
         className={cn(
           'relative overflow-hidden',
-          panMode || isDragging ? 'cursor-grabbing' : 'cursor-auto',
+          isDragging ? 'cursor-grabbing' : 'cursor-auto',
           className
         )}
         onMouseDown={handleMouseDown}
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', overscrollBehavior: 'contain' }}
         data-workspace-container="true"
       >
         {/* Grid Background - only render when needed */}
