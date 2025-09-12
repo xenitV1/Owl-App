@@ -690,7 +690,6 @@
       "days": "gün",
       "subjectBreakdown": "Ders Dağılımı",
       "weeklyTrend": "Haftalık Trend",
-      "achievements": "Başarılar",
       "noAchievements": "Henüz başarı yok",
       "keepStudying": "Başarıları açmak için çalışmaya devam edin!",
       "sevenDayStreak": "7 Günlük Seri",
@@ -722,7 +721,13 @@
         "processing": "İşleniyor...",
         "noTextFound": "Resimde metin bulunamadı",
         "textRecognized": "Metin başarıyla tanındı",
-        "supportedFormats": "Desteklenen formatlar: PNG, JPG, JPEG"
+        "supportedFormats": "Desteklenen formatlar: PNG, JPG, JPEG",
+        "language": "OCR Dili",
+        "languageOptions": {
+          "turkishEnglish": "Türkçe + İngilizce (Önerilen)",
+          "turkishOnly": "Sadece Türkçe",
+          "englishOnly": "Sadece İngilizce"
+        }
       },
       "organization": {
         "createFolder": "Klasör Oluştur",
