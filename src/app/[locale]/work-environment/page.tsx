@@ -26,10 +26,7 @@ export default function WorkEnvironmentPage() {
   
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Load workspace data on mount
-  useEffect(() => {
-    loadWorkspace();
-  }, [loadWorkspace]);
+  // Note: Workspace loading is handled by useWorkspaceStore hook automatically
 
   const handleZoomIn = useCallback(() => {
     setZoom(prev => Math.min(prev * 1.2, 5));
