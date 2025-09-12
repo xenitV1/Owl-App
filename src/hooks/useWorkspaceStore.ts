@@ -153,7 +153,6 @@ export function useWorkspaceStore() {
   const initializeDB = useCallback(async () => {
     try {
       if (!isIndexedDBSupported()) {
-        console.warn('⚠️ IndexedDB desteklenmiyor');
         setIsIndexedDBReady(false);
         setIsLoading(false);
         return;
@@ -162,7 +161,7 @@ export function useWorkspaceStore() {
       await workspaceDB.init();
       setIsIndexedDBReady(true);
     } catch (error) {
-      console.error('❌ IndexedDB başlatma hatası:', error);
+      console.error('IndexedDB initialization error:', error);
       setIsIndexedDBReady(false);
     } finally {
       setIsLoading(false);
@@ -173,7 +172,6 @@ export function useWorkspaceStore() {
   const loadWorkspace = useCallback(async () => {
     try {
       if (!isIndexedDBReady) {
-        console.warn('⚠️ IndexedDB hazır değil, veriler yüklenemiyor');
         setCards([]);
         return;
       }
@@ -181,7 +179,7 @@ export function useWorkspaceStore() {
       const cardsData = await workspaceDB.getAll<WorkspaceCard>('cards');
       setCards(cardsData || []);
     } catch (error) {
-      console.error('❌ Veriler yüklenemedi:', error);
+      console.error('Failed to load workspace:', error);
       setCards([]);
     }
   }, [isIndexedDBReady]);
@@ -190,7 +188,6 @@ export function useWorkspaceStore() {
   const saveWorkspace = useCallback(async (newCards: WorkspaceCard[]) => {
     try {
       if (!isIndexedDBReady) {
-        console.warn('⚠️ IndexedDB hazır değil, veriler kaydedilemiyor');
         return;
       }
 
@@ -230,7 +227,6 @@ export function useWorkspaceStore() {
       saveWorkspace(newCards);
       return newCards;
     });
-    console.log('➕ Yeni kart eklendi:', card.title);
   }, [saveWorkspace]);
 
   // Update an existing card
@@ -259,12 +255,9 @@ export function useWorkspaceStore() {
     try {
       if (isIndexedDBReady) {
         await workspaceDB.delete('cards', cardId);
-        console.log('🗑️ Kart silindi:', cardToDelete?.title);
-      } else {
-        console.warn('⚠️ IndexedDB hazır değil, kart silinemedi');
       }
     } catch (error) {
-      console.error('❌ Kart silme hatası:', error);
+      console.error('Failed to delete card:', error);
     }
   }, [isIndexedDBReady, cards]);
 
@@ -275,8 +268,6 @@ export function useWorkspaceStore() {
       if (isIndexedDBReady) {
         await workspaceDB.clear('cards');
         await workspaceDB.clear('workspace');
-      } else {
-        console.warn('⚠️ IndexedDB hazır değil, workspace temizlenemedi');
       }
     } catch (error) {
       console.error('Failed to clear workspace:', error);
@@ -370,7 +361,6 @@ export function useWorkspaceStore() {
         lastSaved: Date.now(),
       }
     });
-    console.log('💾 Rich note kaydedildi:', cardId);
   }, [cards, updateCard]);
 
   // Pomodoro specific functions
@@ -485,10 +475,8 @@ export function useWorkspaceStore() {
   const getAllFlashcards = useCallback(async (cardId?: string): Promise<Flashcard[]> => {
     try {
       if (!isIndexedDBReady) {
-        console.log('⚠️ IndexedDB hazır değil, flashcard yüklenmiyor');
         return [];
       }
-      console.log('🔍 Flashcard verileri yükleniyor...', cardId ? `(Card ID: ${cardId})` : '(Tüm kartlar)');
       const flashcards = await workspaceDB.getAll<Flashcard>('flashcards');
       
       // Filter by cardId if provided
@@ -496,7 +484,6 @@ export function useWorkspaceStore() {
         ? flashcards.filter(card => card.cardId === cardId)
         : flashcards;
       
-      console.log(`✅ ${filteredFlashcards.length} flashcard yüklendi`);
       return filteredFlashcards.map(card => ({
         ...card,
         nextReview: new Date(card.nextReview),
@@ -504,7 +491,7 @@ export function useWorkspaceStore() {
         lastReviewed: card.lastReviewed ? new Date(card.lastReviewed) : undefined
       }));
     } catch (error) {
-      console.error('❌ Flashcard verileri yüklenemedi:', error);
+      console.error('Failed to load flashcards:', error);
       return [];
     }
   }, [isIndexedDBReady]);
@@ -514,7 +501,7 @@ export function useWorkspaceStore() {
       if (!isIndexedDBReady) return;
       await workspaceDB.put('flashcards', flashcard, true);
     } catch (error) {
-      console.error('❌ Flashcard kaydedilemedi:', error);
+      console.error('Failed to save flashcard:', error);
     }
   }, [isIndexedDBReady]);
 
@@ -523,7 +510,7 @@ export function useWorkspaceStore() {
       if (!isIndexedDBReady) return;
       await workspaceDB.delete('flashcards', flashcardId);
     } catch (error) {
-      console.error('❌ Flashcard silinemedi:', error);
+      console.error('Failed to delete flashcard:', error);
     }
   }, [isIndexedDBReady]);
 
@@ -533,7 +520,7 @@ export function useWorkspaceStore() {
       const stats = await workspaceDB.get<FlashcardStats>('flashcardStats', 'main');
       return stats || null;
     } catch (error) {
-      console.error('❌ Flashcard istatistikleri yüklenemedi:', error);
+      console.error('Failed to load flashcard stats:', error);
       return null;
     }
   }, [isIndexedDBReady]);
@@ -543,7 +530,7 @@ export function useWorkspaceStore() {
       if (!isIndexedDBReady) return;
       await workspaceDB.put('flashcardStats', stats, true);
     } catch (error) {
-      console.error('❌ Flashcard istatistikleri kaydedilemedi:', error);
+      console.error('Failed to save flashcard stats:', error);
     }
   }, [isIndexedDBReady]);
 
@@ -552,7 +539,7 @@ export function useWorkspaceStore() {
       if (!isIndexedDBReady) return;
       await workspaceDB.put('studySessions', session, true);
     } catch (error) {
-      console.error('❌ Çalışma oturumu kaydedilemedi:', error);
+      console.error('Failed to save study session:', error);
     }
   }, [isIndexedDBReady]);
 
@@ -566,27 +553,30 @@ export function useWorkspaceStore() {
         sessionDate: new Date(session.sessionDate)
       }));
     } catch (error) {
-      console.error('❌ Çalışma oturumları yüklenemedi:', error);
+      console.error('Failed to load study sessions:', error);
       return [];
     }
   }, [isIndexedDBReady]);
 
   // Initialize DB and load workspace on mount
   useEffect(() => {
-    const initAndLoad = async () => {
-      console.log('🚀 Workspace başlatılıyor...');
+    const initializeOnly = async () => {
       await initializeDB();
-      console.log('📦 Workspace verileri yükleniyor...');
-      await loadWorkspace();
-      console.log('✅ Workspace başlatma tamamlandı');
     };
-    initAndLoad();
+    initializeOnly();
     return () => {
       if (debouncedSaveRef.current) {
         clearTimeout(debouncedSaveRef.current);
       }
     };
   }, []); // Dependency array'i boş bıraktık çünkü callback'ler zaten useCallback ile wrap edilmiş
+
+  // Separate useEffect to handle loading when IndexedDB becomes ready
+  useEffect(() => {
+    if (isIndexedDBReady && cards.length === 0) {
+      loadWorkspace();
+    }
+  }, [isIndexedDBReady]); // Simplified dependencies - only depend on isIndexedDBReady
 
   return {
     cards,
