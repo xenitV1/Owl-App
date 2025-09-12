@@ -9,6 +9,8 @@ interface UseDragDropOptions {
   gridSnap?: boolean;
   gridSize?: number;
   disabled?: boolean;
+  pan?: { x: number; y: number };
+  zoom?: number;
 }
 
 export function useDragDrop({
@@ -18,19 +20,27 @@ export function useDragDrop({
   gridSnap = true,
   gridSize = 20,
   disabled = false,
+  pan = { x: 0, y: 0 },
+  zoom = 1,
 }: UseDragDropOptions) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [visualDelta, setVisualDelta] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+  const pendingDeltaRef = useRef<{ x: number; y: number } | null>(null);
 
   const snapToGrid = useCallback((value: number) => {
     if (!gridSnap) return value;
     return Math.round(value / gridSize) * gridSize;
   }, [gridSnap, gridSize]);
 
-  // Throttled update for better performance
-  const throttledUpdate = useCallback((newPosition: { x: number; y: number }) => {
-    onUpdate({ position: newPosition });
-  }, [onUpdate]);
+  const flushVisualDelta = useCallback(() => {
+    if (pendingDeltaRef.current === null) return;
+    const next = pendingDeltaRef.current;
+    pendingDeltaRef.current = null;
+    setVisualDelta(next);
+    rafRef.current = null;
+  }, []);
 
   // Handle drag start
   const handleDragStart = useCallback((event: React.MouseEvent | React.TouchEvent) => {
@@ -42,20 +52,23 @@ export function useDragDrop({
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
     
-    // Calculate offset from mouse position to card's current position
+    // Calculate offset from mouse position to card's current position (world coords)
     const parent = document.querySelector('[data-workspace-container]');
     if (!parent) return;
     
     const parentRect = parent.getBoundingClientRect();
+    const worldMouseX = (clientX - parentRect.left - pan.x) / zoom;
+    const worldMouseY = (clientY - parentRect.top - pan.y) / zoom;
     const offset = {
-      x: clientX - parentRect.left - position.x,
-      y: clientY - parentRect.top - position.y,
+      x: worldMouseX - position.x,
+      y: worldMouseY - position.y,
     };
     
     setDragOffset(offset);
-  }, [disabled, position]);
+    setVisualDelta({ x: 0, y: 0 });
+  }, [disabled, position, pan, zoom]);
 
-  // Handle drag move with throttling
+  // Handle drag move with rAF-synced visual updates
   const handleDragMove = useCallback((event: MouseEvent | TouchEvent) => {
     if (!isDragging || disabled) return;
 
@@ -67,18 +80,34 @@ export function useDragDrop({
 
     const parentRect = parent.getBoundingClientRect();
     
-    // Calculate new position: mouse position minus the offset we calculated at start
-    const newX = snapToGrid(clientX - parentRect.left - dragOffset.x);
-    const newY = snapToGrid(clientY - parentRect.top - dragOffset.y);
+    // Convert to world space under current pan/zoom
+    const worldMouseX = (clientX - parentRect.left - pan.x) / zoom;
+    const worldMouseY = (clientY - parentRect.top - pan.y) / zoom;
+    const newX = snapToGrid(worldMouseX - dragOffset.x);
+    const newY = snapToGrid(worldMouseY - dragOffset.y);
 
-    // Allow infinite movement like the canvas - no bounds constraints
-    throttledUpdate({ x: newX, y: newY });
-  }, [isDragging, dragOffset, snapToGrid, throttledUpdate, disabled]);
+    // Update only visual delta to keep element under pointer
+    pendingDeltaRef.current = { x: newX - position.x, y: newY - position.y };
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(flushVisualDelta);
+    }
+  }, [isDragging, dragOffset, snapToGrid, disabled, pan, zoom, position.x, position.y, flushVisualDelta]);
 
   // Handle drag end
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-  }, []);
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    // Commit final snapped position
+    const finalX = snapToGrid(position.x + visualDelta.x);
+    const finalY = snapToGrid(position.y + visualDelta.y);
+    if (finalX !== position.x || finalY !== position.y) {
+      onUpdate({ position: { x: finalX, y: finalY } });
+    }
+    setVisualDelta({ x: 0, y: 0 });
+  }, [snapToGrid, position.x, position.y, visualDelta.x, visualDelta.y, onUpdate]);
 
   // Add event listeners
   useEffect(() => {
@@ -107,7 +136,9 @@ export function useDragDrop({
 
   const style = {
     transition: isDragging ? 'none' : 'transform 200ms ease',
-  };
+    transform: isDragging ? `translate3d(${visualDelta.x}px, ${visualDelta.y}px, 0)` : undefined,
+    willChange: isDragging ? 'transform' : undefined,
+  } as React.CSSProperties;
 
   return {
     isDragging,
