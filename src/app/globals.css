@@ -202,3 +202,20 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
+
+/* Media layout helpers inside BlockNote editor */
+.ProseMirror img,
+.ProseMirror video {
+	display: inline-block;
+	max-width: 100%;
+	height: auto;
+	vertical-align: top;
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+
+/* Optional: when user sets 50% width via inline style, they align in two columns */
+.ProseMirror img[style*="width: 50%"],
+.ProseMirror video[style*="width: 50%"] {
+	max-width: 50% !important;
+}
