@@ -17,11 +17,17 @@ import { ResizeObserverErrorHandler } from '@/components/ResizeObserverErrorHand
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
+  display: 'swap',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
+  display: 'swap',
+  fallback: ['monospace'],
 });
 
 const locales = ['en', 'tr'];
