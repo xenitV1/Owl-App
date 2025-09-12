@@ -1,29 +1,44 @@
-MIT License
+PolyForm Noncommercial License 1.0.0
 
 Copyright (c) 2025 OWL Academic Social Learning Platform
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Licensor: OWL Academic Social Learning Platform
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Permission is hereby granted to use, copy, modify, and prepare derivative works of the Software, in each case for noncommercial purposes and subject to the terms below.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. Definitions
+"License" means the PolyForm Noncommercial License 1.0.0.
+"Licensor" means the copyright holder.
+"Software" means the licensed work.
+"Noncommercial" means not intended for or directed toward commercial advantage or monetary compensation.
 
-COMMERCIAL USE RESTRICTIONS:
-This software is intended for educational and academic purposes only. 
-Commercial use, redistribution, or resale of this software without 
-explicit written permission from the copyright holder is strictly prohibited.
+2. License Grant
+Subject to the terms of this License, Licensor grants you a nonexclusive, worldwide, nontransferable, non-sublicensable license to use, copy, modify, and prepare derivative works of the Software, in each case for Noncommercial purposes only.
 
-For commercial licensing inquiries, please contact: [your-email@domain.com]
+3. Restrictions
+You may not use the Software for Commercial purposes. This includes:
+- Selling, licensing, or distributing the Software or derivative works for a fee.
+- Using the Software to provide a service you charge for, including hosted or SaaS offerings.
+- Incorporating the Software into a product for which you charge a fee.
+
+You may not sublicense, distribute, or make the Software available for Commercial use. If you want to use the Software for Commercial purposes, you must obtain a separate commercial license from the Licensor.
+
+4. Compliance
+If you use the Software, you must:
+- Retain copyright, license, and attribution notices in all copies or substantial portions of the Software.
+- Clearly indicate any changes you make to the Software.
+
+5. No Liability
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+6. Termination
+If you materially breach this License, your rights under this License terminate automatically. Upon termination, you must cease all use of the Software and destroy copies.
+
+7. Governing Law
+This License is governed by the laws applicable in the Licensor’s jurisdiction, unless otherwise required by law.
+
+Commercial Licensing
+To obtain a commercial license for the Software, please contact: your-email@domain.com
+
+Full text: https://polyformproject.org/licenses/noncommercial/1.0.0/
 
