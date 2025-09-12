@@ -60,3 +60,7 @@ prisma/*.db-journal
 
 # OS
 Thumbs.db
+
+# Documentation files
+RICH_NOTE_FEATURES.md
+COMMIT_GUIDE.md
