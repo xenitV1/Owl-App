@@ -29,11 +29,9 @@ class IndexedDBManager {
 
       request.onerror = () => {
         const error = request.error;
-        console.error('IndexedDB error:', error);
         
         // If it's a version error, try to delete and recreate
         if (error?.name === 'VersionError') {
-          console.log('Version conflict detected, recreating database...');
           this.recreateDatabase().then(resolve).catch(reject);
         } else {
           reject(new Error(`IndexedDB error: ${error}`));
@@ -79,7 +77,6 @@ class IndexedDBManager {
       const deleteRequest = indexedDB.deleteDatabase(this.config.name);
       
       deleteRequest.onsuccess = () => {
-        console.log('Database deleted successfully, recreating...');
         // Now create new database
         this.init().then(resolve).catch(reject);
       };
@@ -135,14 +132,10 @@ class IndexedDBManager {
       const request = store.put(data);
 
       request.onsuccess = () => {
-        if (!silent) {
-          console.log('💾 IndexedDB: Kaydedildi');
-        }
         resolve();
       };
 
       request.onerror = () => {
-        console.error('❌ IndexedDB: Kaydetme hatası');
         reject(new Error(`Put operation failed: ${request.error}`));
       };
     });
@@ -157,12 +150,10 @@ class IndexedDBManager {
       const request = store.delete(key);
 
       request.onsuccess = () => {
-        console.log('🗑️ IndexedDB: Silindi', key);
         resolve();
       };
 
       request.onerror = () => {
-        console.error('❌ IndexedDB: Silme hatası', key);
         reject(new Error(`Delete operation failed: ${request.error}`));
       };
     });
