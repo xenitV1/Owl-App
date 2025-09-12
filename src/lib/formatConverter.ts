@@ -1,24 +1,19 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-import { createFFmpeg } from '@ffmpeg/ffmpeg';
-
-// Some versions expose fetchFile from '@ffmpeg/util'; provide a small fallback
-async function fetchFile(input: File | Blob | ArrayBuffer | Uint8Array): Promise<Uint8Array> {
-	if (input instanceof Uint8Array) return input;
-	if (input instanceof ArrayBuffer) return new Uint8Array(input);
-	if (input instanceof Blob) return new Uint8Array(await input.arrayBuffer());
-	return new Uint8Array(await input.arrayBuffer());
-}
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 // Singleton FFmpeg loader to avoid multiple loads
-let ffmpegInstance: any = null;
-let ffmpegLoadingPromise: Promise<any> | null = null;
+let ffmpegInstance: FFmpeg | null = null;
+let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-async function getFFmpeg(): Promise<any> {
+async function getFFmpeg(): Promise<FFmpeg> {
 	if (ffmpegInstance) return ffmpegInstance;
 	if (!ffmpegLoadingPromise) {
 		ffmpegLoadingPromise = (async () => {
-			const ffmpeg = createFFmpeg({ log: false });
+			const ffmpeg = new FFmpeg();
+			ffmpeg.on('log', ({ message }) => {
+				// Optional: handle logs if needed
+			});
 			await ffmpeg.load();
 			ffmpegInstance = ffmpeg;
 			return ffmpeg;
@@ -91,12 +86,12 @@ export async function mp4ToMp3(file: File): Promise<Blob> {
 	const ffmpeg = await getFFmpeg();
 	const inputName = 'input.mp4';
 	const outputName = 'output.mp3';
-	ffmpeg.FS('writeFile', inputName, await fetchFile(file));
-	await ffmpeg.run('-i', inputName, '-vn', '-acodec', 'libmp3lame', '-ab', '192k', outputName);
-	const data = ffmpeg.FS('readFile', outputName);
-	ffmpeg.FS('unlink', inputName);
-	ffmpeg.FS('unlink', outputName);
-	return new Blob([data.buffer], { type: 'audio/mpeg' });
+	await ffmpeg.writeFile(inputName, await fetchFile(file));
+	await ffmpeg.exec(['-i', inputName, '-vn', '-acodec', 'libmp3lame', '-ab', '192k', outputName]);
+	const data = await ffmpeg.readFile(outputName);
+	await ffmpeg.deleteFile(inputName);
+	await ffmpeg.deleteFile(outputName);
+	return new Blob([data], { type: 'audio/mpeg' });
 }
 
 export async function generateVideoThumbnail(fileOrUrl: File | string, timeSeconds = 1): Promise<Blob> {
@@ -106,15 +101,15 @@ export async function generateVideoThumbnail(fileOrUrl: File | string, timeSecon
 	if (typeof fileOrUrl === 'string') {
 		const res = await fetch(fileOrUrl);
 		const buf = new Uint8Array(await res.arrayBuffer());
-		ffmpeg.FS('writeFile', inputName, buf);
+		await ffmpeg.writeFile(inputName, buf);
 	} else {
-		ffmpeg.FS('writeFile', inputName, await fetchFile(fileOrUrl));
+		await ffmpeg.writeFile(inputName, await fetchFile(fileOrUrl));
 	}
-	await ffmpeg.run('-i', inputName, '-ss', String(timeSeconds), '-frames:v', '1', '-q:v', '2', outputName);
-	const data = ffmpeg.FS('readFile', outputName);
-	ffmpeg.FS('unlink', inputName);
-	ffmpeg.FS('unlink', outputName);
-	return new Blob([data.buffer], { type: 'image/jpeg' });
+	await ffmpeg.exec(['-i', inputName, '-ss', String(timeSeconds), '-frames:v', '1', '-q:v', '2', outputName]);
+	const data = await ffmpeg.readFile(outputName);
+	await ffmpeg.deleteFile(inputName);
+	await ffmpeg.deleteFile(outputName);
+	return new Blob([data], { type: 'image/jpeg' });
 }
 
 export function blobToObjectUrl(blob: Blob): string {
@@ -123,4 +118,31 @@ export function blobToObjectUrl(blob: Blob): string {
 
 export function revokeObjectUrl(url: string) {
 	URL.revokeObjectURL(url);
+}
+
+// Convert blob URL to base64 data URL for persistence
+export async function blobUrlToDataUrl(blobUrl: string): Promise<string> {
+	try {
+		const response = await fetch(blobUrl);
+		const blob = await response.blob();
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
+	} catch (error) {
+		console.error('Error converting blob URL to data URL:', error);
+		return blobUrl; // Return original URL if conversion fails
+	}
+}
+
+// Convert base64 data URL back to blob URL if needed
+export function dataUrlToBlobUrl(dataUrl: string): string {
+	if (dataUrl.startsWith('data:')) {
+		// Already a data URL, can be used directly
+		return dataUrl;
+	}
+	// If it's not a data URL, assume it's already a valid URL
+	return dataUrl;
 }
