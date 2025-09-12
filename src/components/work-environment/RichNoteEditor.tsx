@@ -32,37 +32,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Code,
-  Link,
-  Image,
-  List,
-  ListOrdered,
-  Quote,
-  Eye,
-  EyeOff,
-  Save,
-  History,
-  Undo,
-  Redo,
   FileText,
-  Calculator,
-  Download,
-  Upload,
-  FolderPlus,
+  History,
   FolderOpen,
+  FolderPlus,
   Link as LinkIcon,
   Search,
+  Download,
   FileDown,
   Camera,
-  MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
-  File,
-  Folder,
+  Upload,
+  Save,
+  Columns,
 } from 'lucide-react';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -73,7 +54,12 @@ import { useTranslations } from 'next-intl';
 import { createWorker } from 'tesseract.js';
 // import { PDFDocument, rgb } from '@react-pdf/renderer';
 import TurndownService from 'turndown';
-import mammoth from 'mammoth';
+import MediaUploader, { type MediaKind, type SelectedMedia } from '@/components/media/MediaUploader';
+import ImagePreview from '@/components/media/ImagePreview';
+import { VideoPlayer } from '@/components/media/VideoPlayer';
+import { AudioPlayer } from '@/components/media/AudioPlayer';
+import { generateVideoThumbnail, mp4ToMp3, blobToObjectUrl, revokeObjectUrl } from '@/lib/formatConverter';
+
 
 interface RichNoteEditorProps {
   cardId: string;
@@ -100,6 +86,10 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSavedContent, setLastSavedContent] = useState<string>('');
+  const [lastSaveAtMs, setLastSaveAtMs] = useState<number>(0);
+  const MIN_SAVE_INTERVAL_MS = 30000; // 30s
+  const DEBOUNCE_MS = 5000; // 5s idle debounce
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showOCR, setShowOCR] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -107,11 +97,18 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   const [showCrossReference, setShowCrossReference] = useState(false);
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState('');
+  const [ocrLanguage, setOcrLanguage] = useState('tur+eng');
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [crossReferences, setCrossReferences] = useState<CrossReference[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [newFolderName, setNewFolderName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showInsertMedia, setShowInsertMedia] = useState<null | MediaKind>(null);
+  const [pendingMedia, setPendingMedia] = useState<SelectedMedia | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const [splitView, setSplitView] = useState<boolean>(false);
+  const [insertTarget, setInsertTarget] = useState<'left' | 'right'>('left');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,6 +122,9 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   // Initialize BlockNote editor
   const editor = useCreateBlockNote({
     initialContent: undefined, // We'll set this in useEffect
+  });
+  const editorRight = useCreateBlockNote({
+    initialContent: undefined,
   });
 
   // Load existing content when card data is available
@@ -142,13 +142,20 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
   // Auto-save functionality
   const autoSave = useCallback(() => {
-    if (content && content.trim() && content !== '[]') {
+    const now = Date.now();
+    const hasContent = content && content.trim() && content !== '[]';
+    const changed = content !== lastSavedContent;
+    const dueByInterval = now - lastSaveAtMs >= MIN_SAVE_INTERVAL_MS;
+
+    if (hasContent && changed && dueByInterval) {
       setIsSaving(true);
       saveRichNoteVersion(cardId, content);
       setLastSaved(new Date());
+      setLastSavedContent(content);
+      setLastSaveAtMs(now);
       setTimeout(() => setIsSaving(false), 1000);
     }
-  }, [content, cardId, saveRichNoteVersion]);
+  }, [content, cardId, saveRichNoteVersion, lastSavedContent, lastSaveAtMs]);
 
   // Auto-save on content change (debounced)
   useEffect(() => {
@@ -158,7 +165,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
     autoSaveTimeoutRef.current = setTimeout(() => {
       autoSave();
-    }, 2000);
+    }, DEBOUNCE_MS);
 
     return () => {
       if (autoSaveTimeoutRef.current) {
@@ -190,17 +197,16 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
     };
   }, []);
 
-  // Handle content changes from BlockNote
+  // Handle content changes from BlockNote (no immediate save; debounced via autoSave effect)
   const handleContentChange = useCallback(() => {
     const blocks = editor.document;
     const jsonContent = JSON.stringify(blocks);
     setContent(jsonContent);
-    
-    // Auto-save the content to IndexedDB
-    if (jsonContent && jsonContent !== '[]') {
-      saveRichNoteVersion(cardId, jsonContent);
-    }
-  }, [editor, cardId, saveRichNoteVersion]);
+  }, [editor]);
+
+  const handleContentChangeRight = useCallback(() => {
+    // Right editor currently not persisted; hook kept for future state sync
+  }, [editorRight]);
 
   // OCR functionality
   const handleOCRUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,7 +215,8 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
     setOcrProcessing(true);
     try {
-      const worker = await createWorker('eng');
+      // Use selected language for OCR recognition
+      const worker = await createWorker(ocrLanguage);
       const { data: { text } } = await worker.recognize(file);
       setOcrResult(text);
       await worker.terminate();
@@ -232,6 +239,134 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
       setOcrResult('');
     }
   };
+
+  const insertImageBlock = useCallback((media: SelectedMedia, target: 'left' | 'right' = 'left') => {
+    const instance = target === 'left' ? editor : editorRight;
+    const src = media.previewUrl || media.url;
+    if (!src) return;
+    instance.insertBlocks([
+      {
+        type: 'image',
+        props: { url: src, alt: media.alt || '' },
+      } as any,
+    ], instance.getTextCursorPosition().block, 'after');
+  }, [editor, editorRight]);
+
+  const insertVideoBlock = useCallback(async (media: SelectedMedia, target: 'left' | 'right' = 'left') => {
+    console.debug('[RichNote] insertVideoBlock start', { target, hasFile: !!media.file, url: media.url, previewUrl: media.previewUrl });
+    const instance = target === 'left' ? editor : editorRight;
+    let src = media.previewUrl || media.url;
+    if (!src && media.file) src = URL.createObjectURL(media.file);
+    if (!src) {
+      console.warn('[RichNote] insertVideoBlock no src');
+      return;
+    }
+    let thumb: string | undefined;
+    try {
+      if (media.file) {
+        console.debug('[RichNote] generate video thumbnail...');
+        const blob = await generateVideoThumbnail(media.file, 1);
+        thumb = blobToObjectUrl(blob);
+        setThumbUrl(thumb);
+        console.debug('[RichNote] thumbnail generated', { thumb });
+      }
+    } catch (err) {
+      console.error('[RichNote] thumbnail generation failed', err);
+    }
+    instance.insertBlocks([
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: '' }],
+      } as any,
+    ], instance.getTextCursorPosition().block, 'after');
+    instance.insertBlocks([
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: src }],
+      } as any,
+    ], instance.getTextCursorPosition().block, 'after');
+    if (media.file && !media.previewUrl && src.startsWith('blob:')) {
+      try { URL.revokeObjectURL(src); } catch {}
+    }
+    console.debug('[RichNote] insertVideoBlock done', { src, target });
+  }, [editor, editorRight]);
+
+  const insertAudioBlock = useCallback(async (media: SelectedMedia, target: 'left' | 'right' = 'left') => {
+    console.debug('[RichNote] insertAudioBlock start', { target, hasFile: !!media.file, url: media.url, previewUrl: media.previewUrl });
+    const instance = target === 'left' ? editor : editorRight;
+    let src = media.previewUrl || media.url;
+    if (!src && media.file) src = URL.createObjectURL(media.file);
+    if (!src) {
+      console.warn('[RichNote] insertAudioBlock no src');
+      return;
+    }
+    instance.insertBlocks([
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: src }],
+      } as any,
+    ], instance.getTextCursorPosition().block, 'after');
+    if (media.file && !media.previewUrl && src.startsWith('blob:')) {
+      try { URL.revokeObjectURL(src); } catch {}
+    }
+    console.debug('[RichNote] insertAudioBlock done', { src, target });
+  }, [editor, editorRight]);
+
+  const handleMediaSelect = useCallback(async (media: SelectedMedia) => {
+    console.debug('[RichNote] handleMediaSelect', media);
+    setPendingMedia(media);
+
+    const target = insertTarget;
+
+    if (media.kind === 'image') {
+      insertImageBlock(media, target);
+      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
+      setShowInsertMedia(null);
+      setPendingMedia(null);
+      return;
+    }
+    if (media.kind === 'video') {
+      await insertVideoBlock(media, target);
+      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
+      setShowInsertMedia(null);
+      setPendingMedia(null);
+      return;
+    }
+    if (media.kind === 'audio') {
+      if (media.file && media.file.type === 'video/mp4') {
+        try {
+          console.debug('[RichNote] MP4->MP3 conversion start');
+          setIsConverting(true);
+          const mp3Blob = await mp4ToMp3(media.file);
+          const mp3Url = blobToObjectUrl(mp3Blob);
+          console.debug('[RichNote] MP3 produced', { mp3Url });
+          await insertAudioBlock({ kind: 'audio', url: mp3Url }, target);
+          if (mp3Url.startsWith('blob:')) revokeObjectUrl(mp3Url);
+        } catch (e) {
+          console.error('[RichNote] MP4->MP3 conversion failed', e);
+          await insertAudioBlock(media, target);
+        } finally {
+          setIsConverting(false);
+          console.debug('[RichNote] MP4->MP3 conversion end');
+        }
+      } else {
+        await insertAudioBlock(media, target);
+      }
+      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
+      setShowInsertMedia(null);
+      setPendingMedia(null);
+      return;
+    }
+  }, [insertImageBlock, insertVideoBlock, insertAudioBlock, insertTarget]);
+
+  // Revoke thumbnail object URL when it changes or on unmount
+  useEffect(() => {
+    return () => {
+      if (thumbUrl && thumbUrl.startsWith('blob:')) {
+        try { revokeObjectUrl(thumbUrl); } catch {}
+      }
+    };
+  }, [thumbUrl]);
 
   // Export functionality
   const exportToPDF = async () => {
@@ -345,6 +480,16 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             onClick={() => setShowVersionHistory(!showVersionHistory)}
           >
             <History className="w-4 h-4" />
+          </Button>
+
+          {/* Split View Toggle */}
+          <Button
+            variant={splitView ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setSplitView((v) => !v)}
+            title={splitView ? 'Disable split view' : 'Enable split view'}
+          >
+            <Columns className="w-4 h-4" />
           </Button>
 
           {/* Organization */}
@@ -472,6 +617,19 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{t('ocr.language')}</Label>
+                  <Select value={ocrLanguage} onValueChange={setOcrLanguage}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tur+eng">{t('ocr.languageOptions.turkishEnglish')}</SelectItem>
+                      <SelectItem value="tur">{t('ocr.languageOptions.turkishOnly')}</SelectItem>
+                      <SelectItem value="eng">{t('ocr.languageOptions.englishOnly')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     type="file"
@@ -508,6 +666,30 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             </DialogContent>
           </Dialog>
 
+          {/* Insert Media */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Upload className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {/* When split view is on, allow choosing the target pane */}
+              {splitView && (
+                <>
+                  <DropdownMenuLabel>Insert target</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setInsertTarget('left')}>Left (Editor)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setInsertTarget('right')}>Right (Editor)</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={() => setShowInsertMedia('image')}>Insert Image</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowInsertMedia('video')}>Insert Video</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowInsertMedia('audio')}>Insert Audio</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Manual Save */}
           <Button
             variant="ghost"
@@ -521,14 +703,67 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
       </div>
 
       {/* Editor Area */}
-      <div className="flex-1 overflow-hidden">
-        <BlockNoteView
-          editor={editor}
-          onChange={handleContentChange}
-          theme="light"
-          className="h-full"
-        />
+      <div className="flex-1 min-h-0 overflow-auto">
+        {!splitView && (
+          <BlockNoteView
+            editor={editor}
+            onChange={handleContentChange}
+            theme="light"
+            className="h-full"
+            formattingToolbar
+            sideMenu
+          />
+        )}
+        {splitView && (
+          <div className="h-full flex min-h-0">
+            <div className="flex-1 min-h-0 overflow-auto border-r">
+              <BlockNoteView
+                editor={editor}
+                onChange={handleContentChange}
+                theme="light"
+                className="h-full"
+                formattingToolbar
+                sideMenu
+              />
+            </div>
+            <div className="w-1 bg-border" />
+            <div className="flex-1 min-h-0 overflow-auto">
+              <BlockNoteView
+                editor={editorRight}
+                onChange={handleContentChangeRight}
+                theme="light"
+                className="h-full"
+                formattingToolbar
+                sideMenu
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Media Dialog */}
+      <Dialog open={!!showInsertMedia} onOpenChange={() => { setShowInsertMedia(null); if (pendingMedia?.previewUrl && pendingMedia.previewUrl.startsWith('blob:')) revokeObjectUrl(pendingMedia.previewUrl); setPendingMedia(null); if (thumbUrl && thumbUrl.startsWith('blob:')) revokeObjectUrl(thumbUrl); setThumbUrl(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Insert {showInsertMedia}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {showInsertMedia && (
+              <MediaUploader accept={[showInsertMedia]} onSelect={handleMediaSelect} />
+            )}
+            {pendingMedia?.kind === 'image' && pendingMedia.previewUrl && (
+              <ImagePreview src={pendingMedia.previewUrl} alt={pendingMedia.alt} />
+            )}
+            {pendingMedia?.kind === 'video' && (pendingMedia.previewUrl || pendingMedia.url) && (
+              <VideoPlayer src={(pendingMedia.previewUrl || pendingMedia.url)!} thumbnailUrl={thumbUrl || undefined} />
+            )}
+            {pendingMedia?.kind === 'audio' && (pendingMedia.previewUrl || pendingMedia.url) && (
+              <AudioPlayer src={(pendingMedia.previewUrl || pendingMedia.url)!} />
+            )}
+            {isConverting && <div className="text-sm">Converting to MP3...</div>}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Version History */}
       {showVersionHistory && richContent?.versionHistory && (
