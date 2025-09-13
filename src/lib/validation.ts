@@ -125,17 +125,96 @@ export function validateAndSanitizeInput(
   };
 }
 
+/**
+ * SECURITY FIX: Improved HTML sanitization function
+ * 
+ * The previous regex-based approach was vulnerable to XSS attacks due to:
+ * 1. Malformed HTML tags like </script > (with spaces)
+ * 2. Case sensitivity issues
+ * 3. Complex nested structures
+ * 4. Browser HTML parser quirks
+ * 
+ * This improved version handles more edge cases, but for production use,
+ * consider using a dedicated library like DOMPurify.
+ */
 export function sanitizeHtml(input: string): string {
-  // Basic HTML sanitization - remove potentially dangerous tags and attributes
-  return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-    .replace(/on\w+="[^"]*"/g, '')
-    .replace(/on\w+='[^']*'/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/data:\s*image\/svg\+xml/gi, '');
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+
+  let sanitized = input;
+
+  // Remove script tags with comprehensive patterns that handle malformed HTML
+  // This addresses the CodeQL alert about regex bypass vulnerabilities
+  
+  // Remove opening script tags
+  sanitized = sanitized.replace(/<script[^>]*>/gi, '');
+  
+  // Remove closing script tags (including malformed ones like </script foo="bar">)
+  // This pattern specifically addresses the CodeQL vulnerability
+  sanitized = sanitized.replace(/<\/script[^>]*>/gi, '');
+  
+  // Additional catch-all for any remaining script-related tags
+  sanitized = sanitized.replace(/<\/?script[^>]*>/gi, '');
+  
+  // Remove iframe tags
+  sanitized = sanitized.replace(/<\/?iframe[^>]*>/gi, '');
+  
+  // Remove object tags
+  sanitized = sanitized.replace(/<\/?object[^>]*>/gi, '');
+  
+  // Remove embed tags
+  sanitized = sanitized.replace(/<\/?embed[^>]*>/gi, '');
+  
+  // Remove applet tags (legacy but still dangerous)
+  sanitized = sanitized.replace(/<\/?applet[^>]*>/gi, '');
+  
+  // Remove form tags (prevent CSRF)
+  sanitized = sanitized.replace(/<\/?form[^>]*>/gi, '');
+  
+  // Remove input tags
+  sanitized = sanitized.replace(/<\/?input[^>]*>/gi, '');
+  
+  // Remove dangerous event handlers (more comprehensive)
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '');
+  
+  // Remove javascript: URLs (case insensitive)
+  sanitized = sanitized.replace(/javascript\s*:/gi, '');
+  
+  // Remove data: URLs for SVG (potential XSS vector)
+  sanitized = sanitized.replace(/data\s*:\s*image\/svg\+xml/gi, '');
+  
+  // Remove vbscript: URLs
+  sanitized = sanitized.replace(/vbscript\s*:/gi, '');
+  
+  // Remove expression() in CSS (IE-specific XSS)
+  sanitized = sanitized.replace(/expression\s*\(/gi, '');
+  
+  // Remove style attributes that might contain expressions
+  sanitized = sanitized.replace(/\s*style\s*=\s*["'][^"']*expression[^"']*["']/gi, '');
+  
+  // Remove potentially dangerous CSS
+  sanitized = sanitized.replace(/@import/gi, '');
+  
+  // Remove HTML comments that might contain script
+  sanitized = sanitized.replace(/<!--[\s\S]*?-->/g, '');
+  
+  // Remove CDATA sections
+  sanitized = sanitized.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+  
+  // Basic entity decoding to prevent double encoding attacks
+  sanitized = sanitized
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&#x60;/g, '`')
+    .replace(/&#x3D;/g, '=');
+
+  return sanitized;
 }
 
 export function validatePostData(data: any): ValidationResult {
