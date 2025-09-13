@@ -26,6 +26,7 @@ COPY . .
 # Environment variables needed for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_FONT_GOOGLE_MOCKED_RESPONSES=1
+ENV NODE_ENV=production
 
 # Generate Prisma client
 RUN /root/.bun/bin/bun x prisma generate

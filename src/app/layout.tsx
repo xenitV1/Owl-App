@@ -1,22 +1,61 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  preload: false,
-  display: 'swap',
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-});
+// Conditionally load Google Fonts only when not in Docker build
+let geistSans: any;
+let geistMono: any;
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  preload: false,
-  display: 'swap',
-  fallback: ['monospace'],
-});
+if (process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES !== '1') {
+  try {
+    // Dynamic import to load fonts conditionally
+    const loadFonts = async () => {
+      const { Geist, Geist_Mono } = await import("next/font/google");
+      geistSans = Geist({
+        variable: "--font-geist-sans",
+        subsets: ["latin"],
+        preload: false,
+        display: 'swap',
+        fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      });
+
+      geistMono = Geist_Mono({
+        variable: "--font-geist-mono",
+        subsets: ["latin"],
+        preload: false,
+        display: 'swap',
+        fallback: ['monospace'],
+      });
+    };
+
+    // Execute the font loading
+    loadFonts().catch((error) => {
+      console.warn('Failed to load Google Fonts, using fallbacks:', error);
+      geistSans = { variable: "--font-geist-sans", className: "" };
+      geistMono = { variable: "--font-geist-mono", className: "" };
+    });
+  } catch (error) {
+    console.warn('Failed to load Google Fonts, using fallbacks:', error);
+    // Create fallback font objects
+    geistSans = {
+      variable: "--font-geist-sans",
+      className: ""
+    };
+    geistMono = {
+      variable: "--font-geist-mono",
+      className: ""
+    };
+  }
+} else {
+  // Docker build environment - use fallbacks
+  geistSans = {
+    variable: "--font-geist-sans",
+    className: ""
+  };
+  geistMono = {
+    variable: "--font-geist-mono",
+    className: ""
+  };
+}
 
 export const metadata: Metadata = {
   title: "Owl - Educational Social Media Platform",

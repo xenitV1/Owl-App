@@ -12,8 +12,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-*'],
   },
-  // Font optimization for Docker builds
-  optimizeFonts: process.env.NODE_ENV === 'production' && !process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES,
   webpack: (config, { dev, isServer }) => {
     // Production optimizations
     if (!dev && !isServer) {
