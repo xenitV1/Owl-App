@@ -10,6 +10,14 @@ on:
   schedule:
     - cron: '0 2 * * 1'
 
+# SECURITY: Set minimal permissions for all jobs
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  packages: write
+  actions: read
+
 env:
   NODE_VERSION: '20'
   REGISTRY: ghcr.io
@@ -95,10 +103,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' || github.event_name == 'release'
-    
-    permissions:
-      contents: read
-      packages: write
       
     steps:
     - name: Checkout code
@@ -206,6 +210,9 @@ jobs:
     runs-on: ubuntu-latest
     if: failure() && (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure')
     needs: [deploy-production, deploy-staging]
+    permissions:
+      contents: read
+      actions: write
     
     steps:
     - name: Rollback deployment
@@ -219,9 +226,6 @@ jobs:
   dependency-check:
     name: Check Dependencies
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
     
     steps:
     - name: Checkout code
