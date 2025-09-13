@@ -172,6 +172,3 @@ Given our academic focus, we provide an additional appeals process for education
 * **Digital Literacy**: Safe and effective online academic practices
 
 ####
-**Next Review**: July 2025
-
-*This Code of Conduct is a living document and may be updated to reflect the evolving needs of our academic community.*
