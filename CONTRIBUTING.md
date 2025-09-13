@@ -1,6 +1,6 @@
-# 🤝 Contributing to OWL
+# 🤝 Contributing to OWL - Academic Social Learning Platform
 
-Thank you for your interest in contributing to OWL! We welcome contributions from the community to help make OWL better for everyone.
+Thank you for your interest in contributing to OWL! We welcome contributions from the community to help make this academic social learning platform better for students, teachers, and academics worldwide.
 
 ## 📋 Table of Contents
 
@@ -11,6 +11,8 @@ Thank you for your interest in contributing to OWL! We welcome contributions fro
 - [Reporting Issues](#reporting-issues)
 - [Pull Request Process](#pull-request-process)
 - [Development Guidelines](#development-guidelines)
+- [Project Architecture](#project-architecture)
+- [Security Guidelines](#security-guidelines)
 
 ## 🤝 Code of Conduct
 
@@ -28,42 +30,42 @@ This project follows a code of conduct to ensure a welcoming environment for all
 
 Before you begin, ensure you have:
 
-- **Node.js 18+** or **Bun**
+- **Node.js 18+** and **npm**
 - **Git**
 - Basic knowledge of:
   - TypeScript/JavaScript
-  - React/Next.js
+  - React/Next.js 15
   - Database concepts (Prisma/SQLite)
+  - Tailwind CSS
+  - Modern web development practices
 
 ### Quick Setup
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/owl.git
-
-   # For the official repository (if you're not forking):
-   # git clone https://github.com/xenitV1/OWL.git
-   cd owl
+   git clone https://github.com/YOUR_USERNAME/OWL.git
+   cd OWL
    ```
 3. **Install dependencies**:
    ```bash
-   bun install
+   npm install
    ```
 4. **Set up environment**:
    ```bash
    cp .env.example .env.local
-   # Configure your environment variables
+   # Configure your environment variables (see Environment Variables section)
    ```
 5. **Set up database**:
    ```bash
-   bun run db:push
-   bun run db:generate
+   npm run db:push
+   npm run db:generate
    ```
-6. **Start development**:
+6. **Start development server**:
    ```bash
-   bun run dev
+   npm run dev
    ```
+   The application will be available at `http://localhost:3000`
 
 ## 🛠️ Development Setup
 
@@ -82,29 +84,48 @@ NEXTAUTH_SECRET="your-secret-key"
 # Google OAuth
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Firebase (Optional - for file storage and real-time features)
+FIREBASE_PROJECT_ID="your-project-id"
+FIREBASE_PRIVATE_KEY="your-private-key"
+FIREBASE_CLIENT_EMAIL="your-client-email"
+
+# Development
+NODE_ENV="development"
 ```
 
 ### Database Setup
 
 ```bash
 # Push schema to database
-bun run db:push
+npm run db:push
 
 # Generate Prisma client
-bun run db:generate
+npm run db:generate
 
 # Reset database (if needed)
-bun run db:reset
+npm run db:reset
 ```
 
-### Running Tests
+### Available Scripts
 
 ```bash
-# Run all tests
-bun run test
+# Development
+npm run dev          # Start development server with hot reload
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
 
-# Run specific test file
-bun run test -- src/components/MyComponent.test.ts
+# Database
+npm run db:push      # Push schema to database
+npm run db:generate  # Generate Prisma client
+npm run db:migrate   # Create migration
+npm run db:reset     # Reset database
+
+# Testing (E2E setup)
+npm run test:e2e:setup-data   # Set up test data
+npm run test:e2e:cleanup-data # Clean up test data
+npm run test:e2e:reset-db     # Reset test database
 ```
 
 ## 💡 How to Contribute
@@ -185,12 +206,12 @@ For feature requests, please include:
 2. **Add tests** for new features
 3. **Ensure code passes linting**:
    ```bash
-   bun run lint
+   npm run lint
    ```
 4. **Test your changes**:
    ```bash
-   bun run build
-   bun run test
+   npm run build
+   # Note: Currently using E2E test setup scripts
    ```
 
 ### PR Template
@@ -315,6 +336,113 @@ Contributors will be:
 - Mentioned in release notes
 - Recognized in our community
 - Eligible for special mentions
+
+---
+
+## 🏗️ Project Architecture
+
+### Tech Stack
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Next.js API Routes, Prisma ORM, SQLite
+- **Authentication**: NextAuth.js with Google OAuth
+- **Real-time**: Socket.io for live notifications
+- **UI Components**: shadcn/ui (Radix UI primitives)
+- **State Management**: Zustand, React Query
+- **File Storage**: Firebase (optional)
+- **Security**: DOMPurify for HTML sanitization, Zod for validation
+
+### Project Structure
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── [locale]/          # Internationalized routes (en, tr)
+│   │   ├── admin/         # Admin dashboard
+│   │   ├── communities/   # Community features
+│   │   ├── moderation/    # Moderation tools
+│   │   ├── posts/         # Content creation
+│   │   └── ...           # Other pages
+│   ├── api/               # API routes
+│   │   ├── auth/          # Authentication
+│   │   ├── admin/         # Admin APIs
+│   │   ├── communities/   # Community management
+│   │   ├── posts/         # Content management
+│   │   └── ...           # Other APIs
+│   └── landing/           # Landing page
+├── components/            # React components
+│   ├── admin/            # Admin components
+│   ├── auth/             # Authentication components
+│   ├── communities/      # Community components
+│   ├── content/          # Content components
+│   ├── moderation/       # Moderation components
+│   ├── ui/               # shadcn/ui components
+│   └── work-environment/ # Workspace components
+├── contexts/             # React contexts
+├── hooks/                # Custom hooks
+├── lib/                  # Utility functions
+│   ├── auth.ts          # Authentication utilities
+│   ├── db.ts            # Database utilities
+│   ├── validation.ts    # Input validation & sanitization
+│   └── ...              # Other utilities
+├── messages/             # Internationalization files
+└── types/                # TypeScript definitions
+```
+
+### Key Features
+- **Academic Content Sharing**: Study materials, notes, exam prep
+- **Social Learning**: Communities, groups, following system
+- **Advanced Moderation**: Content filtering, reporting, appeals
+- **Real-time Features**: Notifications, live updates
+- **Admin Dashboard**: User management, analytics, moderation
+- **Internationalization**: English and Turkish support
+
+## 🔒 Security Guidelines
+
+### Security-First Development
+OWL handles sensitive academic and user data. All contributions must follow security best practices:
+
+#### Input Validation & Sanitization
+- **Use Zod schemas** for all API input validation
+- **HTML sanitization** with DOMPurify (already implemented)
+- **SQL injection prevention** through Prisma ORM
+- **XSS protection** with React's built-in protections
+
+#### Authentication & Authorization
+- **NextAuth.js** for secure authentication
+- **Role-based access control** (Student, Teacher, Academician, Admin)
+- **Two-factor authentication** support
+- **Session management** with secure cookies
+
+#### Data Protection
+- **Environment variables** for sensitive configuration
+- **Database encryption** for sensitive data
+- **Content filtering** for inappropriate content
+- **Privacy controls** for user data
+
+#### Security Checklist
+Before submitting any code:
+- [ ] Input validation with Zod schemas
+- [ ] No hardcoded secrets or credentials
+- [ ] Proper error handling without information leakage
+- [ ] SQL injection prevention (use Prisma queries)
+- [ ] XSS protection (sanitize user input)
+- [ ] CSRF protection (NextAuth.js handles this)
+- [ ] Rate limiting on API endpoints
+- [ ] Secure file upload handling
+
+#### Reporting Security Issues
+If you discover a security vulnerability:
+1. **DO NOT** create a public issue
+2. **DO NOT** discuss it in public channels
+3. Contact maintainers privately
+4. Provide detailed reproduction steps
+5. Allow time for fix before public disclosure
+
+### Code Security Standards
+- All user input must be validated and sanitized
+- Database queries must use Prisma ORM (no raw SQL)
+- API routes must implement proper authentication checks
+- File uploads must be validated and scanned
+- Environment variables must be used for all secrets
 
 ---
 
