@@ -300,15 +300,51 @@ Easy to extend with additional languages through Next Intl configuration.
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contributing guidelines for details on how to:
-- Report bugs
-- Suggest features
-- Submit pull requests
-- Follow coding standards
+We welcome contributions from the community! 🎉
+
+### Ways to Contribute
+
+* 🐛 **Report bugs** - Help us identify and fix issues
+* ✨ **Suggest features** - Share your ideas for new functionality
+* 💻 **Write code** - Submit pull requests with improvements
+* 📚 **Improve documentation** - Help make our docs better
+* 🎨 **UI/UX improvements** - Enhance the user experience
+* 🌐 **Translations** - Add support for new languages
+
+### Getting Started
+
+1. Check out our [Contributing Guide](CONTRIBUTING.md) for detailed instructions
+2. Look for issues labeled `good first issue` if you're new to the project
+3. Join our community discussions for questions and support
+
+### Development Setup
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/owl.git
+
+# Install dependencies
+bun install
+
+# Set up development environment
+cp .env.example .env.local
+bun run db:push
+bun run dev
+```
+
+We appreciate all contributions, big or small! 🚀
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+
+The Apache 2.0 license allows you to:
+- ✅ Use the software commercially
+- ✅ Modify and distribute the software
+- ✅ Use in proprietary software
+- ✅ Sublicense the software
+
+While maintaining patent protection and requiring attribution.
 
 ## 🙏 Acknowledgments
 

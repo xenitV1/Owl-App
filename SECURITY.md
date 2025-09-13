@@ -133,11 +133,43 @@ If you accidentally commit secrets:
 - Regular security audits
 - Keep dependencies updated
 
-### Reporting Security Issues
+## 🔐 Security Policy
 
-If you find a security vulnerability, please report it privately:
-- Email: security@yourcompany.com
-- Do not create public issues for security vulnerabilities
+### Reporting Security Vulnerabilities
+
+If you discover a security vulnerability in OWL, please report it responsibly:
+
+**📧 Contact:** Send details to [mehmet.apaydin0@gmail.com](mailto:mehmet.apaydin0@gmail.com)
+
+**⏰ Response Time:** We will acknowledge your report within 48 hours and provide a more detailed response within 7 days.
+
+**🔒 Disclosure:** Please do not publicly disclose the vulnerability until we have had time to address it.
+
+### What to Include in Your Report
+
+- **Description:** Clear description of the vulnerability
+- **Steps to reproduce:** Detailed reproduction steps
+- **Impact:** Potential impact and severity
+- **Environment:** Browser, OS, and other relevant details
+- **Contact information:** How we can reach you for follow-up
+
+### Security Best Practices for Contributors
+
+When contributing to OWL:
+
+- **Never commit secrets** to the repository
+- **Use environment variables** for sensitive configuration
+- **Follow secure coding practices** outlined in our guidelines
+- **Report security issues** through proper channels, not public issues
+
+### Security Updates
+
+Security updates and patches will be:
+- Released as soon as possible after verification
+- Documented in release notes
+- Communicated through our community channels
+
+Thank you for helping keep OWL secure! 🛡️
 
 ## Additional Resources
 

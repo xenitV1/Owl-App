@@ -1,8 +1,8 @@
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
-  // For development, use Firebase config from environment or fallback to default
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'owll-514ef';
+  // For development, use Firebase config from environment
+  const projectId = process.env.FIREBASE_PROJECT_ID;
 
   // In development, we can use the Firebase project's service account
   // This requires FIREBASE_PRIVATE_KEY and FIREBASE_CLIENT_EMAIL env vars
