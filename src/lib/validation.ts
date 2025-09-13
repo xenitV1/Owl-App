@@ -203,16 +203,17 @@ export function sanitizeHtml(input: string): string {
   // Remove CDATA sections
   sanitized = sanitized.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
   
-  // Basic entity decoding to prevent double encoding attacks
+  // SECURITY FIX: Correct entity decoding order to prevent double unescaping
+  // Must decode &amp; LAST to prevent breaking other entities like &quot;
   sanitized = sanitized
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, '/')
     .replace(/&#x60;/g, '`')
-    .replace(/&#x3D;/g, '=');
+    .replace(/&#x3D;/g, '=')
+    .replace(/&amp;/g, '&'); // Must be last to prevent double unescaping
 
   return sanitized;
 }
