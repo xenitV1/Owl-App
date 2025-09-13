@@ -23,8 +23,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Environment variable needed for build
+# Environment variables needed for build
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_FONT_GOOGLE_MOCKED_RESPONSES=1
 
 # Generate Prisma client
 RUN /root/.bun/bin/bun x prisma generate
