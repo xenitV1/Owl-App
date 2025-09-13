@@ -321,7 +321,7 @@ We welcome contributions from the community! 🎉
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/owl.git
+git clone https://github.com/xenitV1/OWL.git
 
 # Install dependencies
 bun install

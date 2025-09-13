@@ -41,6 +41,9 @@ Before you begin, ensure you have:
 2. **Clone your fork** locally:
    ```bash
    git clone https://github.com/YOUR_USERNAME/owl.git
+
+   # For the official repository (if you're not forking):
+   # git clone https://github.com/xenitV1/OWL.git
    cd owl
    ```
 3. **Install dependencies**:
