@@ -27,6 +27,15 @@ Explain the problem this feature would solve or the value it would add.
 **How would they use it?**
 Describe the user workflow or scenario.
 
+**Example scenario:**
+"As a [user type], I want [goal] so that [benefit]"
+
+**Frequency of use:**
+- [ ] Daily
+- [ ] Weekly
+- [ ] Monthly
+- [ ] Occasionally
+
 ## 💡 Proposed Solution
 
 **How should it work?**
@@ -37,10 +46,19 @@ Have you considered any alternative approaches?
 
 ## 📋 Additional Information
 
-- **Mockups or screenshots:** If you have visual ideas
-- **Technical requirements:** Any specific technical considerations
-- **Related features:** Similar features in other platforms
+**Visual mockups:**
+- **Screenshots/Mockups:** If you have visual ideas or wireframes
+- **Inspiration:** Similar features in other platforms (with links)
+
+**Technical considerations:**
+- **Complexity:** [Low/Medium/High]
+- **Dependencies:** Any features this depends on
+- **Breaking changes:** Would this require breaking changes?
+
+**Priority & Impact:**
 - **Priority level:** [Low/Medium/High/Critical]
+- **User impact:** How many users would benefit?
+- **Business value:** Why is this important for OWL?
 
 ## ✅ Checklist
 
