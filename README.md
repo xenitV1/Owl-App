@@ -350,9 +350,9 @@ While maintaining patent protection and requiring attribution.
 
 Follow me on social media for updates, insights, and discussions about OWL and educational technology:
 
-- 🐦 **Twitter/X**: [@xenit_v0](https://x.com/xenit_v0) - Quick updates and tech discussions
-- 💼 **LinkedIn**: [Mehmet Apaydın](https://www.linkedin.com/in/apaydinm/) - Professional insights and networking
-- 🦉 **GitHub**: [@xenitV1](https://github.com/xenitV1) - Source code and project repositories
+- 🐦 **Twitter/X**: [@xenit_v0](https://x.com/xenit_v0)
+- 💼 **LinkedIn**: [Mehmet Apaydın](https://www.linkedin.com/in/apaydinm/)
+- 🦉 **GitHub**: [@xenitV1](https://github.com/xenitV1)
 
 Feel free to reach out for questions, feedback, or collaboration opportunities! 🚀
 
