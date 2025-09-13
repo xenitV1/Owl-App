@@ -1,6 +1,7 @@
 ---
 name: 🐛 Bug Report
-description: Report a bug or unexpected behavior
+about: Report a bug or unexpected behavior in OWL
+description: Use this template to report bugs and unexpected behavior
 title: "[BUG] "
 labels: ["bug", "triage"]
 assignees: []

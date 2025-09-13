@@ -1,6 +1,7 @@
 ---
 name: ✨ Feature Request
-description: Suggest a new feature or enhancement
+about: Suggest a new feature or enhancement for OWL
+description: Use this template to suggest new features or improvements
 title: "[FEATURE] "
 labels: ["enhancement", "feature-request"]
 assignees: []
