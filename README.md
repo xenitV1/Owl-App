@@ -346,6 +346,16 @@ The Apache 2.0 license allows you to:
 
 While maintaining patent protection and requiring attribution.
 
+## 📱 Connect with the Creator
+
+Follow me on social media for updates, insights, and discussions about OWL and educational technology:
+
+- 🐦 **Twitter/X**: [@xenit_v0](https://x.com/xenit_v0) - Quick updates and tech discussions
+- 💼 **LinkedIn**: [Mehmet Apaydın](https://www.linkedin.com/in/apaydinm/) - Professional insights and networking
+- 🦉 **GitHub**: [@xenitV1](https://github.com/xenitV1) - Code contributions and collaborations
+
+Feel free to reach out for questions, feedback, or collaboration opportunities! 🚀
+
 ## 🙏 Acknowledgments
 
 Special thanks to the open-source community and the following technologies that made this platform possible:
