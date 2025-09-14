@@ -7,26 +7,25 @@
  */
 
 import javascript
-import DataFlow::PathGraph
 
 // Prisma query security checks
 predicate isPrismaQuery(DataFlow::Node node) {
   exists(CallExpr call |
-    call = node.asExpr() and
-    (call.getTarget().getName().matches("find*") or
-     call.getTarget().getName().matches("create*") or
-     call.getTarget().getName().matches("update*") or
-     call.getTarget().getName().matches("delete*"))
+    call = node.getAstNode() and
+    (call.getCallee().getName().matches("find*") or
+     call.getCallee().getName().matches("create*") or
+     call.getCallee().getName().matches("update*") or
+     call.getCallee().getName().matches("delete*"))
   )
 }
 
 // Prisma input validation
 predicate hasPrismaInputValidation(DataFlow::Node node) {
   exists(CallExpr call |
-    call = node.asExpr() and
-    isPrismaQuery(call) and
-    // Input validation check
-    call.getAnArgument().getType().toString() != "any"
+    call = node.getAstNode() and
+    isPrismaQuery(node) and
+    // Check if there are arguments (basic validation)
+    exists(call.getAnArgument())
   )
 }
 

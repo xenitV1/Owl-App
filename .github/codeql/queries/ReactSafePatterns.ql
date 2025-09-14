@@ -7,12 +7,11 @@
  */
 
 import javascript
-import DataFlow::PathGraph
 
 // Safe patterns for React JSX attributes
-predicate isReactSafeAttribute(DataFlow::Node node) {
-  exists(JSXAttribute attr |
-    attr = node.asExpr() and
+predicate isReactSafeJSXAttribute(DataFlow::Node node) {
+  exists(JSX::JSXAttribute attr |
+    attr = node.getAstNode() and
     (
       // src attributes are safe in React
       attr.getName() = "src" or
@@ -27,9 +26,9 @@ predicate isReactSafeAttribute(DataFlow::Node node) {
 }
 
 // Safe values in React JSX
-predicate isReactSafeValue(DataFlow::Node node) {
-  exists(JSXExpression expr |
-    expr = node.asExpr() and
+predicate isReactSafeJSXValue(DataFlow::Node node) {
+  exists(JSX::JSXExpression expr |
+    expr = node.getAstNode() and
     (
       // Template literals are safe
       expr instanceof TemplateLiteral or
@@ -45,9 +44,9 @@ predicate isReactSafeValue(DataFlow::Node node) {
 
 from DataFlow::Node source, DataFlow::Node sink
 where
-  isReactSafeAttribute(sink) and
-  isReactSafeValue(source) and
-  source.getEnclosingFunction() = sink.getEnclosingFunction()
+  isReactSafeJSXAttribute(sink) and
+  isReactSafeJSXValue(source) and
+  source.getContainer() = sink.getContainer()
 select source, "Safe React JSX pattern: $@ flows to safe attribute $@",
   source, source.toString(),
   sink, sink.toString()

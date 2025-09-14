@@ -7,30 +7,29 @@
  */
 
 import javascript
-import DataFlow::PathGraph
 
 // XSS patterns that are safe in React JSX context
 predicate isReactSafeXSSPattern(DataFlow::Node source, DataFlow::Node sink) {
-  exists(JSXElement jsx |
+  exists(JSX::JSXElement jsx |
     // Within JSX element
-    source.getEnclosingFunction() = jsx.getEnclosingFunction() and
-    sink.getEnclosingFunction() = jsx.getEnclosingFunction() and
+    source.getContainer() = jsx.getContainer() and
+    sink.getContainer() = jsx.getContainer() and
     (
       // iframe src attributes are safe in React
-      (sink.asExpr() instanceof JSXAttribute and
-       sink.asExpr().(JSXAttribute).getName() = "src" and
-       source.asExpr() instanceof TemplateLiteral) or
+      (sink.getAstNode() instanceof JSX::JSXAttribute and
+       sink.getAstNode().(JSX::JSXAttribute).getName() = "src" and
+       source.getAstNode() instanceof TemplateLiteral) or
 
       // video src attributes are safe in React
-      (sink.asExpr() instanceof JSXAttribute and
-       sink.asExpr().(JSXAttribute).getName() = "src" and
-       source.asExpr() instanceof CallExpr and
-       source.asExpr().(CallExpr).getTarget().getName() = "createObjectURL") or
+      (sink.getAstNode() instanceof JSX::JSXAttribute and
+       sink.getAstNode().(JSX::JSXAttribute).getName() = "src" and
+       source.getAstNode() instanceof CallExpr and
+       source.getAstNode().(CallExpr).getCallee().getName() = "createObjectURL") or
 
       // href attributes are safe in React
-      (sink.asExpr() instanceof JSXAttribute and
-       sink.asExpr().(JSXAttribute).getName() = "href" and
-       source.asExpr() instanceof Literal)
+      (sink.getAstNode() instanceof JSX::JSXAttribute and
+       sink.getAstNode().(JSX::JSXAttribute).getName() = "href" and
+       source.getAstNode() instanceof Literal)
     )
   )
 }

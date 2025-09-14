@@ -7,12 +7,11 @@
  */
 
 import javascript
-import DataFlow::PathGraph
 
 // Next.js API route security checks
 predicate isNextJSAPIRoute(DataFlow::Node node) {
   exists(Function f |
-    f = node.getEnclosingFunction() and
+    f = node.getContainer() and
     f.getName() = "handler" and
     f.getFile().getRelativePath().matches("**/api/**/route.ts")
   )
@@ -21,7 +20,7 @@ predicate isNextJSAPIRoute(DataFlow::Node node) {
 // Next.js middleware security checks
 predicate isNextJSMiddleware(DataFlow::Node node) {
   exists(Function f |
-    f = node.getEnclosingFunction() and
+    f = node.getContainer() and
     f.getName() = "middleware" and
     f.getFile().getRelativePath().matches("**/middleware.ts")
   )
