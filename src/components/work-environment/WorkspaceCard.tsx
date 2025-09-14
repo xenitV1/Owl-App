@@ -255,6 +255,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         return (
           <PlatformContentCard
             cardId={card.id}
+            cardData={card}
             config={card.platformContentConfig}
           />
         );
