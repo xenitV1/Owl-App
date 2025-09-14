@@ -18,3 +18,19 @@ analysis:
   
   # Timeout settings
   timeout: 1800  # 30 minutes
+
+# Result filtering
+results:
+  # Show only high and critical level warnings
+  severity: [error, warning]
+  
+  # Exclude specific file types
+  exclude:
+    - "**/*.test.ts"
+    - "**/*.test.tsx"
+    - "**/*.spec.ts"
+    - "**/*.spec.tsx"
+    - "**/node_modules/**"
+    - "**/.next/**"
+    - "**/dist/**"
+    - "**/build/**"
