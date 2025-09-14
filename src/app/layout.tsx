@@ -64,9 +64,9 @@ export const metadata: Metadata = {
   authors: [{ name: "Owl Team" }],
   metadataBase: new URL('http://localhost:3000'),
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
   openGraph: {
     title: "Owl - Educational Social Media Platform",
