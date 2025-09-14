@@ -44,6 +44,7 @@ import {
   Upload,
   Save,
   Columns,
+  Play,
 } from 'lucide-react';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -54,11 +55,7 @@ import { useTranslations } from 'next-intl';
 import { createWorker } from 'tesseract.js';
 // import { PDFDocument, rgb } from '@react-pdf/renderer';
 import TurndownService from 'turndown';
-import MediaUploader, { type MediaKind, type SelectedMedia } from '@/components/media/MediaUploader';
-import ImagePreview from '@/components/media/ImagePreview';
-import { VideoPlayer } from '@/components/media/VideoPlayer';
-import { AudioPlayer } from '@/components/media/AudioPlayer';
-import { generateVideoThumbnail, mp4ToMp3, blobToObjectUrl, revokeObjectUrl, blobUrlToDataUrl } from '@/lib/formatConverter';
+import { blobUrlToDataUrl } from '@/lib/formatConverter';
 
 
 interface RichNoteEditorProps {
@@ -82,6 +79,17 @@ interface CrossReference {
   label: string;
 }
 
+interface CardConnection {
+  id: string;
+  sourceCardId: string;
+  targetCardId: string;
+  sourcePosition: { x: number; y: number };
+  targetPosition: { x: number; y: number };
+  sourceSize: { width: number; height: number };
+  targetSize: { width: number; height: number };
+}
+
+
 export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNoteEditorProps) {
   const [content, setContent] = useState(initialContent);
   const [rightContent, setRightContent] = useState('');
@@ -97,6 +105,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   const [showExport, setShowExport] = useState(false);
   const [showOrganization, setShowOrganization] = useState(false);
   const [showCrossReference, setShowCrossReference] = useState(false);
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState('');
   const [ocrLanguage, setOcrLanguage] = useState('tur+eng');
@@ -105,18 +114,19 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [newFolderName, setNewFolderName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showInsertMedia, setShowInsertMedia] = useState<null | MediaKind>(null);
-  const [pendingMedia, setPendingMedia] = useState<SelectedMedia | null>(null);
-  const [isConverting, setIsConverting] = useState(false);
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [splitView, setSplitView] = useState<boolean>(false);
-  const [insertTarget, setInsertTarget] = useState<'left' | 'right'>('left');
-  
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoType, setVideoType] = useState<'youtube' | 'direct' | 'file' | 'spotify'>('youtube');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [connections, setConnections] = useState<CardConnection[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const t = useTranslations('workEnvironment.richNote');
 
-  const { saveRichNoteVersion, cards } = useWorkspaceStore();
+  const { saveRichNoteVersion, cards, addCard } = useWorkspaceStore();
 
 
   const card = cards.find(c => c.id === cardId);
@@ -132,7 +142,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
   // Load existing content when card data is available
   useEffect(() => {
-    if (richContent?.markdown && editor.document.length === 1 && editor.document[0].type === 'paragraph' && editor.document[0].content.length === 0) {
+    if (richContent?.markdown && Array.isArray(editor.document) && editor.document.length === 1 && editor.document[0].type === 'paragraph' && Array.isArray(editor.document[0].content) && editor.document[0].content.length === 0) {
       try {
         // Try to parse as new split view structure first
         let contentData;
@@ -465,141 +475,148 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
     }
   };
 
-  const insertImageBlock = useCallback((media: SelectedMedia, target: 'left' | 'right' = 'left') => {
-    const instance = target === 'left' ? editor : editorRight;
-    const src = media.previewUrl || media.url;
-    if (!src) return;
-    instance.insertBlocks([
-      {
-        type: 'image',
-        props: { url: src, alt: media.alt || '' },
-      } as any,
-    ], instance.getTextCursorPosition().block, 'after');
-  }, [editor, editorRight]);
 
-  const insertVideoBlock = useCallback(async (media: SelectedMedia, target: 'left' | 'right' = 'left') => {
-    console.debug('[RichNote] insertVideoBlock start', { target, hasFile: !!media.file, url: media.url, previewUrl: media.previewUrl });
-    const instance = target === 'left' ? editor : editorRight;
-    let src = media.previewUrl || media.url;
-    if (!src && media.file) src = URL.createObjectURL(media.file);
-    if (!src) {
-      console.warn('[RichNote] insertVideoBlock no src');
-      return;
+
+
+
+
+  // Helper function to extract YouTube video ID
+  const getYouTubeVideoId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
     }
-    let thumb: string | undefined;
+
+    // If no pattern matches, try to extract from query parameters
     try {
-      if (media.file) {
-        console.debug('[RichNote] generate video thumbnail...');
-        const blob = await generateVideoThumbnail(media.file, 1);
-        thumb = blobToObjectUrl(blob);
-        setThumbUrl(thumb);
-        console.debug('[RichNote] thumbnail generated', { thumb });
+      const urlObj = new URL(url);
+      return urlObj.searchParams.get('v');
+    } catch {
+      return null;
+    }
+  };
+
+  // Helper function to convert Spotify URL to embed URL
+  const getSpotifyEmbedUrl = (url: string): string | null => {
+    const patterns = [
+      /spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const [, type, id] = match;
+        return `https://open.spotify.com/embed/${type}/${id}`;
       }
-    } catch (err) {
-      console.error('[RichNote] thumbnail generation failed', err);
     }
-    instance.insertBlocks([
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text: '' }],
-      } as any,
-    ], instance.getTextCursorPosition().block, 'after');
-    instance.insertBlocks([
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text: src }],
-      } as any,
-    ], instance.getTextCursorPosition().block, 'after');
-    if (media.file && !media.previewUrl && src.startsWith('blob:')) {
-      try { URL.revokeObjectURL(src); } catch {}
-    }
-    console.debug('[RichNote] insertVideoBlock done', { src, target });
-  }, [editor, editorRight]);
 
-  const insertAudioBlock = useCallback(async (media: SelectedMedia, target: 'left' | 'right' = 'left') => {
-    console.debug('[RichNote] insertAudioBlock start', { target, hasFile: !!media.file, url: media.url, previewUrl: media.previewUrl });
-    const instance = target === 'left' ? editor : editorRight;
-    let src = media.previewUrl || media.url;
-    if (!src && media.file) src = URL.createObjectURL(media.file);
-    if (!src) {
-      console.warn('[RichNote] insertAudioBlock no src');
-      return;
-    }
-    instance.insertBlocks([
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text: src }],
-      } as any,
-    ], instance.getTextCursorPosition().block, 'after');
-    if (media.file && !media.previewUrl && src.startsWith('blob:')) {
-      try { URL.revokeObjectURL(src); } catch {}
-    }
-    console.debug('[RichNote] insertAudioBlock done', { src, target });
-  }, [editor, editorRight]);
+    return null;
+  };
 
-  const handleMediaSelect = useCallback(async (media: SelectedMedia) => {
-    console.debug('[RichNote] handleMediaSelect', media);
-    setPendingMedia(media);
+  // Calculate Bezier curve path for connection
+  const calculateConnectionPath = (connection: CardConnection): string => {
+    const sourceX = connection.sourcePosition.x + connection.sourceSize.width;
+    const sourceY = connection.sourcePosition.y + connection.sourceSize.height / 2;
+    const targetX = connection.targetPosition.x;
+    const targetY = connection.targetPosition.y + connection.targetSize.height / 2;
 
-    const target = insertTarget;
+    // Control points for Bezier curve
+    const controlPointOffset = Math.abs(targetX - sourceX) * 0.4;
+    const cp1x = sourceX + controlPointOffset;
+    const cp1y = sourceY;
+    const cp2x = targetX - controlPointOffset;
+    const cp2y = targetY;
 
-    if (media.kind === 'image') {
-      insertImageBlock(media, target);
-      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
-      setShowInsertMedia(null);
-      setPendingMedia(null);
-      return;
-    }
-    if (media.kind === 'video') {
-      await insertVideoBlock(media, target);
-      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
-      setShowInsertMedia(null);
-      setPendingMedia(null);
-      return;
-    }
-    if (media.kind === 'audio') {
-      if (media.file && media.file.type === 'video/mp4') {
-        try {
-          console.debug('[RichNote] MP4->MP3 conversion start');
-          setIsConverting(true);
-          const mp3Blob = await mp4ToMp3(media.file);
-          const mp3Url = blobToObjectUrl(mp3Blob);
-          console.debug('[RichNote] MP3 produced', { mp3Url });
-          await insertAudioBlock({ kind: 'audio', url: mp3Url }, target);
-          if (mp3Url.startsWith('blob:')) revokeObjectUrl(mp3Url);
-        } catch (e) {
-          console.error('[RichNote] MP4->MP3 conversion failed', e);
-          await insertAudioBlock(media, target);
-        } finally {
-          setIsConverting(false);
-          console.debug('[RichNote] MP4->MP3 conversion end');
-        }
-      } else {
-        await insertAudioBlock(media, target);
+    return `M ${sourceX} ${sourceY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${targetX} ${targetY}`;
+  };
+
+  // Handle media card creation
+  const handleCreateVideoCard = async () => {
+    try {
+      // Validate input based on media type
+      if (videoType !== 'file' && !videoUrl.trim()) {
+        alert('Lütfen geçerli bir medya URL girin');
+        return;
       }
-      if (media.previewUrl && media.previewUrl.startsWith('blob:')) revokeObjectUrl(media.previewUrl);
-      setShowInsertMedia(null);
-      setPendingMedia(null);
-      return;
-    }
-  }, [insertImageBlock, insertVideoBlock, insertAudioBlock, insertTarget]);
 
-  // Revoke thumbnail object URL when it changes or on unmount
-  useEffect(() => {
-    return () => {
-      if (thumbUrl && thumbUrl.startsWith('blob:')) {
-        try { revokeObjectUrl(thumbUrl); } catch {}
+      if (videoType === 'file' && !videoFile) {
+        alert('Lütfen bir medya dosyası seçin');
+        return;
       }
-    };
-  }, [thumbUrl]);
+
+      // Get current card position for positioning the video card
+      const currentCard = cards.find(c => c.id === cardId);
+      if (!currentCard) return;
+
+      // Create media card with connection to current card
+      const mediaCardId = `media-${Date.now()}`;
+      const defaultTitle = videoType === 'spotify' ? 'Spotify' :
+                          videoType === 'youtube' ? 'YouTube Video' :
+                          videoType === 'direct' ? 'Video' : 'Medya';
+
+      const mediaCard = {
+        id: mediaCardId,
+        type: 'platformContent' as const,
+        title: videoTitle || defaultTitle,
+        content: JSON.stringify({
+          videoType,
+          videoUrl: videoType !== 'file' ? videoUrl : '',
+          videoFile: videoType === 'file' && videoFile ? videoFile.name : null,
+          videoTitle: videoTitle || '',
+          connectedTo: cardId, // Reference to the source card
+        }),
+        position: {
+          x: currentCard.position.x + currentCard.size.width + 50, // Position to the right
+          y: currentCard.position.y,
+        },
+        size: { width: 400, height: 352 }, // Spotify embed height
+        zIndex: Math.max(...cards.map(c => c.zIndex), 0) + 1,
+      };
+
+      // Add the media card
+      await addCard(mediaCard);
+
+      // Create connection between cards
+      const newConnection: CardConnection = {
+        id: `connection-${mediaCardId}`,
+        sourceCardId: cardId,
+        targetCardId: mediaCardId,
+        sourcePosition: currentCard.position,
+        targetPosition: mediaCard.position,
+        sourceSize: currentCard.size,
+        targetSize: mediaCard.size,
+      };
+
+      setConnections(prev => [...prev, newConnection]);
+
+      // Reset dialog state
+      setVideoUrl('');
+      setVideoTitle('');
+      setVideoFile(null);
+      setVideoType('youtube');
+      setShowVideoDialog(false);
+
+      console.log('🎵 Media Card Created Successfully:', mediaCard);
+
+    } catch (error) {
+      console.error('Error creating media card:', error);
+      alert('Medya kartı oluşturulurken hata oluştu');
+    }
+  };
 
   // Export functionality
   const exportToPDF = async () => {
     try {
       const blocks = editor.document;
       const text = blocks.map(block => {
-        if (block.type === 'paragraph') {
-          return block.content?.map(item => {
+        if (block.type === 'paragraph' && Array.isArray(block.content)) {
+          return block.content.map(item => {
             if (typeof item === 'string') return item;
             if (item && typeof item === 'object' && 'text' in item) {
               return (item as any).text || '';
@@ -628,8 +645,8 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
       const blocks = editor.document;
       const turndownService = new TurndownService();
       const html = blocks.map(block => {
-        if (block.type === 'paragraph') {
-          return `<p>${block.content?.map(item => {
+        if (block.type === 'paragraph' && Array.isArray(block.content)) {
+          return `<p>${block.content.map(item => {
             if (typeof item === 'string') return item;
             if (item && typeof item === 'object' && 'text' in item) {
               return (item as any).text || '';
@@ -721,6 +738,16 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             title={splitView ? 'Disable split view' : 'Enable split view'}
           >
             <Columns className="w-4 h-4" />
+          </Button>
+
+          {/* Video Insertion */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowVideoDialog(true)}
+            title="Video Ekle (YouTube, URL veya Dosya)"
+          >
+            <Play className="w-4 h-4" />
           </Button>
 
           {/* Organization */}
@@ -897,29 +924,142 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             </DialogContent>
           </Dialog>
 
-          {/* Insert Media */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Upload className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {/* When split view is on, allow choosing the target pane */}
-              {splitView && (
-                <>
-                  <DropdownMenuLabel>Insert target</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setInsertTarget('left')}>Left (Editor)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setInsertTarget('right')}>Right (Editor)</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onClick={() => setShowInsertMedia('image')}>Insert Image</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowInsertMedia('video')}>Insert Video</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowInsertMedia('audio')}>Insert Audio</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Video Dialog */}
+          <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Medya Ekle</DialogTitle>
+                <DialogDescription>
+                  YouTube URL, Spotify link, direkt video URL veya yerel dosya yükleyin
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Medya Tipi</Label>
+                  <Select value={videoType} onValueChange={(value: 'youtube' | 'direct' | 'file' | 'spotify') => setVideoType(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="spotify">Spotify</SelectItem>
+                      <SelectItem value="direct">Direkt URL</SelectItem>
+                      <SelectItem value="file">Dosya Yükle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {videoType === 'youtube' && (
+                  <div className="space-y-2">
+                    <Label>YouTube URL</Label>
+                    <Input
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {videoType === 'spotify' && (
+                  <div className="space-y-2">
+                    <Label>Spotify URL</Label>
+                    <Input
+                      placeholder="https://open.spotify.com/track/... veya https://open.spotify.com/playlist/..."
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {videoType === 'direct' && (
+                  <div className="space-y-2">
+                    <Label>Video URL</Label>
+                    <Input
+                      placeholder="https://example.com/video.mp4"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {videoType === 'file' && (
+                  <div className="space-y-2">
+                    <Label>Video Dosyası</Label>
+                    <Input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Video Başlığı (İsteğe bağlı)</Label>
+                  <Input
+                    placeholder="Video başlığı..."
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                  />
+                </div>
+
+                {/* Media Preview */}
+                {videoUrl && videoType !== 'file' && (
+                  <div className="space-y-2">
+                    <Label>Önizleme</Label>
+                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                      {videoType === 'youtube' ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${getYouTubeVideoId(videoUrl) || 'dQw4w9WgXcQ'}?rel=0&modestbranding=1`}
+                          className="w-full h-full rounded-md"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          loading="lazy"
+                          title="YouTube Video Preview"
+                        />
+                      ) : videoType === 'spotify' ? (
+                        <iframe
+                          src={getSpotifyEmbedUrl(videoUrl) || 'https://open.spotify.com/embed/playlist/2VLBh9qpGUB7a6hQxIdGtw'}
+                          className="w-full h-full rounded-md"
+                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                          loading="lazy"
+                          title="Spotify Preview"
+                        />
+                      ) : (
+                        <video
+                          src={videoUrl}
+                          className="w-full h-full rounded-md"
+                          controls
+                          preload="metadata"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {videoFile && (
+                  <div className="space-y-2">
+                    <Label>Dosya Önizlemesi</Label>
+                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                      <video
+                        src={URL.createObjectURL(videoFile)}
+                        className="w-full h-full rounded-md"
+                        controls
+                        preload="metadata"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowVideoDialog(false)}>
+                  İptal
+                </Button>
+                <Button onClick={handleCreateVideoCard}>
+                  Medya Kartı Oluştur
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Manual Save */}
           <Button
@@ -972,32 +1112,6 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
         )}
       </div>
 
-      {/* Media Dialog */}
-      <Dialog open={!!showInsertMedia} onOpenChange={() => { setShowInsertMedia(null); if (pendingMedia?.previewUrl && pendingMedia.previewUrl.startsWith('blob:')) revokeObjectUrl(pendingMedia.previewUrl); setPendingMedia(null); if (thumbUrl && thumbUrl.startsWith('blob:')) revokeObjectUrl(thumbUrl); setThumbUrl(null); }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Insert {showInsertMedia}</DialogTitle>
-            <DialogDescription>
-              Upload a {showInsertMedia} file or paste a URL to insert it into your note.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {showInsertMedia && (
-              <MediaUploader accept={[showInsertMedia]} onSelect={handleMediaSelect} />
-            )}
-            {pendingMedia?.kind === 'image' && pendingMedia.previewUrl && (
-              <ImagePreview src={pendingMedia.previewUrl} alt={pendingMedia.alt} />
-            )}
-            {pendingMedia?.kind === 'video' && (pendingMedia.previewUrl || pendingMedia.url) && (
-              <VideoPlayer src={(pendingMedia.previewUrl || pendingMedia.url)!} thumbnailUrl={thumbUrl || undefined} />
-            )}
-            {pendingMedia?.kind === 'audio' && (pendingMedia.previewUrl || pendingMedia.url) && (
-              <AudioPlayer src={(pendingMedia.previewUrl || pendingMedia.url)!} />
-            )}
-            {isConverting && <div className="text-sm">Converting to MP3...</div>}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Version History */}
       {showVersionHistory && richContent?.versionHistory && (
@@ -1016,6 +1130,52 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             ))}
           </div>
         </div>
+      )}
+
+      {/* Connection Visualization */}
+      {connections.length > 0 && (
+        <svg
+          className="absolute inset-0 pointer-events-none z-10"
+          style={{ width: '100%', height: '100%' }}
+        >
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          {connections.map((connection) => (
+            <g key={connection.id}>
+              <path
+                d={calculateConnectionPath(connection)}
+                stroke="hsl(var(--primary))"
+                strokeWidth="2"
+                fill="none"
+                filter="url(#glow)"
+                className="animate-pulse"
+                opacity="0.7"
+              />
+              {/* Connection endpoints */}
+              <circle
+                cx={connection.sourcePosition.x + connection.sourceSize.width}
+                cy={connection.sourcePosition.y + connection.sourceSize.height / 2}
+                r="4"
+                fill="hsl(var(--primary))"
+                className="animate-pulse"
+              />
+              <circle
+                cx={connection.targetPosition.x}
+                cy={connection.targetPosition.y + connection.targetSize.height / 2}
+                r="4"
+                fill="hsl(var(--primary))"
+                className="animate-pulse"
+              />
+            </g>
+          ))}
+        </svg>
       )}
     </Card>
   );
