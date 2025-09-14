@@ -44,7 +44,7 @@ OWL is a full-stack educational social platform that enables students and educat
 - **Next.js 15** - React framework with App Router
 - **TypeScript 5** - Type-safe development
 - **Tailwind CSS 4** - Utility-first styling
-- **Bun** - Fast JavaScript runtime and package manager
+- **npm** - Node.js package manager
 
 ### 🗄️ **Database & Backend**
 - **Prisma** - Type-safe database ORM
@@ -73,7 +73,7 @@ OWL is a full-stack educational social platform that enables students and educat
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ or Bun
+- Node.js 18+
 - Git
 
 ### Installation
@@ -83,19 +83,19 @@ OWL is a full-stack educational social platform that enables students and educat
 git clone https://github.com/xenitV1/owl.git
 cd owl
 
-# Install dependencies with Bun
-bun install
+# Install dependencies with npm
+npm install
 
 # Set up environment variables
 cp .env.example .env.local
 # Configure your environment variables
 
 # Set up the database
-bun run db:push
-bun run db:generate
+npm run db:push
+npm run db:generate
 
 # Start development server
-bun run dev
+npm run dev
 ```
 
 ### Environment Variables
@@ -185,40 +185,40 @@ prisma/
 ### Database Management
 ```bash
 # Push schema changes
-bun run db:push
+npm run db:push
 
 # Generate Prisma client
-bun run db:generate
+npm run db:generate
 
 # Create migration
-bun run db:migrate
+npm run db:migrate
 
 # Reset database
-bun run db:reset
+npm run db:reset
 ```
 
 ### Testing
 ```bash
 # Set up test data
-bun run test:e2e:setup-data
+npm run test:e2e:setup-data
 
 # Clean up test data
-bun run test:e2e:cleanup-data
+npm run test:e2e:cleanup-data
 
 # Reset test database
-bun run test:e2e:reset-db
+npm run test:e2e:reset-db
 ```
 
 ### Linting & Formatting
 ```bash
 # Run ESLint
-bun run lint
+npm run lint
 
 # Build for production
-bun run build
+npm run build
 
 # Start production server
-bun start
+npm start
 ```
 
 ## 🚀 Deployment
@@ -324,12 +324,12 @@ We welcome contributions from the community! 🎉
 git clone https://github.com/xenitV1/OWL.git
 
 # Install dependencies
-bun install
+npm install
 
 # Set up development environment
 cp .env.example .env.local
-bun run db:push
-bun run dev
+npm run db:push
+npm run dev
 ```
 
 We appreciate all contributions, big or small! 🚀
