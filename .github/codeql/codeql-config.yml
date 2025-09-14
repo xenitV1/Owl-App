@@ -1,26 +1,10 @@
-name: "OWL Academic Platform - CodeQL Configuration 2025"
-
-# Updated CodeQL configuration for 2025
-# Optimized for React/TypeScript projects
-
-# Language support
-languages: [javascript, typescript]
+name: "OWL Academic Platform - CodeQL Configuration"
 
 # Query configuration
 queries:
   # Basic security queries (default)
   - uses: security-and-quality
   
-  # Special optimizations for React/TypeScript
-  - name: "React TypeScript Security"
-    uses: security-and-quality
-    with:
-      # Exclude queries that are false positives in React/JSX context
-      exclude:
-        - js/xss-through-dom  # React automatically escapes
-        - js/unsafe-jquery-plugin  # We don't use jQuery
-        - js/path-injection  # Next.js routing is secure
-      
   # Our custom queries
   - uses: ./.github/codeql/custom-queries.qls
 
@@ -34,80 +18,3 @@ analysis:
   
   # Timeout settings
   timeout: 1800  # 30 minutes
-  
-  # Analyze only changed files (faster scanning)
-  incremental: true
-  
-  # Analyze only new code changes
-  only-new-files: false
-
-# Result filtering
-results:
-  # Show only high and critical level warnings
-  severity: [error, warning]
-  
-  # Exclude specific file types
-  exclude:
-    - "**/*.test.ts"
-    - "**/*.test.tsx"
-    - "**/*.spec.ts"
-    - "**/*.spec.tsx"
-    - "**/node_modules/**"
-    - "**/.next/**"
-    - "**/dist/**"
-    - "**/build/**"
-
-# Special settings for React/TypeScript
-react:
-  # Recognize safe patterns in JSX context
-  safe-patterns:
-    - "src={.*}"  # React automatically escapes
-    - "href={.*}"  # React automatically escapes
-    - "className={.*}"  # CSS classes are safe
-
-# TypeScript special settings
-typescript:
-  # Strict mode controls
-  strict-mode: true
-  
-  # Type safety controls
-  type-safety: true
-  
-  # Interface/type controls
-  interface-validation: true
-
-# Security levels
-security:
-  # Minimum security level
-  min-severity: medium
-  
-  # Automatic alerts for critical security vulnerabilities
-  critical-alerts: true
-  
-  # Dependency security controls
-  dependency-scanning: true
-
-# Reporting
-reporting:
-  # Generate detailed report
-  detailed: true
-  
-  # Output in JSON format
-  format: [sarif, json]
-  
-  # Report file location
-  output: .github/codeql/results
-
-# 2025 updates
-features:
-  # New CodeQL features
-  advanced-analysis: true
-  
-  # Machine learning supported analysis
-  ml-analysis: true
-  
-  # Pattern recognition
-  pattern-recognition: true
-  
-  # Context-aware analysis
-  context-aware: true
