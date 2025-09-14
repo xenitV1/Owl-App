@@ -60,7 +60,6 @@
     "@reactuses/core": "^6.0.6",
     "@tanstack/react-query": "^5.87.1",
     "@tanstack/react-table": "^8.21.3",
-    "@types/dompurify": "^3.2.0",
     "@types/jsdom": "^21.1.7",
     "@types/react-big-calendar": "^1.16.2",
     "@types/speakeasy": "^2.0.10",
