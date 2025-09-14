@@ -1,165 +1,22 @@
 # OWL Academic Platform - Custom CodeQL Queries 2025
 # Custom queries for React/TypeScript projects
 
-# Define safe patterns for React/JSX
+# React JSX Safe Patterns
 - description: "React JSX Safe Patterns"
-  from: "codeql/javascript-all"
-  select: |
-    // Safe patterns in React JSX
-    // This query recognizes React's automatic escaping mechanism
-    
-    import javascript
-    import DataFlow::PathGraph
-    
-    // Safe patterns for React JSX attributes
-    predicate isReactSafeAttribute(DataFlow::Node node) {
-      exists(JSXAttribute attr |
-        attr = node.asExpr() and
-        (
-          // src attributes are safe in React
-          attr.getName() = "src" or
-          // href attributes are safe in React
-          attr.getName() = "href" or
-          // className attributes are safe in React
-          attr.getName() = "className" or
-          // title attributes are safe in React
-          attr.getName() = "title"
-        )
-      )
-    }
-    
-    // Safe values in React JSX
-    predicate isReactSafeValue(DataFlow::Node node) {
-      exists(JSXExpression expr |
-        expr = node.asExpr() and
-        (
-          // Template literals are safe
-          expr instanceof TemplateLiteral or
-          // String literals are safe
-          expr instanceof Literal or
-          // Function calls are safe (like URL.createObjectURL)
-          expr instanceof CallExpr or
-          // Variable references are safe (controlled variables)
-          expr instanceof Identifier
-        )
-      )
-    }
+  query: queries/ReactSafePatterns.ql
 
 # Filter false positive XSS warnings
 - description: "Filter False Positive XSS in React"
-  from: "codeql/javascript-all"
-  select: |
-    // Filter XSS warnings that are false positives in React/JSX context
-    
-    import javascript
-    import DataFlow::PathGraph
-    
-    // XSS patterns that are safe in React JSX context
-    predicate isReactSafeXSSPattern(DataFlow::Node source, DataFlow::Node sink) {
-      exists(JSXElement jsx |
-        // Within JSX element
-        source.getEnclosingFunction() = jsx.getEnclosingFunction() and
-        sink.getEnclosingFunction() = jsx.getEnclosingFunction() and
-        (
-          // iframe src attributes are safe in React
-          (sink.asExpr() instanceof JSXAttribute and
-           sink.asExpr().(JSXAttribute).getName() = "src" and
-           source.asExpr() instanceof TemplateLiteral) or
-          
-          // video src attributes are safe in React
-          (sink.asExpr() instanceof JSXAttribute and
-           sink.asExpr().(JSXAttribute).getName() = "src" and
-           source.asExpr() instanceof CallExpr and
-           source.asExpr().(CallExpr).getTarget().getName() = "createObjectURL") or
-          
-          // href attributes are safe in React
-          (sink.asExpr() instanceof JSXAttribute and
-           sink.asExpr().(JSXAttribute).getName() = "href" and
-           source.asExpr() instanceof Literal)
-        )
-      )
-    }
+  query: queries/ReactXSSFilter.ql
 
 # TypeScript security checks
 - description: "TypeScript Security Checks"
-  from: "codeql/javascript-all"
-  select: |
-    // Security checks for TypeScript
-    
-    import javascript
-    import DataFlow::PathGraph
-    
-    // Type assertion security checks
-    predicate isUnsafeTypeAssertion(DataFlow::Node node) {
-      exists(TypeAssertion ta |
-        ta = node.asExpr() and
-        // any type assertions are potential security risks
-        ta.getType().toString() = "any"
-      )
-    }
-    
-    // Strict null check controls
-    predicate hasStrictNullCheck(DataFlow::Node node) {
-      exists(Variable v |
-        v = node.asVariable() and
-        v.getType().toString() = "null" or
-        v.getType().toString() = "undefined"
-      )
-    }
+  query: queries/TypeScriptSecurity.ql
 
 # Next.js special security checks
 - description: "Next.js Security Checks"
-  from: "codeql/javascript-all"
-  select: |
-    // Special security checks for Next.js framework
-    
-    import javascript
-    import DataFlow::PathGraph
-    
-    // Next.js API route security checks
-    predicate isNextJSAPIRoute(DataFlow::Node node) {
-      exists(Function f |
-        f = node.getEnclosingFunction() and
-        f.getName() = "handler" and
-        f.getFile().getRelativePath().matches("**/api/**/route.ts")
-      )
-    }
-    
-    // Next.js middleware security checks
-    predicate isNextJSMiddleware(DataFlow::Node node) {
-      exists(Function f |
-        f = node.getEnclosingFunction() and
-        f.getName() = "middleware" and
-        f.getFile().getRelativePath().matches("**/middleware.ts")
-      )
-    }
+  query: queries/NextJSSecurity.ql
 
 # Prisma security checks
 - description: "Prisma Security Checks"
-  from: "codeql/javascript-all"
-  select: |
-    // Security checks for Prisma ORM
-    
-    import javascript
-    import DataFlow::PathGraph
-    
-    // Prisma query security checks
-    predicate isPrismaQuery(DataFlow::Node node) {
-      exists(CallExpr call |
-        call = node.asExpr() and
-        call.getTarget().getName().matches("find*") or
-        call.getTarget().getName().matches("create*") or
-        call.getTarget().getName().matches("update*") or
-        call.getTarget().getName().matches("delete*")
-      )
-    }
-    
-    // Prisma input validation
-    predicate hasPrismaInputValidation(DataFlow::Node node) {
-      exists(CallExpr call |
-        call = node.asExpr() and
-        isPrismaQuery(call) and
-        // Input validation check
-        call.getAnArgument().getType().toString() != "any"
-      )
-    }
+  query: queries/PrismaSecurity.ql
