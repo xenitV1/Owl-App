@@ -1,5 +1,0 @@
-name: owl-academic-platform/custom-queries
-version: 0.0.1
-description: Custom security queries for OWL Academic Platform
-dependencies:
-  codeql/javascript-all: "*"
