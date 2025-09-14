@@ -3,20 +3,20 @@
 
 # React JSX Safe Patterns
 - description: "React JSX Safe Patterns"
-  query: queries/ReactSafePatterns.ql
+  query: owl-academic-platform/custom-queries/queries/ReactSafePatterns.ql
 
 # Filter false positive XSS warnings
 - description: "Filter False Positive XSS in React"
-  query: queries/ReactXSSFilter.ql
+  query: owl-academic-platform/custom-queries/queries/ReactXSSFilter.ql
 
 # TypeScript security checks
 - description: "TypeScript Security Checks"
-  query: queries/TypeScriptSecurity.ql
+  query: owl-academic-platform/custom-queries/queries/TypeScriptSecurity.ql
 
 # Next.js special security checks
 - description: "Next.js Security Checks"
-  query: queries/NextJSSecurity.ql
+  query: owl-academic-platform/custom-queries/queries/NextJSSecurity.ql
 
 # Prisma security checks
 - description: "Prisma Security Checks"
-  query: queries/PrismaSecurity.ql
+  query: owl-academic-platform/custom-queries/queries/PrismaSecurity.ql
