@@ -183,12 +183,6 @@ export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
       if (!isIndexedDBReady) return;
 
       try {
-        // Debug: IndexedDB durumunu kontrol et
-        const indexedDBCheck = await checkIndexedDBFlashcards();
-        console.log('🔍 Flashcard Debug Bilgileri:');
-        console.log('- IndexedDB:', indexedDBCheck);
-        console.log('- Card ID:', cardId);
-
         const cards = await getAllFlashcards(cardId);
         setFlashcards(cards);
         updateStats(cards);
