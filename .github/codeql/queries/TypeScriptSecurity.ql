@@ -8,15 +8,7 @@
 
 import javascript
 
-// Type assertion security checks
-predicate isUnsafeTypeAssertion(DataFlow::Node node) {
-  exists(TypeScript::TypeAssertion ta |
-    ta = node.getAstNode() and
-    // any type assertions are potential security risks
-    ta.getTypeAnnotation().toString() = "any"
-  )
-}
-
-from DataFlow::Node node
-where isUnsafeTypeAssertion(node)
-select node, "Unsafe type assertion to 'any' type found"
+// Find eval() usage which is dangerous
+from CallExpr call
+where call.getCallee().(Identifier).getName() = "eval"
+select call, "Dangerous eval() usage found"

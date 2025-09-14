@@ -8,27 +8,10 @@
 
 import javascript
 
-// Prisma query security checks
-predicate isPrismaQuery(DataFlow::Node node) {
-  exists(CallExpr call |
-    call = node.getAstNode() and
-    (call.getCallee().getName().matches("find*") or
-     call.getCallee().getName().matches("create*") or
-     call.getCallee().getName().matches("update*") or
-     call.getCallee().getName().matches("delete*"))
-  )
-}
-
-// Prisma input validation
-predicate hasPrismaInputValidation(DataFlow::Node node) {
-  exists(CallExpr call |
-    call = node.getAstNode() and
-    isPrismaQuery(node) and
-    // Check if there are arguments (basic validation)
-    exists(call.getAnArgument())
-  )
-}
-
-from DataFlow::Node node
-where isPrismaQuery(node) and not hasPrismaInputValidation(node)
-select node, "Prisma query without proper input validation"
+// Find Prisma queries that might be unsafe
+from CallExpr call
+where call.getCallee().(Identifier).getName().matches("find*") or
+      call.getCallee().(Identifier).getName().matches("create*") or
+      call.getCallee().(Identifier).getName().matches("update*") or
+      call.getCallee().(Identifier).getName().matches("delete*")
+select call, "Prisma query detected - ensure proper input validation"

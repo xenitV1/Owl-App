@@ -66,3 +66,13 @@ Thumbs.db
 RICH_NOTE_FEATURES.md
 COMMIT_GUIDE.md
 competitor-analysis.md
+
+# CodeQL local files
+codeql-db/
+codeql-temp/
+codeql.zip
+*.sarif
+
+# Release notes (auto-generated)
+RELEASE_NOTES.md
+releases/
