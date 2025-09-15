@@ -199,7 +199,7 @@ class IndexedDBManager {
 // Workspace için IndexedDB konfigürasyonu
 const workspaceConfig: IDBConfig = {
   name: 'owl-workspace',
-  version: 4, // Rich Note editor için versiyon artırıldı
+  version: 5, // bumped for connections store
   stores: [
     {
       name: 'workspace',
@@ -258,6 +258,14 @@ const workspaceConfig: IDBConfig = {
         { name: 'cardId', keyPath: 'cardId' },
         { name: 'lastModified', keyPath: 'lastModified' },
         { name: 'folder', keyPath: 'folder' }
+      ]
+    },
+    {
+      name: 'connections',
+      keyPath: 'id',
+      indexes: [
+        { name: 'sourceCardId', keyPath: 'sourceCardId' },
+        { name: 'targetCardId', keyPath: 'targetCardId' }
       ]
     }
   ]
