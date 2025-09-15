@@ -135,7 +135,7 @@ export function useDragDrop({
   }, [isDragging, handleDragMove, handleDragEnd]);
 
   const style = {
-    transition: isDragging ? 'none' : 'transform 200ms ease',
+    transition: 'none',
     transform: isDragging ? `translate3d(${visualDelta.x}px, ${visualDelta.y}px, 0)` : undefined,
     willChange: isDragging ? 'transform' : undefined,
   } as React.CSSProperties;
