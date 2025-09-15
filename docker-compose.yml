@@ -25,7 +25,7 @@ services:
     networks:
       - owl-network
 
-  db:
+  db:ar
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB}

@@ -63,6 +63,7 @@
     "@types/jsdom": "^21.1.7",
     "@types/react-big-calendar": "^1.16.2",
     "@types/speakeasy": "^2.0.10",
+    "@xyflow/react": "^12.8.4",
     "axios": "^1.12.2",
     "citation-js": "^0.7.20",
     "class-variance-authority": "^0.7.1",
