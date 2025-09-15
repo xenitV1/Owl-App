@@ -5,7 +5,7 @@ import { WorkspaceCard } from './WorkspaceCard';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -50,6 +50,17 @@ const isCardInViewport = (card: WorkspaceCardType, viewportBounds: ReturnType<ty
   );
 };
 
+// Check if card is media (video/music) that should stay mounted for background playback
+const isMediaCard = (card: WorkspaceCardType) => {
+  if (card.type !== 'platformContent' || typeof card.content !== 'string') return false;
+  try {
+    const parsed = JSON.parse(card.content as unknown as string);
+    return !!parsed?.videoType && (parsed.videoUrl || parsed.videoFile);
+  } catch {
+    return false;
+  }
+};
+
 export const VirtualizedCardRenderer = memo(function VirtualizedCardRenderer({
   cards,
   zoom,
@@ -85,7 +96,7 @@ export const VirtualizedCardRenderer = memo(function VirtualizedCardRenderer({
     }
 
     const viewportBounds = getViewportBounds(zoom, pan, containerSize);
-    return cards.filter(card => isCardInViewport(card, viewportBounds));
+    return cards.filter(card => isMediaCard(card) || isCardInViewport(card, viewportBounds));
   }, [cards, zoom, pan, containerSize]);
 
   // Sort cards by z-index for proper layering
