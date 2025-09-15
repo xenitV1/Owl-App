@@ -1,53 +1,53 @@
-# OWL Project License
-**Version 1.0, September 2025**
+OWL Project License
+Version 1.0, September 2025
 
 Copyright (c) 2025 Mehmet Apaydın (xenit)
 
-## TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-### 1. Definitions
+1. Definitions
 
-**"License"** shall mean the terms and conditions for use, reproduction, and distribution as defined in this document.
+"License" shall mean the terms and conditions for use, reproduction, and distribution as defined in this document.
 
-**"Project"** shall mean the OWL software and all related files provided under this License.
+"Project" shall mean the OWL software and all related files provided under this License.
 
-**"Contributor"** shall mean any person or entity that provides code, documentation, or other contributions to the Project.
+"Contributor" shall mean any person or entity that provides code, documentation, or other contributions to the Project.
 
-**"Commercial Use"** shall mean any use of the Project, directly or indirectly, for monetary gain, revenue generation, or commercial advantage.
+"Commercial Use" shall mean any use of the Project, directly or indirectly, for monetary gain, revenue generation, or commercial advantage.
 
-**"You"** (or "Your") shall mean an individual or Legal Entity exercising permissions granted by this License.
+"You" (or "Your") shall mean an individual or Legal Entity exercising permissions granted by this License.
 
-### 2. Permitted Uses
+2. Permitted Uses
 
-The following uses are **PERMITTED** under this License:
+The following uses are PERMITTED under this License:
 
-- **Personal Use** - Using the Project for personal, educational, or research purposes
-- **Open Source Contributions** - Contributing improvements, bug fixes, or features back to the Project
-- **Academic Use** - Using the Project in academic research, coursework, or educational institutions
-- **Non-Commercial Distribution** - Sharing the Project with others for non-commercial purposes
-- **Modification** - Creating derivative works for non-commercial purposes
+- Personal Use - Using the Project for personal, educational, or research purposes
+- Open Source Contributions - Contributing improvements, bug fixes, or features back to the Project
+- Academic Use - Using the Project in academic research, coursework, or educational institutions
+- Non-Commercial Distribution - Sharing the Project with others for non-commercial purposes
+- Modification - Creating derivative works for non-commercial purposes
 
-### 3. Prohibited Uses
+3. Prohibited Uses
 
-The following uses are **STRICTLY PROHIBITED**:
+The following uses are STRICTLY PROHIBITED:
 
-- **Commercial Use** - Using the Project in any commercial product or service
-- **Selling** - Selling the Project or any derivative works
-- **Commercial Services** - Providing paid services based on the Project
-- **Revenue Generation** - Using the Project to generate income or profit
-- **Proprietary Distribution** - Distributing the Project under proprietary licenses
+- Commercial Use - Using the Project in any commercial product or service
+- Selling - Selling the Project or any derivative works
+- Commercial Services - Providing paid services based on the Project
+- Revenue Generation - Using the Project to generate income or profit
+- Proprietary Distribution - Distributing the Project under proprietary licenses
 
-### 4. Conditions
+4. Conditions
 
 If You distribute copies of the Project or derivative works, You must:
 
-1. **Include this License** - Provide a copy of this License with any distribution
-2. **Preserve Copyright** - Retain all copyright notices and author attributions
-3. **Document Changes** - Clearly mark any modifications you have made
-4. **Non-Commercial Only** - Ensure all distribution remains non-commercial
-5. **Same License** - Distribute derivative works under this same License
+1. Include this License - Provide a copy of this License with any distribution
+2. Preserve Copyright - Retain all copyright notices and author attributions
+3. Document Changes - Clearly mark any modifications you have made
+4. Non-Commercial Only - Ensure all distribution remains non-commercial
+5. Same License - Distribute derivative works under this same License
 
-### 5. Contributions
+5. Contributions
 
 By contributing to this Project, You agree that:
 
@@ -55,11 +55,11 @@ By contributing to this Project, You agree that:
 - You have the right to make such contributions
 - Your contributions are made voluntarily and without expectation of commercial benefit
 
-### 6. Attribution
+6. Attribution
 
 You must give appropriate credit to the original Project and its contributors when using or distributing the Project.
 
-### 7. Support and Community
+7. Support and Community
 
 While commercial use is prohibited, You are encouraged to:
 
@@ -69,22 +69,20 @@ While commercial use is prohibited, You are encouraged to:
 - Help with documentation
 - Support other community members
 
-### 8. Disclaimer of Warranty
+8. Disclaimer of Warranty
 
 THE PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
-### 9. Limitation of Liability
+9. Limitation of Liability
 
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE PROJECT OR THE USE OR OTHER DEALINGS IN THE PROJECT.
 
-### 10. Termination
+10. Termination
 
 This License automatically terminates if You violate any of its terms. Upon termination, You must cease all use and distribution of the Project.
 
-### 11. Contact
+11. Contact
 
 For questions about this License or to request commercial licensing options, please contact: mehmet.apaydin0@outlook.com
 
----
-
-**Note**: If you wish to use this Project for commercial purposes, please contact the copyright holder to discuss commercial licensing arrangements.
+Note: If you wish to use this Project for commercial purposes, please contact the copyright holder to discuss commercial licensing arrangements.
