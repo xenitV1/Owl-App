@@ -1,11 +1,24 @@
 'use client';
 
+import { createContext, useContext, createElement } from 'react';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { workspaceDB, isIndexedDBSupported } from '@/lib/indexedDB';
 
+// Connection types for linking cards
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
+
+export interface Connection {
+  id: string;
+  sourceCardId: string;
+  sourceAnchor: AnchorSide;
+  targetCardId: string;
+  targetAnchor: AnchorSide;
+  createdAt: number;
+}
+
 interface WorkspaceCard {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -143,11 +156,60 @@ interface WorkspaceData {
 
 const CURRENT_VERSION = '2.0.0'; // IndexedDB version
 
-export function useWorkspaceStore() {
+export interface WorkspaceStoreValue {
+  cards: WorkspaceCard[];
+  isLoading: boolean;
+  isIndexedDBReady: boolean;
+  addCard: (card: WorkspaceCard) => Promise<void>;
+  updateCard: (cardId: string, updates: Partial<WorkspaceCard>) => Promise<void>;
+  deleteCard: (cardId: string) => Promise<void>;
+  clearWorkspace: () => Promise<void>;
+  bringToFront: (cardId: string) => Promise<void>;
+  loadWorkspace: () => Promise<void>;
+  exportWorkspace: () => string;
+  importWorkspace: (jsonData: string) => Promise<boolean>;
+  getStats: () => any;
+  saveRichNoteVersion: (cardId: string, content: string, author?: string) => Promise<void>;
+  startPomodoro: (cardId: string) => Promise<void>;
+  pausePomodoro: (cardId: string) => Promise<void>;
+  resetPomodoro: (cardId: string) => Promise<void>;
+  addTask: (cardId: string, columnId: string, task: { title: string; description?: string; priority?: 'low' | 'medium' | 'high' | 'urgent'; dueDate?: Date; }) => Promise<void>;
+  moveTask: (cardId: string, taskId: string, fromColumnId: string, toColumnId: string) => Promise<void>;
+  getAllFlashcards: (cardId?: string) => Promise<any[]>;
+  saveFlashcard: (flashcard: any) => Promise<void>;
+  deleteFlashcard: (flashcardId: string) => Promise<void>;
+  getFlashcardStats: () => Promise<any | null>;
+  saveFlashcardStats: (stats: any) => Promise<void>;
+  saveStudySession: (session: any) => Promise<void>;
+  getStudySessions: () => Promise<any[]>;
+  // Connections API
+  connections: Connection[];
+  addConnection: (conn: Connection) => Promise<void>;
+  removeConnection: (connectionId: string) => Promise<void>;
+  clearConnectionsForCard: (cardId: string) => Promise<void>;
+  removeConnectionsAt: (cardId: string, anchor: AnchorSide) => Promise<void>;
+  // Linking flow state
+  linking: {
+    isActive: boolean;
+    sourceCardId?: string;
+    sourceAnchor?: AnchorSide;
+    cursor?: { x: number; y: number };
+  };
+  startLinking: (sourceCardId: string, sourceAnchor: AnchorSide) => void;
+  updateLinkCursor: (pos: { x: number; y: number }) => void;
+  cancelLinking: () => void;
+  completeLinking: (targetCardId: string, targetAnchor: AnchorSide) => Promise<boolean>;
+}
+
+export const WorkspaceStoreContext = createContext<WorkspaceStoreValue | null>(null);
+
+export function WorkspaceStoreProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCards] = useState<WorkspaceCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isIndexedDBReady, setIsIndexedDBReady] = useState(false);
   const debouncedSaveRef = useRef<number | null>(null);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [linking, setLinking] = useState<{ isActive: boolean; sourceCardId?: string; sourceAnchor?: AnchorSide; cursor?: { x: number; y: number } }>({ isActive: false });
 
   // Initialize IndexedDB
   const initializeDB = useCallback(async () => {
@@ -173,14 +235,19 @@ export function useWorkspaceStore() {
     try {
       if (!isIndexedDBReady) {
         setCards([]);
+        setConnections([]);
         return;
       }
 
       const cardsData = await workspaceDB.getAll<WorkspaceCard>('cards');
       setCards(cardsData || []);
+
+      const conns = await workspaceDB.getAll<Connection>('connections');
+      setConnections(conns || []);
     } catch (error) {
       console.error('Failed to load workspace:', error);
       setCards([]);
+      setConnections([]);
     }
   }, [isIndexedDBReady]);
 
@@ -219,6 +286,69 @@ export function useWorkspaceStore() {
     }, delayMs);
   }, [saveWorkspace]);
 
+  const addConnection = useCallback(async (conn: Connection) => {
+    setConnections(prev => {
+      const next = [...prev, conn];
+      return next;
+    });
+    try {
+      if (isIndexedDBReady) {
+        await workspaceDB.put('connections', conn, true);
+      }
+    } catch (e) {
+      console.error('Failed to save connection:', e);
+    }
+  }, [isIndexedDBReady]);
+
+  const removeConnection = useCallback(async (connectionId: string) => {
+    setConnections(prev => prev.filter(c => c.id !== connectionId));
+    try {
+      if (isIndexedDBReady) {
+        await workspaceDB.delete('connections', connectionId);
+      }
+    } catch (e) {
+      console.error('Failed to delete connection:', e);
+    }
+  }, [isIndexedDBReady]);
+
+  const removeConnectionsAt = useCallback(async (cardId: string, anchor: AnchorSide) => {
+    // Update state
+    setConnections(prev => prev.filter(c => !(
+      (c.sourceCardId === cardId && c.sourceAnchor === anchor) ||
+      (c.targetCardId === cardId && c.targetAnchor === anchor)
+    )));
+    // Persist
+    try {
+      if (isIndexedDBReady) {
+        const all = await workspaceDB.getAll<Connection>('connections');
+        const toDelete = (all || []).filter(c => (
+          (c.sourceCardId === cardId && c.sourceAnchor === anchor) ||
+          (c.targetCardId === cardId && c.targetAnchor === anchor)
+        ));
+        for (const c of toDelete) {
+          await workspaceDB.delete('connections', c.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to remove connections at anchor:', e);
+    }
+  }, [isIndexedDBReady]);
+
+  const clearConnectionsForCard = useCallback(async (cardId: string) => {
+    setConnections(prev => prev.filter(c => c.sourceCardId !== cardId && c.targetCardId !== cardId));
+    try {
+      if (isIndexedDBReady) {
+        const all = await workspaceDB.getAll<Connection>('connections');
+        const toDelete = (all || []).filter(c => c.sourceCardId === cardId || c.targetCardId === cardId);
+        for (const c of toDelete) {
+          await workspaceDB.delete('connections', c.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to clear connections for card:', e);
+    }
+  }, [isIndexedDBReady]);
+
   // Add a new card
   const addCard = useCallback(async (card: WorkspaceCard) => {
     setCards(prev => {
@@ -243,23 +373,30 @@ export function useWorkspaceStore() {
 
   // Delete a card
   const deleteCard = useCallback(async (cardId: string) => {
-    const cardToDelete = cards.find(card => card.id === cardId);
-    
-    // Remove from state
+    // Remove from state and persist immediately to avoid resurrection via debounced save
     setCards(prev => {
       const newCards = prev.filter(card => card.id !== cardId);
+      // Cancel any pending debounced save that may re-write old state
+      if (debouncedSaveRef.current) {
+        clearTimeout(debouncedSaveRef.current);
+        debouncedSaveRef.current = null;
+      }
+      // Persist the new state right away
+      saveWorkspace(newCards);
       return newCards;
     });
 
-    // Delete from IndexedDB
+    // Delete from IndexedDB store for cards
     try {
       if (isIndexedDBReady) {
         await workspaceDB.delete('cards', cardId);
       }
+      // Also delete related connections
+      await clearConnectionsForCard(cardId);
     } catch (error) {
       console.error('Failed to delete card:', error);
     }
-  }, [isIndexedDBReady, cards]);
+  }, [isIndexedDBReady, saveWorkspace, clearConnectionsForCard]);
 
   // Clear all cards
   const clearWorkspace = useCallback(async () => {
@@ -558,6 +695,38 @@ export function useWorkspaceStore() {
     }
   }, [isIndexedDBReady]);
 
+  // Linking flow
+  const startLinking = useCallback((sourceCardId: string, sourceAnchor: AnchorSide) => {
+    setLinking({ isActive: true, sourceCardId, sourceAnchor });
+  }, []);
+
+  const updateLinkCursor = useCallback((pos: { x: number; y: number }) => {
+    setLinking(prev => prev.isActive ? { ...prev, cursor: pos } : prev);
+  }, []);
+
+  const cancelLinking = useCallback(() => {
+    setLinking({ isActive: false });
+  }, []);
+
+  const completeLinking = useCallback(async (targetCardId: string, targetAnchor: AnchorSide) => {
+    if (!linking.isActive || !linking.sourceCardId || !linking.sourceAnchor) return false;
+    if (linking.sourceCardId === targetCardId && linking.sourceAnchor === targetAnchor) {
+      setLinking({ isActive: false });
+      return false;
+    }
+    const newConn: Connection = {
+      id: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      sourceCardId: linking.sourceCardId,
+      sourceAnchor: linking.sourceAnchor,
+      targetCardId,
+      targetAnchor,
+      createdAt: Date.now(),
+    };
+    await addConnection(newConn);
+    setLinking({ isActive: false });
+    return true;
+  }, [linking, addConnection]);
+
   // Initialize DB and load workspace on mount
   useEffect(() => {
     const initializeOnly = async () => {
@@ -569,16 +738,15 @@ export function useWorkspaceStore() {
         clearTimeout(debouncedSaveRef.current);
       }
     };
-  }, []); // Dependency array'i boş bıraktık çünkü callback'ler zaten useCallback ile wrap edilmiş
+  }, []);
 
-  // Separate useEffect to handle loading when IndexedDB becomes ready
   useEffect(() => {
     if (isIndexedDBReady && cards.length === 0) {
       loadWorkspace();
     }
-  }, [isIndexedDBReady]); // Simplified dependencies - only depend on isIndexedDBReady
+  }, [isIndexedDBReady]);
 
-  return {
+  const value: WorkspaceStoreValue = {
     cards,
     isLoading,
     isIndexedDBReady,
@@ -591,16 +759,12 @@ export function useWorkspaceStore() {
     exportWorkspace,
     importWorkspace,
     getStats,
-    // Rich Note functions
     saveRichNoteVersion,
-    // Pomodoro functions
     startPomodoro,
     pausePomodoro,
     resetPomodoro,
-    // Task Board functions
     addTask,
     moveTask,
-    // Flashcard functions
     getAllFlashcards,
     saveFlashcard,
     deleteFlashcard,
@@ -608,5 +772,30 @@ export function useWorkspaceStore() {
     saveFlashcardStats,
     saveStudySession,
     getStudySessions,
+    // connections
+    connections,
+    addConnection,
+    removeConnection,
+    clearConnectionsForCard,
+    removeConnectionsAt,
+    // linking
+    linking,
+    startLinking,
+    updateLinkCursor,
+    cancelLinking,
+    completeLinking,
   };
+
+  return (
+    // replaced JSX with createElement to avoid JSX in .ts files
+    createElement(WorkspaceStoreContext.Provider, { value }, children)
+  );
+}
+
+export function useWorkspaceStore(): WorkspaceStoreValue {
+  const ctx = useContext(WorkspaceStoreContext);
+  if (!ctx) {
+    throw new Error('useWorkspaceStore must be used within a WorkspaceStoreProvider');
+  }
+  return ctx;
 }
