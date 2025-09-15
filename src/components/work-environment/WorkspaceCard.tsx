@@ -18,10 +18,12 @@ import { CalendarView } from './CalendarView';
 import FlashcardSystem from './FlashcardSystem';
 import { PlatformContentCard } from './PlatformContentCard';
 import { useDragDrop } from '@/hooks/useDragDrop';
+import { RssFeedCard } from './RssFeedCard';
+import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -151,6 +153,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   const [isResizing, setIsResizing] = useState(false);
   
   const cardRef = useRef<HTMLDivElement>(null);
+  const { startLinking, completeLinking, linking, connections, removeConnectionsAt } = useWorkspaceStore();
 
   // Use optimized drag & drop hook
   const {
@@ -294,16 +297,98 @@ export const WorkspaceCard = memo(function WorkspaceCard({
           <FlashcardSystem cardId={card.id} />
         );
 
+      case 'rssFeed':
+        return (
+          <RssFeedCard cardId={card.id} cardData={card} onUpdate={onUpdate} />
+        );
 
       default:
         return null;
     }
   }, [card.type, card.id, card.content, card.richContent?.markdown, card.platformContentConfig]);
 
+  const renderAnchors = () => {
+    const sides: Array<{ side: 'top' | 'right' | 'bottom' | 'left'; style: React.CSSProperties }> = [
+      { side: 'top', style: { left: '50%', top: 0, transform: 'translate(-50%, -50%)' } },
+      { side: 'right', style: { right: 0, top: '50%', transform: 'translate(50%, -50%)' } },
+      { side: 'bottom', style: { left: '50%', bottom: 0, transform: 'translate(-50%, 50%)' } },
+      { side: 'left', style: { left: 0, top: '50%', transform: 'translate(-50%, -50%)' } },
+    ];
+
+    const hasConn = (anchor: 'top' | 'right' | 'bottom' | 'left') =>
+      connections.some(c => (c.sourceCardId === card.id && c.sourceAnchor === anchor) || (c.targetCardId === card.id && c.targetAnchor === anchor));
+
+    const getArc = (side: 'top' | 'right' | 'bottom' | 'left') => {
+      const r = 10; // radius
+      switch (side) {
+        case 'top':
+          return `M ${-r} 0 A ${r} ${r} 0 0 1 ${r} 0`;
+        case 'bottom':
+          return `M ${-r} 0 A ${r} ${r} 0 0 0 ${r} 0`;
+        case 'left':
+          return `M 0 ${-r} A ${r} ${r} 0 0 1 0 ${r}`;
+        case 'right':
+          return `M 0 ${-r} A ${r} ${r} 0 0 0 0 ${r}`;
+      }
+    };
+
+    return (
+      <>
+        {/* Neon filter once per card */}
+        <svg width="0" height="0" style={{ position: 'absolute' }}>
+          <defs>
+            <filter id={`neon-${card.id}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
+        {sides.map(({ side, style }) => {
+          const active = hasConn(side);
+          const color = active ? 'hsl(140 70% 45%)' : 'hsl(270 90% 60%)'; // green when connected, purple otherwise
+          const arc = getArc(side);
+          return (
+            <div key={side} style={{ position: 'absolute', zIndex: 5, ...style }}>
+              <svg
+                width={24}
+                height={24}
+                viewBox="-12 -12 24 24"
+                data-anchor="true"
+                className="pointer-events-auto"
+                style={{ filter: `url(#neon-${card.id})` }}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (linking.isActive) {
+                    await completeLinking(card.id, side);
+                  } else {
+                    startLinking(card.id, side);
+                  }
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  removeConnectionsAt(card.id, side);
+                }}
+                role="button"
+                aria-label="Connect"
+              >
+                <path d={arc} stroke={color} strokeWidth={3} fill="none" strokeLinecap="round" />
+              </svg>
+            </div>
+          );
+        })}
+      </>
+    );
+  };
+
   return (
     <Card
       ref={cardRef}
       data-workspace-card="true"
+      data-card-id={card.id}
+      data-dragging={isDragging ? 'true' : undefined}
       className={cn(
         'absolute bg-background border-2 transition-all duration-200 overflow-hidden',
         isSelected ? 'border-primary shadow-lg' : 'border-border',
@@ -370,8 +455,11 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         </div>
       </div>
 
-      {/* Card Content */}
-      <div className="flex-1 relative" style={{ height: 'calc(100% - 45px)' }}>
+      {/* Anchors */}
+      {renderAnchors()}
+
+      {/* Card Body */}
+      <div className="w-full h-full">
         {renderCardContent()}
       </div>
 
