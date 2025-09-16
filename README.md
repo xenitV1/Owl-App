@@ -1,10 +1,10 @@
-# 🦉 OWL - Academic Social Learning Platform
+# 🦉 OWL-App - Academic Social Learning Platform
 
-A comprehensive academic social platform that connects students, teachers, and academics worldwide. Built with modern technologies and designed for seamless knowledge sharing, collaborative learning, and educational content management.
+A comprehensive academic social platform that connects students, teachers, and academics worldwide. OWL-App is built with modern technologies and designed for seamless knowledge sharing, collaborative learning, and educational content management.
 
 ## 🌟 Overview
 
-OWL is a full-stack educational social platform that enables students and educators to share study materials, collaborate in communities, and engage in meaningful academic discussions. The platform features advanced content moderation, real-time notifications, and sophisticated user management systems.
+OWL-App is a full-stack educational social platform that enables students and educators to share study materials, collaborate in communities, and engage in meaningful academic discussions. The platform features advanced content moderation, real-time notifications, and sophisticated user management systems.
 
 ## ✨ Key Features
 
@@ -80,8 +80,8 @@ OWL is a full-stack educational social platform that enables students and educat
 
 ```bash
 # Clone the repository
-git clone https://github.com/xenitV1/owl.git
-cd owl
+git clone https://github.com/xenitV1/owl-app.git
+cd owl-app
 
 # Install dependencies with npm
 npm install
@@ -321,7 +321,7 @@ We welcome contributions from the community! 🎉
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/xenitV1/OWL.git
+git clone https://github.com/xenitV1/OWL-App.git
 
 # Install dependencies
 npm install
@@ -334,17 +334,26 @@ npm run dev
 
 We appreciate all contributions, big or small! 🚀
 
-## 📄 License
+## 📄 License & Commercial Use
 
-This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+The repository includes a community license that allows non‑commercial use. For commercial use, an Enterprise Commercial License is available.
 
-The Apache 2.0 license allows you to:
-- ✅ Use the software commercially
-- ✅ Modify and distribute the software
-- ✅ Use in proprietary software
-- ✅ Sublicense the software
+- Community (Non‑Commercial): see `LICENSE`
+- Enterprise (Commercial): see `COMMERCIAL_LICENSE.md` and contact us below
 
-While maintaining patent protection and requiring attribution.
+### Community vs Enterprise
+
+| Capability | Community (NC) | Enterprise |
+| --- | --- | --- |
+| Production commercial use | ❌ Not permitted | ✅ Permitted |
+| Source access | ✅ Yes | ✅ Yes |
+| Brand usage | Limited (see TRADEMARKS) | With agreement |
+| Updates | ✅ Public releases | ✅ Public releases |
+| Support/SLA | Community best effort | Optional SLAs |
+
+### Commercial Licensing
+
+For pricing, quotes, and custom terms, contact: `mehmet.apaydin0@outlook.com`
 
 ## 📱 Connect with the Creator
 
