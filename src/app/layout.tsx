@@ -58,21 +58,21 @@ if (process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES !== '1') {
 }
 
 export const metadata: Metadata = {
-  title: "Owl - Educational Social Media Platform",
-  description: "A social media platform designed for students to share study notes, exam materials, and educational content.",
-  keywords: ["Owl", "Education", "Social Media", "Study Notes", "Students", "Learning"],
-  authors: [{ name: "Owl Team" }],
-  metadataBase: new URL('http://localhost:3000'),
+  title: "OWL-App - Academic Social Learning Platform",
+  description: "OWL-App is an academic social platform for sharing study notes, materials, and educational content.",
+  keywords: ["OWL-App", "Education", "Social", "Study Notes", "Students", "Learning"],
+  authors: [{ name: "OWL-App Team" }],
+  metadataBase: new URL('https://owl-app.com'),
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
   openGraph: {
-    title: "Owl - Educational Social Media Platform",
-    description: "Share study notes and learn together with Owl",
-    url: "https://owl-platform.com",
-    siteName: "Owl",
+    title: "OWL-App - Academic Social Learning Platform",
+    description: "Share study notes and learn together with OWL-App",
+    url: "https://owl-app.com",
+    siteName: "OWL-App",
     type: "website",
     images: [
       {
@@ -85,8 +85,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Owl - Educational Social Media Platform",
-    description: "Share study notes and learn together with Owl",
+    title: "OWL-App - Academic Social Learning Platform",
+    description: "Share study notes and learn together with OWL-App",
     images: ['/logo.png'],
   },
 };
