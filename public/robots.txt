@@ -26,3 +26,6 @@ Disallow: /api/admin
 Allow: /logo.png
 Allow: /favicon.ico
 Allow: /manifest.json
+
+# Sitemap
+Sitemap: https://owl-app.com/sitemap.xml
