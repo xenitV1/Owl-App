@@ -769,5 +769,34 @@
         "ocr": "OCR"
       }
     }
+  },
+  "rss": {
+    "title": "RSS Akışı",
+    "selectCategory": "Kategori seçin",
+    "selectProvider": "Kaynak seçin",
+    "load": "Yükle",
+    "noItems": "İçerik yok",
+    "limitInfo": "En fazla {count} içerik gösteriliyor",
+    "normalVideos": "Videolar",
+    "shortVideos": "Shorts",
+    "hide": "Gizle",
+    "showShorts": "Shorts’u Göster",
+    "hideShorts": "Shorts’u gizle",
+    "loadMore": "Daha fazla yükle",
+    "youtube": {
+      "modeLabel": "Tür",
+      "mode": {
+        "user": "Kullanıcı (ad/handle/url)",
+        "popular": "Popüler (trending)"
+      },
+      "valuePlaceholder": "@handle veya isim (UC… kabul edilir)",
+      "regionPlaceholder": "TR, US, DE…"
+    },
+    "category": {
+      "social": "Sosyal Medya",
+      "news": "Haber",
+      "tech": "Teknoloji",
+      "developer": "Geliştirici"
+    }
   }
 }

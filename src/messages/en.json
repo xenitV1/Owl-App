@@ -766,5 +766,34 @@
         "ocr": "OCR"
       }
     }
+  },
+  "rss": {
+    "title": "RSS Feed",
+    "selectCategory": "Select category",
+    "selectProvider": "Select provider",
+    "load": "Load",
+    "noItems": "No items",
+    "limitInfo": "Showing up to {count} items",
+    "normalVideos": "Videos",
+    "shortVideos": "Shorts",
+    "hideShorts": "Hide shorts",
+    "hide": "Hide",
+    "showShorts": "Show Shorts",
+    "loadMore": "Load more",
+    "youtube": {
+      "modeLabel": "Type",
+      "mode": {
+        "user": "User (name/handle/url)",
+        "popular": "Popular (trending)"
+      },
+      "valuePlaceholder": "@handle or name (UC… accepted)",
+      "regionPlaceholder": "TR, US, DE…"
+    },
+    "category": {
+      "social": "Social Media",
+      "news": "News",
+      "tech": "Technology",
+      "developer": "Developer"
+    }
   }
 }
