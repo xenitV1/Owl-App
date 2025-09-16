@@ -51,6 +51,7 @@ import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useTranslations } from 'next-intl';
 import { createWorker } from 'tesseract.js';
 // import { PDFDocument, rgb } from '@react-pdf/renderer';
@@ -125,6 +126,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   const cardRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const t = useTranslations('workEnvironment.richNote');
+  const { resolvedTheme } = useTheme();
 
   const { saveRichNoteVersion, cards, addCard } = useWorkspaceStore();
 
@@ -181,6 +183,38 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
       }
     }
   }, [richContent?.markdown, editor, editorRight]);
+
+  // Reflect external updates (e.g., notes appended from Web Content) after mount
+  useEffect(() => {
+    try {
+      if (!richContent?.markdown) return;
+      // If store content differs from local state, refresh editor content
+      if (richContent.markdown !== content) {
+        let contentData: any;
+        try {
+          contentData = JSON.parse(richContent.markdown);
+          if (contentData && typeof contentData === 'object' && contentData.leftContent !== undefined) {
+            const leftBlocks = JSON.parse(contentData.leftContent || '[]');
+            editor.replaceBlocks(editor.document, leftBlocks);
+            setContent(contentData.leftContent);
+            if (contentData.rightContent && contentData.rightContent !== '[]') {
+              const rightBlocks = JSON.parse(contentData.rightContent);
+              editorRight.replaceBlocks(editorRight.document, rightBlocks);
+              setRightContent(contentData.rightContent);
+            }
+          } else {
+            // Simple array structure
+            editor.replaceBlocks(editor.document, Array.isArray(contentData) ? contentData : []);
+            setContent(richContent.markdown);
+          }
+        } catch (_e) {
+          // Ignore parse errors
+        }
+      }
+    } catch (_err) {
+      // swallow
+    }
+  }, [richContent?.markdown]);
 
   // Convert blob URLs to data URLs in content for persistence
   const processContentForSaving = useCallback(async (leftContent: string, rightContent: string = ''): Promise<string> => {
@@ -1079,7 +1113,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
           <BlockNoteView
             editor={editor}
             onChange={handleContentChange}
-            theme="light"
+            theme={resolvedTheme}
             className="h-full"
             formattingToolbar
             sideMenu
@@ -1091,7 +1125,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
               <BlockNoteView
                 editor={editor}
                 onChange={handleContentChange}
-                theme="light"
+                theme={resolvedTheme}
                 className="h-full"
                 formattingToolbar
                 sideMenu
@@ -1102,7 +1136,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
               <BlockNoteView
                 editor={editorRight}
                 onChange={handleContentChangeRight}
-                theme="light"
+                theme={resolvedTheme}
                 className="h-full"
                 formattingToolbar
                 sideMenu
