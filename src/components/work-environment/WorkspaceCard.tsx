@@ -309,9 +309,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
 
   const renderAnchors = () => {
     const sides: Array<{ side: 'top' | 'right' | 'bottom' | 'left'; style: React.CSSProperties }> = [
-      { side: 'top', style: { left: '50%', top: 0, transform: 'translate(-50%, -50%)' } },
+      { side: 'top', style: { left: '50%', top: -15, transform: 'translate(-50%, 0)' } },
       { side: 'right', style: { right: 0, top: '50%', transform: 'translate(50%, -50%)' } },
-      { side: 'bottom', style: { left: '50%', bottom: 0, transform: 'translate(-50%, 50%)' } },
+      { side: 'bottom', style: { left: '50%', bottom: -15, transform: 'translate(-50%, 0)' } },
       { side: 'left', style: { left: 0, top: '50%', transform: 'translate(-50%, -50%)' } },
     ];
 
@@ -322,9 +322,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
       const r = 10; // radius
       switch (side) {
         case 'top':
-          return `M ${-r} 0 A ${r} ${r} 0 0 1 ${r} 0`;
-        case 'bottom':
           return `M ${-r} 0 A ${r} ${r} 0 0 0 ${r} 0`;
+        case 'bottom':
+          return `M ${-r} 0 A ${r} ${r} 0 0 1 ${r} 0`;
         case 'left':
           return `M 0 ${-r} A ${r} ${r} 0 0 1 0 ${r}`;
         case 'right':
@@ -484,23 +484,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
             onMouseDown={(e) => handleResize('bottom-right', e)}
           />
 
-          {/* Edge handles */}
-          <div
-            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-n-resize hover:bg-primary transition-colors"
-            onMouseDown={(e) => handleResize('top', e)}
-          />
-          <div
-            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-primary/80 cursor-s-resize hover:bg-primary transition-colors"
-            onMouseDown={(e) => handleResize('bottom', e)}
-          />
-          <div
-            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-w-resize hover:bg-primary transition-colors"
-            onMouseDown={(e) => handleResize('left', e)}
-          />
-          <div
-            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-4 bg-primary/80 cursor-e-resize hover:bg-primary transition-colors"
-            onMouseDown={(e) => handleResize('right', e)}
-          />
+          {/* Edge handles removed per request */}
         </>
       )}
     </Card>
