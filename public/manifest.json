@@ -1,7 +1,7 @@
 {
-  "name": "Owl - Educational Social Media Platform",
-  "short_name": "Owl",
-  "description": "A social media platform designed for students to share study notes, exam materials, and educational content.",
+  "name": "OWL-App - Academic Social Learning Platform",
+  "short_name": "OWL-App",
+  "description": "OWL-App is an academic social platform for sharing study notes, materials, and learning content.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
