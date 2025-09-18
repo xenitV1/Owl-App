@@ -348,7 +348,12 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         </svg>
         {sides.map(({ side, style }) => {
           const active = hasConn(side);
-          const color = active ? 'hsl(140 70% 45%)' : 'hsl(270 90% 60%)'; // green when connected, purple otherwise
+          // Use retro theme colors when retro is active
+          const root = typeof document !== 'undefined' ? document.documentElement : null;
+          const isRetro = !!root && (root.classList.contains('retro-light') || root.classList.contains('retro-dark'));
+          const color = isRetro
+            ? (active ? 'var(--retro-connector-active)' : 'var(--retro-connector-idle)')
+            : (active ? 'hsl(140 70% 45%)' : 'hsl(270 90% 60%)');
           const arc = getArc(side);
           return (
             <div key={side} style={{ position: 'absolute', zIndex: 5, ...style }}>
