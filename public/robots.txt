@@ -26,4 +26,4 @@ Allow: /notification.mp3
 Allow: /robots.txt
 
 # Sitemap
-Sitemap: https://owl-app-seven.vercel.app/sitemap.xml
+Sitemap: https://owl-app.com/sitemap.xml
