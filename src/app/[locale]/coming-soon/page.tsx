@@ -51,9 +51,9 @@ export default function ComingSoonPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button size="lg" className={`text-lg px-8 py-4 ${styles.button} transition-all duration-500`}>
+              <Button size="lg" className={`text-lg px-8 py-4 ${styles.button} transition-all duration-500`} disabled>
                 <Mail className="mr-2 h-5 w-5" />
-                {t('notifyButton')}
+                {t('notifyButton')} (Coming Soon)
               </Button>
               <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-white/30 text-white hover:bg-white/10">
                 <Clock className="mr-2 h-5 w-5" />
@@ -121,22 +121,11 @@ export default function ComingSoonPage() {
             {t('cta.subtitle')}
           </p>
           
-          <div className="max-w-md mx-auto">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="email"
-                placeholder={t('cta.emailPlaceholder')}
-                className="flex-1 px-4 py-3 rounded-lg text-gray-900"
-              />
-              <Button 
-                size="lg"
-                className="bg-white text-blue-600 hover:bg-gray-100"
-              >
-                <Mail className="mr-2 h-5 w-5" />
-                {t('cta.notifyButton')}
-              </Button>
-            </div>
-            <p className="text-sm mt-4 opacity-75">
+          <div className="max-w-md mx-auto text-center">
+            <p className="text-xl mb-6 opacity-90">
+              🚀 {t('cta.title')}
+            </p>
+            <p className="text-sm opacity-75">
               {t('cta.disclaimer')}
             </p>
           </div>
