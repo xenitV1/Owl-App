@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { JSDOM } from 'jsdom';
-import { pickThumbnail } from '@/lib/rssThumbnails';
+import { pickThumbnail, extractFirstImageFromHtml } from '@/lib/rssThumbnails';
+import { cleanRssContent } from '@/lib/contentCleaner';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,12 @@ function isXmlContentType(ct: string | null): boolean {
   if (!ct) return false;
   const low = ct.toLowerCase();
   return low.includes('xml') || low.includes('rss') || low.includes('atom');
+}
+
+function isJsonFeedContentType(ct: string | null): boolean {
+  if (!ct) return false;
+  const low = ct.toLowerCase();
+  return low.includes('application/feed+json') || low.includes('application/json');
 }
 
 function youtubeHeuristics(pageUrl: string): DiscoveredFeed[] {
@@ -50,7 +57,7 @@ async function discoverFeeds(pageUrl: string): Promise<DiscoveredFeed[]> {
   const yt = youtubeHeuristics(pageUrl);
   const feeds: DiscoveredFeed[] = [...yt];
 
-  const res = await fetch(pageUrl, { headers: { 'User-Agent': 'OwlRSS/1.0' } });
+  const res = await fetch(pageUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'tr-TR,tr;q=0.9' } });
   console.info('[RSS][discover] fetch page response', { status: res.status, ok: res.ok });
   if (res.ok) {
     const html = await res.text();
@@ -63,10 +70,28 @@ async function discoverFeeds(pageUrl: string): Promise<DiscoveredFeed[]> {
       const href = link.getAttribute('href') || '';
       const title = link.getAttribute('title') || undefined;
       console.debug('[RSS][discover] candidate', { type, href, title });
-      if (type && (type.includes('rss') || type.includes('atom') || type.includes('xml'))) {
+      if (type && (type.includes('rss') || type.includes('atom') || type.includes('xml') || type.includes('feed+json') || type.includes('json'))) {
         const abs = absolutize(pageUrl, href);
         feeds.push({ url: abs, type: type || 'application/xml', title });
       }
+    }
+
+    // Anchor-based discovery (text contains RSS/Feed/Abone Ol)
+    const anchors = Array.from(doc.querySelectorAll('a[href]')) as HTMLAnchorElement[];
+    for (const a of anchors) {
+      const text = (a.textContent || '').toLowerCase();
+      const href = a.getAttribute('href') || '';
+      if (/rss|feed|abone|atom|xml/.test(text) || /\/(?:feed|rss|atom)(?:\/|$|\.)/i.test(href)) {
+        const abs = absolutize(pageUrl, href);
+        if (!feeds.find(f => f.url === abs)) feeds.push({ url: abs, type: 'text/html' });
+      }
+    }
+
+    // WordPress heuristics
+    const wpCandidates = ['feed', 'feed/rss', 'feed/atom', '?feed=rss2'];
+    for (const c of wpCandidates) {
+      const abs = absolutize(pageUrl, c);
+      if (!feeds.find(f => f.url === abs)) feeds.push({ url: abs, type: 'application/xml' });
     }
   }
 
@@ -95,13 +120,81 @@ function parseText(el: Element | null): string | undefined {
   return text || undefined;
 }
 
+function parseNumericParam(url: string, key: string): number | null {
+  try {
+    const u = new URL(url);
+    const v = u.searchParams.get(key);
+    if (!v) return null;
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : n;
+  } catch { return null; }
+}
+
+function urlSuggestsSmallSize(url: string): boolean {
+  const m = url.match(/(?:^|[\/_=-])(\d{2,4})x(\d{2,4})(?:[\/_.-]|$)/i);
+  if (m) {
+    const w = parseInt(m[1], 10);
+    const h = parseInt(m[2], 10);
+    if (!isNaN(w) && !isNaN(h) && (w < 854 || h < 480)) return true;
+  }
+  const wq = parseNumericParam(url, 'w') ?? parseNumericParam(url, 'width');
+  const hq = parseNumericParam(url, 'h') ?? parseNumericParam(url, 'height');
+  if (wq !== null && wq < 854) return true;
+  if (hq !== null && hq < 480) return true;
+  if (/\/avatar|\/icon|\/thumb|favicon|sprite/i.test(url)) return true;
+  return false;
+}
+
+
 async function fetchFeed(feedUrl: string, limit: number, page: number) {
   console.info('[RSS][fetch] start', { feedUrl });
-  const res = await fetch(feedUrl, { headers: { 'User-Agent': 'OwlRSS/1.0' } });
-  const ct = res.headers.get('content-type');
+  let res = await fetch(feedUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8' } });
+  let ct = res.headers.get('content-type');
   console.info('[RSS][fetch] response', { status: res.status, ok: res.ok, contentType: ct });
   if (!res.ok) throw new Error(`Failed to fetch feed: ${res.status}`);
-  if (!isXmlContentType(ct)) throw new Error(`Not an RSS/Atom feed (content-type: ${ct})`);
+  // Fallback: Some providers (e.g., VOA Türkçe) link to a landing page instead of a raw RSS.
+  // If content-type is not XML, try to discover a feed on the same URL and refetch.
+  if (!isXmlContentType(ct)) {
+    try {
+      const discovered = await discoverFeeds(feedUrl);
+      const first = discovered[0]?.url;
+      if (first) {
+        console.info('[RSS][fetch] non-xml, discovered feed. Refetching', { first });
+        res = await fetch(first, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8' } });
+        ct = res.headers.get('content-type');
+      }
+    } catch {}
+  }
+  // Meta refresh fallback
+  if (!isXmlContentType(ct)) {
+    const html = await res.text();
+    const m = html.match(/<meta[^>]+http-equiv=["']refresh["'][^>]*content=["']\d+;\s*url=([^"'>]+)["']/i);
+    if (m && m[1]) {
+      const abs = absolutize(feedUrl, m[1]);
+      res = await fetch(abs, { headers: { 'User-Agent': 'OwlRSS/1.0' } });
+      ct = res.headers.get('content-type');
+    } else {
+      // If JSON Feed
+      if (isJsonFeedContentType(ct) || /"version"\s*:\s*"https?:\/\/jsonfeed\.org\//i.test(html)) {
+        const j = typeof html === 'string' ? JSON.parse(html) : await res.json();
+        const jfItems = (j.items || []).map((it: any) => ({
+          id: it.id || it.url || '',
+          title: it.title || '',
+          link: it.url || it.external_url || '',
+          published: it.date_published,
+          summary: it.summary || it.content_text,
+          thumbnail: it.image || it.banner_image,
+        }));
+        const lim = Math.max(1, Math.min(50, limit || 20));
+        const start = Math.max(0, (page || 0) * lim);
+        const sliced = jfItems.slice(start, start + lim);
+        const hasMore = start + lim < jfItems.length;
+        const title = j.title || '';
+        return { title, items: sliced, limit: lim, page, hasMore };
+      }
+      throw new Error(`Not an RSS/Atom/JSON feed (content-type: ${ct})`);
+    }
+  }
 
   const xml = await res.text();
   console.debug('[RSS][fetch] xml length', { length: xml.length });
@@ -137,9 +230,10 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
       const thumbEl = (entry.querySelector('media\\:thumbnail') || entry.querySelector('media\\:content') || entry.querySelector('thumbnail')) as Element | null;
       const enclosureImg = (entry.querySelector('link[rel="enclosure"][type^="image/"]') as Element | null)?.getAttribute('href') || undefined;
       const mediaUrl = readMediaUrl(thumbEl);
-      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: contentHtml || summaryHtml, descriptionHtml: summaryHtml || summary, linkUrl: link });
+      const { cleanedHtml: cleanedHtmlA, cleanedText: cleanedTextA } = cleanRssContent(contentHtml || summaryHtml, summaryHtml, link);
+      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: cleanedHtmlA || summaryHtml, descriptionHtml: summary || undefined, linkUrl: link });
       const isShort = /youtube\.com\/shorts\//i.test(link) || /#shorts/i.test(title || '') || /#shorts/i.test(summary || '');
-      items.push({ id, title, link, published, summary, thumbnail, isShort });
+      items.push({ id, title, link, published, summary: cleanedTextA || summary, thumbnail, isShort });
     });
   } else {
     doc.querySelectorAll('item').forEach(item => {
@@ -153,9 +247,10 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
       const thumbEl = (item.querySelector('media\\:thumbnail') || item.querySelector('media\\:content') || item.querySelector('thumbnail')) as Element | null;
       const enclosureImg = (item.querySelector('enclosure[type^="image/"]') as Element | null)?.getAttribute('url') || undefined;
       const mediaUrl = readMediaUrl(thumbEl);
-      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: contentHtml || descriptionHtml, descriptionHtml: descriptionHtml || description, linkUrl: link });
+      const { cleanedHtml: cleanedHtmlR, cleanedText: cleanedTextR } = cleanRssContent(contentHtml || descriptionHtml, descriptionHtml, link);
+      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: cleanedHtmlR || descriptionHtml, descriptionHtml: description || undefined, linkUrl: link });
       const isShort = /youtube\.com\/shorts\//i.test(link) || /#shorts/i.test(title || '') || /#shorts/i.test(description || '');
-      items.push({ id, title, link, published, summary: description, thumbnail, isShort });
+      items.push({ id, title, link, published, summary: cleanedTextR || description, thumbnail, isShort });
     });
   }
 
@@ -179,13 +274,32 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
     return undefined;
   };
 
-  const enriched = items.map((it: any) => {
+  // Generic article-page fallback: fetch the page and extract a prominent image
+  const extractFromArticlePage = async (linkUrl: string | undefined): Promise<string | undefined> => {
+    if (!linkUrl) return undefined;
+    try {
+      const r = await fetch(linkUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept-Language': 'tr-TR,tr;q=0.9' } });
+      if (!r.ok) return undefined;
+      const html = await r.text();
+      const img = extractFirstImageFromHtml(html, linkUrl);
+      return img || undefined;
+    } catch {}
+    return undefined;
+  };
+
+  // Enrich items with thumbnails
+  const enriched = await Promise.all(items.map(async (it: any) => {
     if (!it.thumbnail) {
-      const t = addYouTubeThumb(it.link);
-      if (t) return { ...it, thumbnail: t };
+      const yt = addYouTubeThumb(it.link);
+      if (yt) return { ...it, thumbnail: yt };
+      const pageImg = await extractFromArticlePage(it.link);
+      if (pageImg && !urlSuggestsSmallSize(pageImg)) return { ...it, thumbnail: pageImg };
+    }
+    if (it.thumbnail && urlSuggestsSmallSize(it.thumbnail)) {
+      return { ...it, thumbnail: undefined };
     }
     return it;
-  });
+  }));
 
   const lim = Math.max(1, Math.min(50, limit || 20));
   const start = Math.max(0, (page || 0) * lim);
