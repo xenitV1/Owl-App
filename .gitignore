@@ -76,3 +76,4 @@ codeql.zip
 # Release notes (auto-generated)
 RELEASE_NOTES.md
 releases/
+.vercel
