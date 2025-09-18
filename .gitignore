@@ -58,6 +58,7 @@ blob-report/
 
 # Prisma artifacts
 prisma/*.db-journal
+prisma/schema-dev.prisma
 
 # OS
 Thumbs.db

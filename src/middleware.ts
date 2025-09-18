@@ -26,14 +26,20 @@ export async function middleware(request: NextRequest) {
   const isRootPage = path === '/' || path === '/en' || path === '/tr';
   const isHealthCheck = path === '/api/health';
 
+  // Only redirect to coming-soon based on environment and variable
+  const isProduction = (process.env.NODE_ENV === 'production' &&
+                       process.env.NEXT_PUBLIC_COMING_SOON_ENABLED !== 'false') ||
+                      process.env.NEXT_PUBLIC_COMING_SOON_ENABLED === 'true';
+
   // Redirect to coming-soon if:
   // 1. It's the root page OR
   // 2. It's not an API route AND not a static file AND not already coming-soon
-  if ((isRootPage || (!isApiRoute && !isStaticFile && !isComingSoonPage && !isHealthCheck)) && !path.startsWith('/_next')) {
+  // 3. AND it's production environment
+  if (isProduction && (isRootPage || (!isApiRoute && !isStaticFile && !isComingSoonPage && !isHealthCheck)) && !path.startsWith('/_next')) {
     // Determine locale for redirect
     const locale = pathLocale || cookieLocale || (acceptLanguage?.includes('tr') ? 'tr' : 'en');
     const comingSoonUrl = `/${locale}/coming-soon`;
-    console.log('[middleware] redirecting to coming-soon', { from: path, to: comingSoonUrl });
+    console.log('[middleware] redirecting to coming-soon', { from: path, to: comingSoonUrl, env: process.env.NODE_ENV });
     return NextResponse.redirect(new URL(comingSoonUrl, request.url));
   }
 
