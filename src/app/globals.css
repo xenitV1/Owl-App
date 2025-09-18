@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Archivo+Black&display=swap');
 
 /* React Grid Layout styles */
 @import "react-grid-layout/css/styles.css";
@@ -170,6 +171,278 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Retro Theme - Light Mode */
+.retro-light {
+  --background: #E7E1CB;
+  --foreground: #2D1B1B;
+  --card: #F5F0E8;
+  --card-foreground: #2D1B1B;
+  --popover: #F5F0E8;
+  --popover-foreground: #2D1B1B;
+  /* Adjusted primary to a darker mustard for better legibility on small elements */
+  --primary: #D39A09;
+  --primary-foreground: #2D1B1B;
+  --secondary: #E64B35;
+  --secondary-foreground: #F5F0E8;
+  --muted: #D4C4A8;
+  --muted-foreground: #5A4A3A;
+  --accent: #C6312B;
+  --accent-foreground: #F5F0E8;
+  --destructive: #992D3D;
+  --destructive-foreground: #F5F0E8;
+  --border: #B8A082;
+  --input: #D4C4A8;
+  --ring: #D39A09;
+  --chart-1: #D39A09;
+  --chart-2: #E64B35;
+  --chart-3: #C6312B;
+  --chart-4: #992D3D;
+  --chart-5: #702647;
+  --sidebar: #F5F0E8;
+  --sidebar-foreground: #2D1B1B;
+  --sidebar-primary: #D39A09;
+  --sidebar-primary-foreground: #2D1B1B;
+  --sidebar-accent: #E64B35;
+  --sidebar-accent-foreground: #F5F0E8;
+  --sidebar-border: #B8A082;
+  --sidebar-ring: #D39A09;
+  /* Retro connector colors */
+  --retro-connector-active: var(--secondary);
+  --retro-connector-idle: var(--chart-5);
+}
+
+/* Retro Theme - Dark Mode */
+.retro-dark {
+  --background: #1A1612;
+  --foreground: #F5F0E8;
+  --card: #2D2520;
+  --card-foreground: #F5F0E8;
+  --popover: #2D2520;
+  --popover-foreground: #F5F0E8;
+  --primary: #FBCD43;
+  --primary-foreground: #1A1612;
+  --secondary: #E64B35;
+  --secondary-foreground: #F5F0E8;
+  --muted: #3A322D;
+  --muted-foreground: #B8A082;
+  --accent: #C6312B;
+  --accent-foreground: #F5F0E8;
+  --destructive: #992D3D;
+  --destructive-foreground: #F5F0E8;
+  --border: #4A3F38;
+  --input: #3A322D;
+  --ring: #FBCD43;
+  --chart-1: #FBCD43;
+  --chart-2: #E64B35;
+  --chart-3: #C6312B;
+  --chart-4: #992D3D;
+  --chart-5: #702647;
+  --sidebar: #2D2520;
+  --sidebar-foreground: #F5F0E8;
+  --sidebar-primary: #FBCD43;
+  --sidebar-primary-foreground: #1A1612;
+  --sidebar-accent: #E64B35;
+  --sidebar-accent-foreground: #F5F0E8;
+  --sidebar-border: #4A3F38;
+  --sidebar-ring: #FBCD43;
+  /* Retro connector colors */
+  --retro-connector-active: var(--secondary);
+  --retro-connector-idle: var(--chart-5);
+  /* Card overlays for dark theme */
+  --retro-card-overlay: rgba(45, 37, 32, 0.55);
+  --retro-card-overlay-hover: rgba(45, 37, 32, 0.72);
+  --retro-card-border: #4A3F38;
+}
+
+/* Retro Dark: soften card hover whiteness and use palette tones */
+.retro-dark [data-slot="card"] {
+  background: var(--retro-card-overlay) !important;
+  border-color: var(--retro-card-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+.retro-dark [data-slot="card"]:hover {
+  background: var(--retro-card-overlay-hover) !important;
+  border-color: var(--border) !important;
+}
+
+/* Retro themes: Rich Note (BlockNote) backgrounds should match theme */
+.retro-light .bn-root .bn-note-bg,
+.retro-dark  .bn-root .bn-note-bg {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+.retro-light .bn-container,
+.retro-light .bn-editor {
+  background: transparent !important;
+}
+.retro-light .bn-root .bn-default-styles,
+.retro-light .bn-root .bn-inline-content {
+  color: var(--foreground) !important;
+}
+.retro-light .bn-root .bn-block-content,
+.retro-light .bn-root .bn-block-content-inner,
+.retro-light .bn-root .bn-content,
+.retro-light .ProseMirror {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+}
+.retro-light .bn-root .bn-block-content-inner,
+.retro-dark  .bn-root .bn-block-content-inner,
+.retro-light .bn-root .bn-content,
+.retro-dark  .bn-root .bn-content,
+.retro-light .ProseMirror,
+.retro-dark  .ProseMirror {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+/* Retro Theme Specific Styles */
+.retro-light,
+.retro-dark {
+  /* Retro font styling */
+  font-family: 'Space Grotesk', 'Courier New', monospace;
+  
+  /* Retro shadow effects */
+  --retro-shadow-xs: 1px 1px 0 0 var(--border);
+  --retro-shadow-sm: 2px 2px 0 0 var(--border);
+  --retro-shadow: 3px 3px 0 0 var(--border);
+  --retro-shadow-md: 4px 4px 0 0 var(--border);
+  --retro-shadow-lg: 6px 6px 0 0 var(--border);
+  --retro-shadow-xl: 8px 8px 0 0 var(--border);
+  
+  /* Retro background texture */
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(251, 205, 67, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(230, 75, 53, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(198, 49, 43, 0.02) 0%, transparent 50%);
+  background-size: 300px 300px, 400px 400px, 500px 500px;
+}
+
+/* Retro button effects */
+.retro-light button,
+.retro-dark button {
+  position: relative;
+  transition: all 0.1s ease;
+}
+
+.retro-light button:active,
+.retro-dark button:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--retro-shadow-sm);
+}
+
+/* Retro card effects */
+.retro-light .card,
+.retro-dark .card {
+  box-shadow: var(--retro-shadow);
+  border: 2px solid var(--border);
+}
+
+/* Retro input effects */
+.retro-light input,
+.retro-dark input,
+.retro-light textarea,
+.retro-dark textarea {
+  box-shadow: inset 2px 2px 0 0 var(--border);
+  border: 2px solid var(--border);
+}
+
+/* Retro striped background pattern */
+.retro-light::before,
+.retro-dark::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, transparent 0%, transparent 2%, var(--primary) 2%, var(--primary) 3%, transparent 3%, transparent 5%, var(--secondary) 5%, var(--secondary) 6%, transparent 6%, transparent 8%, var(--accent) 8%, var(--accent) 9%, transparent 9%, transparent 11%, var(--destructive) 11%, var(--destructive) 12%, transparent 12%, transparent 14%, var(--chart-5) 14%, var(--chart-5) 15%, transparent 15%),
+    linear-gradient(0deg, transparent 0%, transparent 2%, var(--primary) 2%, var(--primary) 3%, transparent 3%, transparent 5%, var(--secondary) 5%, var(--secondary) 6%, transparent 6%, transparent 8%, var(--accent) 8%, var(--accent) 9%, transparent 9%, transparent 11%, var(--destructive) 11%, var(--destructive) 12%, transparent 12%, transparent 14%, var(--chart-5) 14%, var(--chart-5) 15%, transparent 15%);
+  background-size: 20px 20px;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Retro starburst effects */
+.retro-starburst {
+  position: relative;
+}
+
+.retro-starburst::after {
+  content: '✦';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  color: var(--primary);
+  font-size: 1.2em;
+  animation: retro-twinkle 2s ease-in-out infinite alternate;
+}
+
+@keyframes retro-twinkle {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Retro pixelated borders */
+.retro-pixel-border {
+  border-image: 
+    linear-gradient(45deg, var(--primary), var(--secondary), var(--accent), var(--destructive)) 1;
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* Retro crinkled paper effect */
+.retro-crinkled {
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,0,0,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  background-size: 100px 100px, 150px 150px, 200px 200px;
+}
+
+/* Retro utility classes */
+.retro-shadow-xs { box-shadow: var(--retro-shadow-xs); }
+.retro-shadow-sm { box-shadow: var(--retro-shadow-sm); }
+.retro-shadow { box-shadow: var(--retro-shadow); }
+.retro-shadow-md { box-shadow: var(--retro-shadow-md); }
+.retro-shadow-lg { box-shadow: var(--retro-shadow-lg); }
+.retro-shadow-xl { box-shadow: var(--retro-shadow-xl); }
+
+/* Retro text effects */
+.retro-text-glow {
+  text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--primary);
+}
+
+.retro-text-outline {
+  -webkit-text-stroke: 1px var(--border);
+  text-stroke: 1px var(--border);
+}
+
+/* Retro border effects */
+.retro-border-dashed {
+  border: 2px dashed var(--border);
+}
+
+.retro-border-dotted {
+  border: 2px dotted var(--border);
+}
+
+/* Retro gradient backgrounds */
+.retro-gradient-primary {
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+}
+
+.retro-gradient-accent {
+  background: linear-gradient(45deg, var(--accent), var(--destructive));
+}
+
+.retro-gradient-chart {
+  background: linear-gradient(45deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5));
 }
 
 @layer base {
