@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, Rss } from 'lucide-react';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
-import { rssProviders, getProvider, type ProviderOption, rssCategories, type RssCategory } from '@/lib/rssProviders';
+import { rssProviders, getProvider, type ProviderOption, rssCategories, type RssCategory, type RssLang } from '@/lib/rssProviders';
 import { useTranslations } from 'next-intl';
+import { useLoadingMessages } from '@/hooks/useLoadingMessages';
 
 interface RssFeedCardProps {
   cardId: string;
@@ -59,10 +60,18 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
   const [providerOpts, setProviderOpts] = useState<Record<string, string>>(cardData?.rss?.providerOpts || {});
   const [selectedFeed, setSelectedFeed] = useState<string>(cardData?.rss?.feedUrl || '');
   const [items, setItems] = useState<FeedItem[]>([]);
+  const [rssLang, setRssLang] = useState<RssLang>((cardData?.rss?.lang as RssLang) || 'en');
+  const [contentScale, setContentScale] = useState<number>(typeof cardData?.rss?.scale === 'number' ? cardData.rss.scale : 1);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showShorts, setShowShorts] = useState<boolean>(true);
+
+  const { currentMessage } = useLoadingMessages({
+    isLoading: loading,
+    messageKeys: ['connecting', 'fetching', 'analyzing', 'preparing', 'optimizing'],
+    interval: 1500
+  });
 
   const { cards, addCard } = useWorkspaceStore();
 
@@ -183,7 +192,7 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Rss className="h-4 w-4" /> {t('rss.title', { default: 'RSS Feed' })}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {currentProvider?.id === 'youtube' && (
               showShorts ? (
                 <Button variant="ghost" size="sm" onClick={() => setShowShorts(false)}>{t('rss.hide', { default: 'Gizle' })}</Button>
@@ -204,12 +213,26 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
               ))}
             </SelectContent>
           </Select>
+          {/* RSS language selector (only affects non-social categories) */}
+          <Select value={rssLang} onValueChange={(v) => setRssLang(v as RssLang)}>
+            <SelectTrigger className="w-28">
+              <SelectValue placeholder="Lang" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">EN</SelectItem>
+              <SelectItem value="tr">TR</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={providerId} onValueChange={(v) => { setProviderId(v); setProviderOpts({}); }} disabled={!category}>
             <SelectTrigger>
               <SelectValue placeholder={t('rss.selectProvider', { default: 'RSS Kaynağı seçin' })} />
             </SelectTrigger>
             <SelectContent>
-              {rssProviders.filter(p => !category || p.category === category).map(p => (
+              {rssProviders
+                .filter(p => !category || p.category === category)
+                .filter(p => p.category === 'social' || !p.lang || p.lang === rssLang)
+                .map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
             </SelectContent>
@@ -287,7 +310,7 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
                 }
                 if (url) {
                   setSelectedFeed(url);
-                  persist({ content: JSON.stringify({ rss: { category, providerId, providerOpts, feedUrl: url } }) });
+                  persist({ content: JSON.stringify({ rss: { category, providerId, providerOpts, feedUrl: url, lang: rssLang } }) });
                 }
               }} disabled={!canBuild || loading}>
                 {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : t('rss.load', { default: 'Yükle' })}
@@ -299,10 +322,11 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
         {error && <div className="text-xs text-red-500 mt-2">{error}</div>}
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-auto pr-1 pb-4">
+      <CardContent className="flex-1 overflow-auto pr-1 pb-4" style={{ fontSize: `${contentScale}em` }}>
         {loading && (
           <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" /> Loading...
+            <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+            {currentMessage || t('common.loading')}
           </div>
         )}
         {!loading && items.length === 0 && (
@@ -322,8 +346,22 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
               )}
               {(items.filter(i => !i.isShort)).map((it, idx) => (
                 <a key={(it.id || it.link || '') + idx} href={it.link} onClick={(e) => handleItemClick(e, it)} className="flex gap-3 p-2 rounded border hover:bg-muted/40 cursor-pointer items-start">
-                  {it.thumbnail && (<img src={it.thumbnail} alt="thumb" className="w-16 h-16 object-cover rounded" />)}
-                  <div className="min-w-0 flex-1">
+                  {it.thumbnail && (
+                    <img
+                      src={it.thumbnail}
+                      alt="thumb"
+                      className="object-cover rounded"
+                      style={{ width: `${64 * contentScale}px`, height: `${64 * contentScale}px` }}
+                    />
+                  )}
+                  <div
+                    className="min-w-0 flex-1"
+                    style={{
+                      transform: `scale(${contentScale})`,
+                      transformOrigin: 'top left',
+                      width: `${100 / contentScale}%`,
+                    }}
+                  >
                     <div className="text-sm font-medium truncate">{it.title}</div>
                     {it.published && <div className="text-xs text-muted-foreground">{new Date(it.published).toLocaleString()}</div>}
                     {it.summary && <div className="text-xs text-muted-foreground line-clamp-2">{it.summary}</div>}
@@ -336,12 +374,19 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
                 <div className="text-xs font-medium text-muted-foreground px-1 mb-1">{t('rss.shortVideos', { default: 'Shorts' })}</div>
                 {(items.filter(i => i.isShort)).map((it, idx) => (
                   <a key={(it.id || it.link || '') + idx} href={it.link} onClick={(e) => handleItemClick(e, it)} className="flex gap-3 p-2 rounded border hover:bg-muted/40 cursor-pointer items-start">
-                    {it.thumbnail && (<img src={it.thumbnail} alt="thumb" className="w-16 h-16 object-cover rounded" />)}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{it.title}</div>
-                      {it.published && <div className="text-xs text-muted-foreground">{new Date(it.published).toLocaleString()}</div>}
-                      {it.summary && <div className="text-xs text-muted-foreground line-clamp-2">{it.summary}</div>}
-                    </div>
+                    {it.thumbnail && (
+                      <img
+                        src={it.thumbnail}
+                        alt="thumb"
+                        className="object-cover rounded"
+                        style={{ width: `${64 * contentScale}px`, height: `${64 * contentScale}px` }}
+                      />
+                    )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium whitespace-normal break-words">{it.title}</div>
+                    {it.published && <div className="text-xs text-muted-foreground whitespace-normal break-words">{new Date(it.published).toLocaleString()}</div>}
+                    {it.summary && <div className="text-xs text-muted-foreground whitespace-normal break-words">{it.summary}</div>}
+                  </div>
                   </a>
                 ))}
               </div>
