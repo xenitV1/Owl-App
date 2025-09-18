@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma db push && next build",
     "start": "cross-env NODE_ENV=production tsx server.ts",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -12,6 +12,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
+    "db:check": "node scripts/update-production-schema.js",
     "test:e2e:setup-data": "tsx tests/e2e/utils/test-setup.ts setup",
     "test:e2e:cleanup-data": "tsx tests/e2e/utils/test-setup.ts cleanup",
     "test:e2e:reset-db": "tsx tests/e2e/utils/test-setup.ts reset"

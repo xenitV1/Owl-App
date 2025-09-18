@@ -14,7 +14,7 @@ async function main() {
       'user', 'post', 'community', 'privateGroup', 'communityMember', 
       'groupMember', 'follow', 'comment', 'like', 'pool', 'poolCategory',
       'notification', 'report', 'userBlock', 'userMute', 'moderationAction',
-      'appeal', 'contentFilter', 'adminActivityLog'
+      'appeal', 'contentFilter', 'adminActivityLog', 'waitlist'
     ];
 
     for (const table of tables) {
