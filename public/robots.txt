@@ -1,31 +1,29 @@
-User-agent: Googlebot
-Allow: /
-Disallow: /admin
-Disallow: /api/admin
-
-User-agent: Bingbot
-Allow: /
-Disallow: /admin
-Disallow: /api/admin
-
-User-agent: Twitterbot
-Allow: /
-Disallow: /admin
-Disallow: /api/admin
-
-User-agent: facebookexternalhit
-Allow: /
-Disallow: /admin
-Disallow: /api/admin
-
 User-agent: *
-Allow: /
+# Coming Soon sayfasına izin ver
+Allow: /coming-soon
+Allow: /coming-soon/
+
+# Diğer tüm sayfaları engelle
+Disallow: /
 Disallow: /admin
-Disallow: /api/admin
-# Logo and favicon
+Disallow: /api/
+Disallow: /posts
+Disallow: /communities
+Disallow: /profile
+Disallow: /settings
+Disallow: /moderation
+Disallow: /work-environment
+Disallow: /discover
+Disallow: /following
+Disallow: /saved
+Disallow: /privacy
+
+# Statik dosyalara izin ver
 Allow: /logo.png
 Allow: /favicon.ico
 Allow: /manifest.json
+Allow: /notification.mp3
+Allow: /robots.txt
 
 # Sitemap
-Sitemap: https://owl-app.com/sitemap.xml
+Sitemap: https://owl-app-seven.vercel.app/sitemap.xml
