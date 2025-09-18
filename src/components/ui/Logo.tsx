@@ -35,12 +35,13 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
   }, []);
   
   const currentTheme = mounted ? (resolvedTheme || theme) : 'light';
+  const isDarkTheme = currentTheme === 'dark' || currentTheme === 'retro-dark';
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div className={`relative ${sizeClasses[size]} ${
-        currentTheme === 'dark' 
-          ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg p-2 border border-blue-500/20 shadow-lg shadow-blue-500/20' 
+        isDarkTheme
+          ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg p-2 border border-blue-500/20 shadow-lg shadow-blue-500/20'
           : ''
       }`}>
         <Image
@@ -51,14 +52,14 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
           priority
           sizes={`${sizeClasses[size]}`}
         />
-        {/* Dark theme için ek parıltı efekti */}
-        {currentTheme === 'dark' && (
+        {/* Karanlık temalar (dark ve retro-dark) için parıltı efekti */}
+        {isDarkTheme && (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent rounded-lg pointer-events-none" />
         )}
       </div>
       {showText && (
-        <span className={`font-bold ${textSizes[size]} ${
-          currentTheme === 'dark' ? 'text-blue-100 drop-shadow-lg' : 'text-gray-900'
+        <span className={`font-bold ${textSizes[size]} text-foreground ${
+          isDarkTheme ? 'drop-shadow-lg' : ''
         }`}>
           Owl
         </span>
