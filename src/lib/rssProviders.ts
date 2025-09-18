@@ -9,7 +9,9 @@ export interface ProviderOption {
   options?: Array<{ value: string; label: string }>; // for select
 }
 
-export type RssCategory = 'social' | 'news' | 'tech' | 'developer';
+export type RssCategory = 'social' | 'news' | 'tech' | 'developer' | 'science' | 'academia';
+
+export type RssLang = 'en' | 'tr' | 'all';
 
 export interface RssProvider {
   id: string;
@@ -19,6 +21,7 @@ export interface RssProvider {
   options: ProviderOption[]; // empty for fixed feeds
   buildUrl: (opts: Record<string, string>) => string | null;
   example?: Record<string, string>;
+  lang?: RssLang; // if set, non-social providers can be filtered by language
 }
 
 export const rssProviders: RssProvider[] = [
@@ -47,6 +50,90 @@ export const rssProviders: RssProvider[] = [
       return null;
     },
     example: { mode: 'channel', value: 'UC_x5XG1OV2P6uZZ5FSM9Ttw' }
+  },
+  // ---- Science & Popular Science (TR) ----
+  {
+    id: 'evrimagaci',
+    name: 'Evrim Ağacı',
+    description: 'Bilim ve popüler bilim yazıları',
+    category: 'science',
+    options: [],
+    buildUrl: () => 'https://evrimagaci.org/',
+    lang: 'tr'
+  },
+  {
+    id: 'bilimvegelecek',
+    name: 'Bilim ve Gelecek',
+    description: 'Bilim kültürü ve felsefesi',
+    category: 'science',
+    options: [],
+    buildUrl: () => 'https://bilimvegelecek.com.tr/',
+    lang: 'tr'
+  },
+  {
+    id: 'popsci_tr',
+    name: 'Popular Science Türkiye',
+    description: 'Popüler bilim içerikleri',
+    category: 'science',
+    options: [],
+    buildUrl: () => 'https://popsci.com.tr/',
+    lang: 'tr'
+  },
+  {
+    id: 'tubitak_bilimgenc',
+    name: 'TÜBİTAK Bilim Genç',
+    description: 'Gençlere yönelik bilim içerikleri',
+    category: 'science',
+    options: [],
+    buildUrl: () => 'https://bilimgenc.tubitak.gov.tr/',
+    lang: 'tr'
+  },
+
+  // ---- Academic Announcements & Projects (TR) ----
+  {
+    id: 'tubitak_duyurular',
+    name: 'TÜBİTAK Duyurular',
+    description: 'Program ve proje duyuruları',
+    category: 'academia',
+    options: [],
+    buildUrl: () => 'https://www.tubitak.gov.tr/tr/duyurular',
+    lang: 'tr'
+  },
+  {
+    id: 'yok_duyurular',
+    name: 'YÖK Duyurular',
+    description: 'Yükseköğretim Kurulu duyuruları',
+    category: 'academia',
+    options: [],
+    buildUrl: () => 'https://www.yok.gov.tr/duyurular',
+    lang: 'tr'
+  },
+  {
+    id: 'tuba_haberler',
+    name: 'TÜBA Haberler',
+    description: 'Türkiye Bilimler Akademisi haberleri',
+    category: 'academia',
+    options: [],
+    buildUrl: () => 'https://tuba.gov.tr/tr/haberler',
+    lang: 'tr'
+  },
+  {
+    id: 'tuseb_haberler',
+    name: 'TÜSEB Haberler',
+    description: 'Sağlık Enstitüleri Başkanlığı haber/duyuru',
+    category: 'academia',
+    options: [],
+    buildUrl: () => 'https://www.tuseb.gov.tr/haberler',
+    lang: 'tr'
+  },
+  {
+    id: 'ulusal_ajans',
+    name: 'Türkiye Ulusal Ajansı (Erasmus+)',
+    description: 'Erasmus+ ve ESC duyuruları',
+    category: 'academia',
+    options: [],
+    buildUrl: () => 'https://www.ua.gov.tr',
+    lang: 'tr'
   },
   {
     id: 'reddit',
@@ -151,7 +238,8 @@ export const rssProviders: RssProvider[] = [
     description: 'Genel haberler',
     category: 'news',
     options: [],
-    buildUrl: () => 'https://feeds.bbci.co.uk/news/rss.xml'
+    buildUrl: () => 'https://feeds.bbci.co.uk/news/rss.xml',
+    lang: 'en'
   },
   {
     id: 'theverge',
@@ -159,7 +247,8 @@ export const rssProviders: RssProvider[] = [
     description: 'Teknoloji haberleri',
     category: 'tech',
     options: [],
-    buildUrl: () => 'https://www.theverge.com/rss/index.xml'
+    buildUrl: () => 'https://www.theverge.com/rss/index.xml',
+    lang: 'en'
   },
   {
     id: 'techcrunch',
@@ -167,7 +256,55 @@ export const rssProviders: RssProvider[] = [
     description: 'Startup ve teknoloji',
     category: 'tech',
     options: [],
-    buildUrl: () => 'http://feeds.feedburner.com/TechCrunch/'
+    buildUrl: () => 'http://feeds.feedburner.com/TechCrunch/',
+    lang: 'en'
+  }
+  ,
+  // ---- Turkish news providers ----
+  {
+    id: 'bbcturkce',
+    name: 'BBC Türkçe',
+    description: 'BBC Türkçe - Genel',
+    category: 'news',
+    options: [],
+    buildUrl: () => 'https://feeds.bbci.co.uk/turkce/rss.xml',
+    lang: 'tr'
+  },
+  {
+    id: 'ntv',
+    name: 'NTV - Gündem',
+    description: 'NTV Gündem',
+    category: 'news',
+    options: [],
+    buildUrl: () => 'https://www.ntv.com.tr/gundem.rss',
+    lang: 'tr'
+  },
+  {
+    id: 'cnnturk',
+    name: 'CNN Türk',
+    description: 'CNN Türk - Türkiye',
+    category: 'news',
+    options: [],
+    buildUrl: () => 'https://www.cnnturk.com/feed/rss/turkiye',
+    lang: 'tr'
+  },
+  {
+    id: 'anadoluajansi',
+    name: 'Anadolu Ajansı',
+    description: 'AA Güncel',
+    category: 'news',
+    options: [],
+    buildUrl: () => 'https://www.aa.com.tr/tr/rss/default?cat=guncel',
+    lang: 'tr'
+  },
+  {
+    id: 'dwturkce',
+    name: 'DW Türkçe',
+    description: 'Deutsche Welle Türkçe - Genel',
+    category: 'news',
+    options: [],
+    buildUrl: () => 'http://rss.dw.com/rdf/rss-tur-all',
+    lang: 'tr'
   }
 ];
 
@@ -180,6 +317,8 @@ export const rssCategories: Array<{ id: RssCategory; i18nKey: string }> = [
   { id: 'news', i18nKey: 'rss.category.news' },
   { id: 'tech', i18nKey: 'rss.category.tech' },
   { id: 'developer', i18nKey: 'rss.category.developer' },
+  { id: 'science', i18nKey: 'rss.category.science' },
+  { id: 'academia', i18nKey: 'rss.category.academia' },
 ];
 
 
