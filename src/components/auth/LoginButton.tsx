@@ -6,9 +6,18 @@ import { Chrome, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithGoogle } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
+import { useLoadingMessages } from '@/hooks/useLoadingMessages';
 
 export const LoginButton: React.FC = () => {
   const { loading } = useAuth();
+  const t = useTranslations();
+
+  const { currentMessage } = useLoadingMessages({
+    isLoading: loading,
+    messageKeys: ['authenticating', 'connecting', 'processing'],
+    interval: 1000
+  });
 
   const handleLogin = async () => {
     try {
@@ -48,7 +57,7 @@ export const LoginButton: React.FC = () => {
       className="flex items-center gap-2"
     >
       <Chrome className="h-4 w-4" />
-      Sign in with Google
+      {loading ? (currentMessage || t('common.loading')) : 'Sign in with Google'}
     </Button>
   );
 };
