@@ -118,7 +118,9 @@ const nextConfig: NextConfig = {
             "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss: https:",
             "media-src 'self' https: blob:",
             "worker-src 'self' blob:",
-            "child-src 'self'",
+            // Allow embedding trusted providers (Spotify, YouTube, Vimeo)
+            "frame-src 'self' https://open.spotify.com https://www.youtube.com https://player.vimeo.com",
+            "child-src 'self' https://open.spotify.com https://www.youtube.com https://player.vimeo.com",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
@@ -143,7 +145,9 @@ const nextConfig: NextConfig = {
           "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss: https:",
           "media-src 'self' https: blob:",
           "worker-src 'self' blob:",
-          "child-src 'self'",
+          // Allow embedding trusted providers (Spotify, YouTube, Vimeo)
+          "frame-src 'self' https://open.spotify.com https://www.youtube.com https://player.vimeo.com",
+          "child-src 'self' https://open.spotify.com https://www.youtube.com https://player.vimeo.com",
           "object-src 'none'",
           "base-uri 'self'",
           "form-action 'self'",
