@@ -43,6 +43,8 @@ import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 import { addNoteToRichNote as addNoteToRichNoteUtil } from '@/lib/richNoteManager';
 import { TextHighlighter } from './TextHighlighter';
 import { HighlightsPanel } from './HighlightsPanel';
+import { useLoadingMessages } from '@/hooks/useLoadingMessages';
+import { useTranslations } from 'next-intl';
 
 // Web Content Viewer Component
 interface WebContentViewerProps {
@@ -54,6 +56,8 @@ interface WebContentViewerProps {
 
 
 function WebContentViewer({ url, title, cardId, connectedTo }: WebContentViewerProps) {
+  const t = useTranslations();
+
   // Typography hook
   const {
     textSpacing,
@@ -76,6 +80,12 @@ function WebContentViewer({ url, title, cardId, connectedTo }: WebContentViewerP
   const [highlights, setHighlights] = useState<any[]>([]);
   const textHighlighterRef = useRef<any>(null);
   const { addCard, cards, addConnection, connections, saveRichNoteVersion } = useWorkspaceStore() as any;
+
+  const { currentMessage } = useLoadingMessages({
+    isLoading: loading,
+    messageKeys: ['connecting', 'fetching', 'analyzing', 'preparing', 'optimizing'],
+    interval: 1200
+  });
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -368,7 +378,7 @@ function WebContentViewer({ url, title, cardId, connectedTo }: WebContentViewerP
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <span className="text-lg">🌐</span>
-              {title || 'Loading...'}
+              {title || (loading ? currentMessage : t('common.loading'))}
             </CardTitle>
             <Badge variant="secondary" className="text-xs">
               Web Content
@@ -378,7 +388,7 @@ function WebContentViewer({ url, title, cardId, connectedTo }: WebContentViewerP
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading web content...</p>
+            <p className="text-sm text-muted-foreground">{currentMessage || t('loading.loadingContent')}</p>
           </div>
         </CardContent>
       </div>
@@ -834,6 +844,8 @@ interface ApiResponse {
 }
 
 export function PlatformContentCard({ cardId, cardData, config }: PlatformContentCardProps) {
+  const t = useTranslations();
+
   const [contentType, setContentType] = useState(config?.contentType || 'posts');
   const [data, setData] = useState<Post[] | Community[] | User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -848,6 +860,12 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
   const [showSettings, setShowSettings] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(config?.autoRefresh || false);
   const [refreshInterval, setRefreshInterval] = useState(config?.refreshInterval || 5);
+
+  const { currentMessage } = useLoadingMessages({
+    isLoading: loading,
+    messageKeys: ['fetching', 'processing', 'analyzing', 'preparing', 'optimizing'],
+    interval: 1000
+  });
 
   // Check if this card contains video content
   const isVideoCard = cardData?.content && typeof cardData.content === 'string' &&
@@ -1304,7 +1322,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
       return (
         <div className="flex items-center justify-center h-32">
           <RefreshCw className="h-6 w-6 animate-spin" />
-          <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
+          <span className="ml-2 text-sm text-muted-foreground">{currentMessage || t('common.loading')}</span>
         </div>
       );
     }
