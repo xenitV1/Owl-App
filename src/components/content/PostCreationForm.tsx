@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Image as ImageIcon, X, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLoadingMessages } from '@/hooks/useLoadingMessages';
 
 // Helper function to encode Unicode strings to base64
 const encodeToBase64 = (str: string): string => {
@@ -48,6 +49,12 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const { currentMessage } = useLoadingMessages({
+    isLoading: (externalIsSubmitting ?? isLoading),
+    messageKeys: ['processing', 'uploading', 'saving', 'finalizing'],
+    interval: 800
+  });
 
   const SUBJECTS = [
     t('subjects.mathematics'),
@@ -316,7 +323,7 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
               type="submit" 
               disabled={(externalIsSubmitting ?? isLoading) || !title.trim()}
             >
-              {(externalIsSubmitting ?? isLoading) ? t('posts.creating') : t('posts.sharePost')}
+              {(externalIsSubmitting ?? isLoading) ? (currentMessage || t('posts.creating')) : t('posts.sharePost')}
             </Button>
           </div>
         </form>
