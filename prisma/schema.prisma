@@ -18,7 +18,7 @@ model User {
   favoriteSubject    String?
   bio                String?
   isVerified         Boolean            @default(false)
-  theme              String             @default("light")
+  theme              String             @default("light") // light, dark, system, retro-light, retro-dark
   fontSize           String             @default("normal")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
