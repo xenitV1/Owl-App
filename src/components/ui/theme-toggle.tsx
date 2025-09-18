@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun, Monitor, Palette, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,13 +19,13 @@ export const ThemeToggle: React.FC = () => {
     setMounted(true);
   }, []);
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => {
     setTheme(newTheme);
     // Save theme preference to user profile
     saveThemePreference(newTheme);
   };
 
-  const saveThemePreference = async (theme: 'light' | 'dark' | 'system') => {
+  const saveThemePreference = async (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => {
     try {
       const response = await fetch('/api/user/preferences', {
         method: 'PUT',
@@ -46,12 +46,21 @@ export const ThemeToggle: React.FC = () => {
     if (theme === 'system') {
       return resolvedTheme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
     }
+    if (theme === 'retro-light' || theme === 'retro-dark') {
+      return <Sparkles className="h-4 w-4" />;
+    }
     return theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
   };
 
   const getLabel = () => {
     if (theme === 'system') {
       return `System (${resolvedTheme})`;
+    }
+    if (theme === 'retro-light') {
+      return 'Retro Light';
+    }
+    if (theme === 'retro-dark') {
+      return 'Retro Dark';
     }
     return theme.charAt(0).toUpperCase() + theme.slice(1);
   };
@@ -76,6 +85,14 @@ export const ThemeToggle: React.FC = () => {
         <DropdownMenuItem onClick={() => handleThemeChange('system')}>
           <Monitor className="mr-2 h-4 w-4" />
           <span>System</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('retro-light')}>
+          <Sparkles className="mr-2 h-4 w-4" />
+          <span>Retro Light</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('retro-dark')}>
+          <Palette className="mr-2 h-4 w-4" />
+          <span>Retro Dark</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
