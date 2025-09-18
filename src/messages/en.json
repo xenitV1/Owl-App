@@ -851,5 +851,69 @@
     "applyingFilters": "Applying filters...",
     "organizingData": "Organizing data...",
     "finalizing": "Finalizing..."
+  },
+  "comingSoon": {
+    "theme": "Theme",
+    "language": "Language",
+    "badge": "Educational Social Media Platform",
+    "title": "Coming Soon",
+    "titleHighlight": "Soon!",
+    "subtitle": "Social media platform specially designed for students. Note sharing, collaboration and learning community.",
+    "notifyButton": "Get Notified",
+    "demoButton": "Watch Demo",
+    "themes": {
+      "light": "Modern light theme",
+      "dark": "Modern dark theme",
+      "retroLight": "80s nostalgic light",
+      "retroDark": "80s nostalgic dark"
+    },
+    "stats": {
+      "users": "Users",
+      "content": "Content",
+      "schools": "Schools",
+      "success": "Success Rate"
+    },
+    "features": {
+      "title": "Platform Features",
+      "subtitle": "Powerful features specially designed for students",
+      "noteSharing": {
+        "title": "Note Sharing",
+        "description": "Share exam materials, lesson notes and educational content"
+      },
+      "collaborative": {
+        "title": "Collaborative Learning",
+        "description": "Learn together with communities and private groups"
+      },
+      "smartDiscovery": {
+        "title": "Smart Discovery",
+        "description": "Find the most relevant content with AI-powered recommendations"
+      },
+      "global": {
+        "title": "Global Community",
+        "description": "Connect with students from different schools and countries"
+      },
+      "fast": {
+        "title": "Fast Performance",
+        "description": "Instant loading and smooth interactions"
+      },
+      "comingSoon": {
+        "title": "Coming Soon",
+        "description": "Platform is in development stage, will be available soon"
+      }
+    },
+    "cta": {
+      "title": "Ready to Transform Your Learning Experience?",
+      "subtitle": "Join thousands of students who are improving their education using the Owl platform.",
+      "emailPlaceholder": "Enter your email address",
+      "notifyButton": "Get Notified",
+      "disclaimer": "No credit card required. Free for students."
+    },
+    "footer": {
+      "tagline": "Empowering students through collaborative learning.",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy",
+      "copyright": "© 2024 Owl Platform. All rights reserved."
+    }
   }
 }
