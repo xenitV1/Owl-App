@@ -1113,7 +1113,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
           <BlockNoteView
             editor={editor}
             onChange={handleContentChange}
-            theme={resolvedTheme}
+            theme={resolvedTheme as any}
             className="h-full"
             formattingToolbar
             sideMenu
@@ -1125,7 +1125,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
               <BlockNoteView
                 editor={editor}
                 onChange={handleContentChange}
-                theme={resolvedTheme}
+                theme={resolvedTheme as any}
                 className="h-full"
                 formattingToolbar
                 sideMenu
@@ -1136,7 +1136,7 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
               <BlockNoteView
                 editor={editorRight}
                 onChange={handleContentChangeRight}
-                theme={resolvedTheme}
+                theme={resolvedTheme as any}
                 className="h-full"
                 formattingToolbar
                 sideMenu
