@@ -33,14 +33,33 @@ interface TextHighlighterProps {
   connectedTo?: any; // Card connection data
 }
 
-const HIGHLIGHT_COLORS = [
-  '#fef3c7', // yellow-100
-  '#dbeafe', // blue-100
-  '#dcfce7', // green-100
-  '#fce7f3', // pink-100
-  '#fed7d7', // red-100
-  '#e0e7ff', // indigo-100
-];
+// Returns palette depending on active theme
+function getHighlightColors(): string[] {
+  const isRetroLight = typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('retro-light');
+
+  if (isRetroLight) {
+    // Retro Light: stronger, warmer mid-tones for better legibility
+    return [
+      '#F5CC66', // mustard-mid (from --primary)
+      '#F29B85', // coral-mid (from --secondary)
+      '#E37D74', // brick-mid (from --accent)
+      '#C26474', // berry-mid (from --destructive)
+      '#B07AA6', // plum-mid (from chart-5)
+      '#E6D9BF', // warm beige (background accent)
+    ];
+  }
+
+  // Default soft pastels
+  return [
+    '#fef3c7', // yellow-100
+    '#dbeafe', // blue-100
+    '#dcfce7', // green-100
+    '#fce7f3', // pink-100
+    '#fed7d7', // red-100
+    '#e0e7ff', // indigo-100
+  ];
+}
 
 // Generate unique highlight ID with better collision resistance
 function generateUniqueHighlightId(existingIds: string[]): string {
@@ -114,7 +133,7 @@ export const TextHighlighter = React.forwardRef<{
   const [highlights, setHighlights] = useState<HighlightData[]>(existingHighlights);
   const [selectedText, setSelectedText] = useState<string>('');
   const [selectionRange, setSelectionRange] = useState<Range | null>(null);
-  const [selectedColor, setSelectedColor] = useState(HIGHLIGHT_COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState<string>(getHighlightColors()[0]);
   const containerRef = useRef<HTMLDivElement>(null);
   const { addCard, cards, addConnection, connections, saveRichNoteVersion } = useWorkspaceStore() as any;
 
@@ -512,7 +531,7 @@ export const TextHighlighter = React.forwardRef<{
 
           {/* Color Picker */}
           <div className="flex items-center gap-1 flex-wrap justify-center w-full">
-            {HIGHLIGHT_COLORS.map((color) => (
+            {getHighlightColors().map((color) => (
               <button
                 key={color}
                 className={cn(
