@@ -51,6 +51,7 @@ bun-debug.log*
 
 # Firebase/Emulators
 .firebase/
+owll-514ef-firebase-adminsdk-fbsvc-151ccc7716.json
 
 # Playwright reports
 playwright-report/
