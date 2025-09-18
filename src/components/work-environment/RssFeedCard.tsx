@@ -25,6 +25,9 @@ interface FeedItem {
   summary?: string;
   thumbnail?: string;
   isShort?: boolean;
+  embedUrl?: string;
+  isSpotify?: boolean;
+  trackNumber?: number;
 }
 
 // Helpers to detect/prepare media embeds
@@ -47,10 +50,46 @@ const extractYouTubeVideoId = (url: string): string | null => {
 };
 
 const extractSpotifyEmbedUrl = (url: string): string | null => {
-  const m = url.match(/spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
-  if (!m) return null;
-  const [, type, id] = m;
-  return `https://open.spotify.com/embed/${type}/${id}`;
+  // Handle full URLs
+  const fullUrlMatch = url.match(/spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+  if (fullUrlMatch) {
+    const [, type, id] = fullUrlMatch;
+    return `https://open.spotify.com/embed/${type}/${id}`;
+  }
+
+  // Handle embed URLs
+  const embedMatch = url.match(/open\.spotify\.com\/embed\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+  if (embedMatch) {
+    return url; // Already an embed URL
+  }
+
+  // Handle just IDs (assume playlist if no type specified)
+  if (/^[a-zA-Z0-9]+$/.test(url)) {
+    return `https://open.spotify.com/embed/playlist/${url}`;
+  }
+
+  return null;
+};
+
+const extractSpotifyId = (input: string, type: string): string | null => {
+  // If it's already just an ID
+  if (/^[a-zA-Z0-9]+$/.test(input)) {
+    return input;
+  }
+
+  // Extract from full Spotify URL
+  const urlMatch = input.match(/spotify\.com\/(?:track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+  if (urlMatch) {
+    return urlMatch[1];
+  }
+
+  // Extract from embed URL
+  const embedMatch = input.match(/open\.spotify\.com\/embed\/(?:track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+  if (embedMatch) {
+    return embedMatch[1];
+  }
+
+  return null;
 };
 
 export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
@@ -173,7 +212,13 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
       return;
     }
 
-    // Spotify
+    // Spotify from API response (when isSpotify is true)
+    if ((item as any).isSpotify && (item as any).embedUrl) {
+      createMediaCard('spotify', (item as any).embedUrl, title);
+      return;
+    }
+
+    // Spotify from link
     const sp = extractSpotifyEmbedUrl(link);
     if (sp) {
       createMediaCard('spotify', link, title);
@@ -307,6 +352,28 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
                       }
                     } catch {}
                   }
+                } else if (currentProvider?.id === 'spotify') {
+                  if (providerOpts.type && providerOpts.id) {
+                    try {
+                      // Extract Spotify ID from input (could be URL, embed, or just ID)
+                      const spotifyId = extractSpotifyId(providerOpts.id, providerOpts.type);
+                      if (!spotifyId) {
+                        console.error('[RssFeedCard] Could not extract Spotify ID from:', providerOpts.id);
+                        return;
+                      }
+
+                      const res = await fetch(`/api/rss?spotify${providerOpts.type}=${encodeURIComponent(spotifyId)}`);
+                      const data = await res.json();
+                      // For Spotify, we get items directly since there's no RSS feed
+                      if (Array.isArray(data?.items)) {
+                        setItems(data.items);
+                        persist({ content: JSON.stringify({ rss: { category, providerId, providerOpts, feedUrl: null } }) });
+                        return;
+                      }
+                    } catch (error) {
+                      console.error('[RssFeedCard] Spotify API error:', error);
+                    }
+                  }
                 }
                 if (url) {
                   setSelectedFeed(url);
@@ -338,20 +405,26 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
               {t('rss.limitInfo', { default: 'Showing up to {count} items', count: 15 })}
             </div>
           )}
-          {/** Only show Shorts UI for YouTube provider */}
-          <div className={`grid grid-cols-1 ${(currentProvider?.id === 'youtube' && showShorts) ? 'md:grid-cols-[1fr_minmax(280px,360px)]' : 'md:grid-cols-1'} gap-3`}>
+          {/** Show different layouts based on provider */}
+          {currentProvider?.id === 'spotify' ? (
+            // Spotify layout - show tracks with numbers
             <div>
-              {currentProvider?.id === 'youtube' && (
-                <div className="text-xs font-medium text-muted-foreground px-1 mb-1">{t('rss.normalVideos', { default: 'Videolar' })}</div>
-              )}
-              {(items.filter(i => !i.isShort)).map((it, idx) => (
+              <div className="text-xs font-medium text-muted-foreground px-1 mb-1">
+                {currentProvider?.id === 'spotify' && providerOpts.type === 'playlist' && t('spotify.playlistTracks', { default: 'Playlist Şarkıları' })}
+                {currentProvider?.id === 'spotify' && providerOpts.type === 'album' && t('spotify.albumTracks', { default: 'Albüm Şarkıları' })}
+                {currentProvider?.id === 'spotify' && providerOpts.type === 'artist' && t('spotify.topTracks', { default: 'Popüler Şarkılar' })}
+              </div>
+              {items.map((it, idx) => (
                 <a key={(it.id || it.link || '') + idx} href={it.link} onClick={(e) => handleItemClick(e, it)} className="flex gap-3 p-2 rounded border hover:bg-muted/40 cursor-pointer items-start">
+                  <div className="flex items-center justify-center w-8 h-8 bg-muted rounded text-xs font-medium text-muted-foreground">
+                    {it.trackNumber || (idx + 1)}
+                  </div>
                   {it.thumbnail && (
                     <img
                       src={it.thumbnail}
-                      alt="thumb"
+                      alt="album art"
                       className="object-cover rounded"
-                      style={{ width: `${64 * contentScale}px`, height: `${64 * contentScale}px` }}
+                      style={{ width: `${48 * contentScale}px`, height: `${48 * contentScale}px` }}
                     />
                   )}
                   <div
@@ -363,12 +436,43 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
                     }}
                   >
                     <div className="text-sm font-medium truncate">{it.title}</div>
-                    {it.published && <div className="text-xs text-muted-foreground">{new Date(it.published).toLocaleString()}</div>}
                     {it.summary && <div className="text-xs text-muted-foreground line-clamp-2">{it.summary}</div>}
                   </div>
                 </a>
               ))}
             </div>
+          ) : (
+            // YouTube layout
+            <div className={`grid grid-cols-1 ${(currentProvider?.id === 'youtube' && showShorts) ? 'md:grid-cols-[1fr_minmax(280px,360px)]' : 'md:grid-cols-1'} gap-3`}>
+              <div>
+                {currentProvider?.id === 'youtube' && (
+                  <div className="text-xs font-medium text-muted-foreground px-1 mb-1">{t('rss.normalVideos', { default: 'Videolar' })}</div>
+                )}
+                {(items.filter(i => !i.isShort)).map((it, idx) => (
+                  <a key={(it.id || it.link || '') + idx} href={it.link} onClick={(e) => handleItemClick(e, it)} className="flex gap-3 p-2 rounded border hover:bg-muted/40 cursor-pointer items-start">
+                    {it.thumbnail && (
+                      <img
+                        src={it.thumbnail}
+                        alt="thumb"
+                        className="object-cover rounded"
+                        style={{ width: `${64 * contentScale}px`, height: `${64 * contentScale}px` }}
+                      />
+                    )}
+                    <div
+                      className="min-w-0 flex-1"
+                      style={{
+                        transform: `scale(${contentScale})`,
+                        transformOrigin: 'top left',
+                        width: `${100 / contentScale}%`,
+                      }}
+                    >
+                      <div className="text-sm font-medium truncate">{it.title}</div>
+                      {it.published && <div className="text-xs text-muted-foreground">{new Date(it.published).toLocaleString()}</div>}
+                      {it.summary && <div className="text-xs text-muted-foreground line-clamp-2">{it.summary}</div>}
+                    </div>
+                  </a>
+                ))}
+              </div>
             {(currentProvider?.id === 'youtube' && showShorts) && (
               <div className="md:sticky md:top-0 md:self-start">
                 <div className="text-xs font-medium text-muted-foreground px-1 mb-1">{t('rss.shortVideos', { default: 'Shorts' })}</div>
@@ -391,7 +495,8 @@ export function RssFeedCard({ cardId, cardData, onUpdate }: RssFeedCardProps) {
                 ))}
               </div>
             )}
-          </div>
+            </div>
+          )}
           {/* when shorts hidden, toggle button is rendered in header to avoid scroll jump */}
           {/* Fixed 15 items per server; no auto-load beyond limit */}
         </div>

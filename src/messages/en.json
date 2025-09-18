@@ -798,6 +798,11 @@
       "academia": "Academia"
     }
   },
+  "spotify": {
+    "playlistTracks": "Playlist Tracks",
+    "albumTracks": "Album Tracks",
+    "topTracks": "Top Tracks"
+  },
   "loading": {
     "connecting": "Connecting...",
     "fetching": "Fetching data...",

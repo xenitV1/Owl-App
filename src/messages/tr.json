@@ -780,7 +780,12 @@
     "normalVideos": "Videolar",
     "shortVideos": "Shorts",
     "hide": "Gizle",
-    "showShorts": "Shorts’u Göster",
+    "showShorts": "Shorts'u Göster"
+  },
+  "spotify": {
+    "playlistTracks": "Playlist Şarkıları",
+    "albumTracks": "Albüm Şarkıları",
+    "topTracks": "Popüler Şarkılar",
     "hideShorts": "Shorts’u gizle",
     "loadMore": "Daha fazla yükle",
     "youtube": {

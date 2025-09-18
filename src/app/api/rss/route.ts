@@ -381,6 +381,118 @@ function isoDurationToSeconds(iso: string | undefined): number | null {
   return h * 3600 + mi * 60 + s;
 }
 
+async function fetchSpotifyData(type: string, id: string, limit: number, page: number): Promise<any | null> {
+  try {
+    const clientId = process.env.SPOTIFY_CLIENT_ID;
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.info('[RSS] Spotify API credentials not configured, using fallback');
+      return null;
+    }
+
+    // Get access token using Client Credentials flow
+    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!tokenResponse.ok) {
+      console.error('[RSS] Failed to get Spotify access token');
+      return null;
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    let apiUrl: string;
+    let title: string;
+
+    if (type === 'playlists') {
+      apiUrl = `https://api.spotify.com/v1/playlists/${id}/tracks?limit=${limit}&offset=${page * limit}`;
+      // Also get playlist info
+      const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${id}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      if (playlistResponse.ok) {
+        const playlistData = await playlistResponse.json();
+        title = playlistData.name || `Spotify Playlist`;
+      } else {
+        title = `Spotify Playlist`;
+      }
+    } else if (type === 'albums') {
+      apiUrl = `https://api.spotify.com/v1/albums/${id}/tracks?limit=${limit}&offset=${page * limit}`;
+      // Get album info
+      const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${id}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      if (albumResponse.ok) {
+        const albumData = await albumResponse.json();
+        title = albumData.name || `Spotify Album`;
+      } else {
+        title = `Spotify Album`;
+      }
+    } else if (type === 'artists') {
+      apiUrl = `https://api.spotify.com/v1/artists/${id}/top-tracks?market=TR`;
+      // Get artist info
+      const artistResponse = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      if (artistResponse.ok) {
+        const artistData = await artistResponse.json();
+        title = artistData.name || `Spotify Artist`;
+      } else {
+        title = `Spotify Artist`;
+      }
+    } else {
+      return null;
+    }
+
+    const response = await fetch(apiUrl, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+
+    if (!response.ok) {
+      console.error(`[RSS] Spotify API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const tracks = type === 'artists' ? data.tracks : data.items;
+
+    const items = tracks.map((track: any, index: number) => {
+      const trackInfo = type === 'artists' ? track : track.track;
+      return {
+        id: trackInfo.id,
+        title: trackInfo.name,
+        link: trackInfo.external_urls.spotify,
+        published: trackInfo.album?.release_date,
+        summary: `${trackInfo.artists.map((a: any) => a.name).join(', ')} - ${trackInfo.album?.name || ''}`,
+        thumbnail: trackInfo.album?.images?.[0]?.url,
+        embedUrl: `https://open.spotify.com/embed/track/${trackInfo.id}`,
+        isSpotify: true,
+        trackNumber: type === 'artists' ? index + 1 : track.track_number
+      };
+    });
+
+    return {
+      title: title,
+      items: items,
+      limit: limit,
+      page: page,
+      hasMore: type === 'artists' ? false : data.next !== null
+    };
+
+  } catch (error) {
+    console.error('[RSS] Spotify API error:', error);
+    return null;
+  }
+}
+
 async function fetchYouTubePopular(regionCode: string, limit: number, page: number): Promise<{ items: Array<{ id: string; title: string; link: string; published?: string; summary?: string; thumbnail?: string; isShort?: boolean }>, limit: number, page: number, hasMore: boolean }> {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -420,6 +532,9 @@ export async function GET(req: NextRequest) {
     const feed = searchParams.get('feed');
     const ytResolve = searchParams.get('youtubeResolve');
     const ytPopular = searchParams.get('youtubePopular');
+    const spotifyPlaylist = searchParams.get('spotifyplaylist');
+    const spotifyAlbum = searchParams.get('spotifyalbum');
+    const spotifyArtist = searchParams.get('spotifyartist');
     const limitParam = parseInt(searchParams.get('limit') || '15', 10);
     const limit = isNaN(limitParam) ? 15 : limitParam;
     const pageParam = parseInt(searchParams.get('page') || '0', 10);
@@ -438,6 +553,55 @@ export async function GET(req: NextRequest) {
         return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
       } catch (e: any) {
         return new Response(JSON.stringify({ error: e?.message || 'YouTube popular failed' }), { status: 500 });
+      }
+    }
+
+    // Handle Spotify requests
+    if (spotifyPlaylist || spotifyAlbum || spotifyArtist) {
+      try {
+        let type: string, id: string;
+        if (spotifyPlaylist) {
+          type = 'playlists';
+          id = spotifyPlaylist;
+        } else if (spotifyAlbum) {
+          type = 'albums';
+          id = spotifyAlbum;
+        } else {
+          type = 'artists';
+          id = spotifyArtist!;
+        }
+
+        // Try to fetch from Spotify Web API first
+        const spotifyData = await fetchSpotifyData(type, id, limit, page);
+        if (spotifyData) {
+          return new Response(JSON.stringify(spotifyData), { headers: { 'content-type': 'application/json' } });
+        }
+
+        // Fallback: Create a mock RSS-like response with Spotify embed
+        const embedUrl = `https://open.spotify.com/embed/${type.replace('s', '')}/${id}`;
+        const title = `Spotify ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        const items = [{
+          id: `${type}_${id}`,
+          title: `Spotify ${type}: ${id}`,
+          link: `https://open.spotify.com/${type.replace('s', '')}/${id}`,
+          published: new Date().toISOString(),
+          summary: `Embedded Spotify ${type}`,
+          thumbnail: undefined,
+          embedUrl: embedUrl,
+          isSpotify: true
+        }];
+
+        const data = {
+          title: title,
+          items: items,
+          limit: 1,
+          page: 0,
+          hasMore: false
+        };
+
+        return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e?.message || 'Spotify request failed' }), { status: 500 });
       }
     }
     if (!url && !feed) {

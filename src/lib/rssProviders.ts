@@ -51,6 +51,31 @@ export const rssProviders: RssProvider[] = [
     },
     example: { mode: 'channel', value: 'UC_x5XG1OV2P6uZZ5FSM9Ttw' }
   },
+  {
+    id: 'spotify',
+    name: 'Spotify',
+    description: 'Playlist, album veya sanatçı',
+    category: 'social',
+    options: [
+      {
+        key: 'type',
+        label: 'Tür',
+        type: 'select',
+        options: [
+          { value: 'playlist', label: 'Playlist' },
+          { value: 'album', label: 'Albüm' },
+          { value: 'artist', label: 'Sanatçı' }
+        ],
+        required: true
+      },
+      { key: 'id', label: 'Spotify ID', type: 'text', placeholder: 'Playlist/Album/Artist ID veya URL', required: true }
+    ],
+    buildUrl: (o) => {
+      if (o.type && o.id) return `spotify:${o.type}:${o.id}`; // special marker handled in UI
+      return null;
+    },
+    example: { type: 'playlist', id: '37i9dQZF1DXcBWIGoYBM5M' }
+  },
   // ---- Science & Popular Science (TR) ----
   {
     id: 'evrimagaci',

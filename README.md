@@ -118,7 +118,45 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 FIREBASE_PROJECT_ID="your-project-id"
 FIREBASE_PRIVATE_KEY="your-private-key"
 FIREBASE_CLIENT_EMAIL="your-client-email"
-```
+
+# YouTube API (Optional - for enhanced YouTube features)
+YOUTUBE_API_KEY="your-youtube-api-key"
+
+# Spotify Web API (Optional - for Spotify playlist integration)
+SPOTIFY_CLIENT_ID="your-spotify-client-id"
+SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
+
+## 🔧 API Setup Instructions
+
+### Spotify Web API Setup
+
+To enable Spotify playlist integration in RSS feeds:
+
+1. **Create a Spotify App**:
+   - Go to [Spotify Developer Console](https://developer.spotify.com/dashboard)
+   - Click "Create an App"
+   - Fill in app name (e.g., "OWL-App") and description
+   - Set redirect URI to: `https://owl-app.com` (if you have SSL certificate) or `http://localhost:3000` (for development)
+     - **Note**: For localhost, Spotify will show a security warning, but this is normal for development. Click "Save anyway" to continue.
+
+2. **Get API Credentials**:
+   - Copy the **Client ID** from your app dashboard
+   - Click "Show Client Secret" to get the **Client Secret**
+
+3. **Configure Environment Variables**:
+   - Add to your `.env.local` file:
+     ```
+     SPOTIFY_CLIENT_ID=your_actual_client_id_here
+     SPOTIFY_CLIENT_SECRET=your_actual_client_secret_here
+     ```
+
+4. **Features Enabled**:
+   - View playlist tracks as RSS feed items
+   - Display album artwork thumbnails
+   - Show artist and album information
+   - Click tracks to open Spotify embed player
+
+**Note**: Without API credentials, Spotify integration falls back to embed-only mode.
 
 ## 📁 Project Structure
 
