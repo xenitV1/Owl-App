@@ -71,6 +71,13 @@ export async function POST(request: NextRequest) {
 
     } catch (prismaError) {
       console.error('❌ Prisma hatası:', prismaError);
+      console.error('❌ Prisma error details:', {
+        message: prismaError instanceof Error ? prismaError.message : 'Unknown error',
+        stack: prismaError instanceof Error ? prismaError.stack : undefined,
+        name: prismaError instanceof Error ? prismaError.name : undefined,
+        code: (prismaError as any)?.code,
+        meta: (prismaError as any)?.meta
+      });
       console.log('🔄 In-memory storage kullanılıyor...');
       
       // Prisma başarısız olursa in-memory storage kullan
