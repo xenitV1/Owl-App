@@ -343,7 +343,7 @@ export default function SettingsPage() {
               <div>
                 <Label>Theme</Label>
                 <div className="grid gap-2 mt-2">
-                  {(['light', 'dark', 'system'] as const).map((themeOption) => (
+                  {(['light', 'dark', 'system', 'retro-light', 'retro-dark'] as const).map((themeOption) => (
                     <div
                       key={themeOption}
                       className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -359,7 +359,18 @@ export default function SettingsPage() {
                             <div className="w-2 h-2 rounded-full bg-primary m-0.5" />
                           )}
                         </div>
-                        <span className="capitalize font-medium">{themeOption}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="capitalize font-medium">
+                            {themeOption === 'retro-light' ? 'Retro Light' : 
+                             themeOption === 'retro-dark' ? 'Retro Dark' : 
+                             themeOption}
+                          </span>
+                          {themeOption.startsWith('retro-') && (
+                            <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full">
+                              ✦ Retro
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
