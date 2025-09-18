@@ -128,11 +128,55 @@ export default function ComingSoonPage() {
               {t('subtitle')}
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button size="lg" className={`text-lg px-8 py-4 ${styles.button} transition-all duration-500`}>
-                <Mail className="mr-2 h-5 w-5" />
-                {t('notifyButton')}
-              </Button>
+            {/* Waitlist Form */}
+            <div className="max-w-md mx-auto mb-12">
+              <form onSubmit={handleWaitlistSubmit} className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('cta.emailPlaceholder')}
+                    className={`flex-1 ${styles.input}`}
+                    required
+                  />
+                  <Button 
+                    type="submit" 
+                    className={`px-8 ${styles.button} transition-all duration-500`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Clock className="mr-2 h-4 w-4 animate-spin" />
+                        Kaydediliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        {t('notifyButton')}
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {message && (
+                  <div className={`flex items-center justify-center space-x-2 p-3 rounded-md ${
+                    message.type === 'success' 
+                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                      : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    {message.type === 'success' ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4" />
+                    )}
+                    <span className="text-sm">{message.text}</span>
+                  </div>
+                )}
+              </form>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button variant="outline" size="lg" className={`text-lg px-8 py-4 border-2 ${styles.text} hover:bg-opacity-10 transition-all duration-500`}>
                 <Clock className="mr-2 h-5 w-5" />
                 {t('demoButton')}
@@ -256,7 +300,7 @@ export default function ComingSoonPage() {
         </div>
       </section>
 
-      {/* Waitlist Section */}
+      {/* Additional Info Section */}
       <section className={`py-20 ${resolvedTheme === 'dark' ? 'bg-gray-800' : resolvedTheme?.startsWith('retro') ? 'bg-amber-100' : 'bg-blue-600'} text-white`}>
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">
@@ -266,60 +310,25 @@ export default function ComingSoonPage() {
             {t('cta.subtitle')}
           </p>
           
-          <div className="max-w-md mx-auto">
-            <form onSubmit={handleWaitlistSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-left block text-sm font-medium">
-                  E-posta Adresi *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('cta.emailPlaceholder')}
-                  className={styles.input}
-                  required
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className={`w-full ${styles.button} transition-all duration-500`}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Kaydediliyor...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="mr-2 h-4 w-4" />
-                    {t('cta.notifyButton')}
-                  </>
-                )}
-              </Button>
-              
-              {message && (
-                <div className={`flex items-center justify-center space-x-2 p-3 rounded-md ${
-                  message.type === 'success' 
-                    ? 'bg-green-100 text-green-800 border border-green-200' 
-                    : 'bg-red-100 text-red-800 border border-red-200'
-                }`}>
-                  {message.type === 'success' ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4" />
-                  )}
-                  <span className="text-sm">{message.text}</span>
-                </div>
-              )}
-              
-              <p className="text-sm opacity-75">
-                {t('cta.disclaimer')}
-              </p>
-            </form>
+          <div className="max-w-2xl mx-auto">
+            <p className="text-lg opacity-90 mb-6">
+              Platform açıldığında size haber vereceğiz. E-posta adresinizi yukarıdaki forma girerek kayıt olabilirsiniz.
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-4 text-sm opacity-75">
+              <span className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Ücretsiz erken erişim
+              </span>
+              <span className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Özel duyurular
+              </span>
+              <span className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Spam yok, sadece önemli güncellemeler
+              </span>
+            </div>
           </div>
         </div>
       </section>
