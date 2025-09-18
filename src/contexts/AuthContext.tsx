@@ -52,21 +52,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(firebaseUser);
 
       if (firebaseUser?.email) {
-        // Fetch database user info
-        try {
-          const token = await firebaseUser.getIdToken();
-          const response = await fetch('/api/users/profile', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (response.ok) {
-            const userData = await response.json();
-            setDbUser(userData);
+        // Only fetch database user info if not on coming soon page
+        const isComingSoonPage = window.location.pathname.includes('/coming-soon');
+        
+        if (!isComingSoonPage) {
+          try {
+            const token = await firebaseUser.getIdToken();
+            const response = await fetch('/api/users/profile', {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            if (response.ok) {
+              const userData = await response.json();
+              setDbUser(userData);
+            } else {
+              console.warn('Failed to fetch user profile:', response.status);
+              setDbUser(null);
+            }
+          } catch (error) {
+            console.error('Failed to fetch user profile:', error);
+            setDbUser(null);
           }
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
+        } else {
+          // On coming soon page, don't try to fetch user profile
           setDbUser(null);
         }
       } else {
