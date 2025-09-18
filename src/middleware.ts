@@ -19,6 +19,24 @@ export async function middleware(request: NextRequest) {
   const pathLocale = pathLocaleMatch ? pathLocaleMatch[1] : undefined;
   console.log('[middleware] incoming', { path, acceptLanguage, cookieLocale, pathLocale });
 
+  // Check if this is a coming-soon redirect scenario
+  const isApiRoute = path.startsWith('/api/');
+  const isStaticFile = path.includes('.') && !path.includes('/api/');
+  const isComingSoonPage = path.includes('/coming-soon');
+  const isRootPage = path === '/' || path === '/en' || path === '/tr';
+  const isHealthCheck = path === '/api/health';
+
+  // Redirect to coming-soon if:
+  // 1. It's the root page OR
+  // 2. It's not an API route AND not a static file AND not already coming-soon
+  if ((isRootPage || (!isApiRoute && !isStaticFile && !isComingSoonPage && !isHealthCheck)) && !path.startsWith('/_next')) {
+    // Determine locale for redirect
+    const locale = pathLocale || cookieLocale || (acceptLanguage?.includes('tr') ? 'tr' : 'en');
+    const comingSoonUrl = `/${locale}/coming-soon`;
+    console.log('[middleware] redirecting to coming-soon', { from: path, to: comingSoonUrl });
+    return NextResponse.redirect(new URL(comingSoonUrl, request.url));
+  }
+
   const response = intlMiddleware(request);
 
   const resolvedLocaleHeader = response.headers.get('x-middleware-next-intl-locale');

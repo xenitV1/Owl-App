@@ -117,7 +117,7 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
-  
+
   // Validate that the incoming `locale` parameter is valid
   if (!locales.includes(locale as any)) notFound();
 
@@ -131,18 +131,18 @@ export default async function LocaleLayout({
           <FontSizeProvider>
             <ThemeLoader />
             <div className="min-h-screen flex flex-col">
-              <SkipLinks 
+              <SkipLinks
                 links={[
                   { href: '#main-content', label: 'Skip to main content' },
                   { href: '#navigation', label: 'Skip to navigation' }
-                ]} 
+                ]}
               />
               <header role="banner">
                 <Navigation />
               </header>
-              <main 
-                id="main-content" 
-                role="main" 
+              <main
+                id="main-content"
+                role="main"
                 tabIndex={-1}
                 className="flex-1 pb-16 md:pb-0 focus:outline-none"
               >

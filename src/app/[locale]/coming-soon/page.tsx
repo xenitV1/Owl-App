@@ -88,7 +88,7 @@ export default function ComingSoonPage() {
   const styles = getThemeStyles();
 
   return (
-    <div className={`min-h-screen ${styles.background} transition-all duration-500`}>
+    <div className={`min-h-screen ${styles.background} transition-all duration-500 overflow-hidden`}>
       {/* Theme Selector & Language Switcher */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {/* Language Switcher */}
