@@ -864,12 +864,34 @@
   "comingSoon": {
     "theme": "Tema",
     "language": "Dil",
-    "badge": "Eğitim Sosyal Medya Platformu",
+    "badge": "Akademik Çalışma Ortamı",
     "title": "Yakında",
     "titleHighlight": "Geliyor!",
-    "subtitle": "Öğrenciler için özel olarak tasarlanmış sosyal medya platformu. Not paylaşımı, işbirliği ve öğrenme topluluğu.",
+    "subtitle": "Öğrenciler için optimize edilmiş çalışma ortamı. Not paylaşımı, işbirliği ve verimli öğrenme topluluğu.",
     "notifyButton": "Haberdar Ol",
     "demoButton": "Demo İzle",
+    "workEnvironment": {
+      "title": "Profesyonel Çalışma Ortamı",
+      "subtitle": "Öğrenciler için tasarlanmış verimli çalışma alanı",
+      "features": {
+        "focused": {
+          "title": "Odaklanmış Çalışma",
+          "description": "Dikkat dağıtıcı unsurlardan arındırılmış, sadece eğitim odaklı ortam"
+        },
+        "collaborative": {
+          "title": "İşbirlikçi Öğrenme",
+          "description": "Sınıf arkadaşlarınızla ve öğretmenlerinizle etkili çalışma grupları"
+        },
+        "organized": {
+          "title": "Düzenli İçerik Yönetimi",
+          "description": "Ders notlarınızı, projelerinizi ve kaynaklarınızı sistematik şekilde organize edin"
+        },
+        "productive": {
+          "title": "Verimli Çalışma Araçları",
+          "description": "Öğrenme sürecinizi optimize eden akıllı araçlar ve özellikler"
+        }
+      }
+    },
     "themes": {
       "light": "Modern açık tema",
       "dark": "Modern koyu tema",
@@ -877,9 +899,9 @@
       "retroDark": "80'ler nostaljik koyu"
     },
     "stats": {
-      "users": "Kullanıcı",
-      "content": "İçerik",
-      "schools": "Okul",
+      "users": "Aktif Öğrenci",
+      "content": "Paylaşılan İçerik",
+      "schools": "Partner Okul",
       "success": "Başarı Oranı"
     },
     "features": {
@@ -911,11 +933,11 @@
       }
     },
     "cta": {
-      "title": "Öğrenme Deneyiminizi Dönüştürmeye Hazır mısınız?",
+      "title": "Çalışma Deneyiminizi Dönüştürmeye Hazır mısınız?",
       "subtitle": "Owl platformunu kullanarak eğitimlerini geliştiren binlerce öğrenciye katılın.",
       "emailPlaceholder": "E-posta adresinizi girin",
       "notifyButton": "Haberdar Ol",
-      "disclaimer": "Kredi kartı gerekmez. Öğrenciler için ücretsiz."
+      "disclaimer": "Kredi kartı gerekmez. Öğrenciler için uygun fiyatlı erişim."
     },
     "footer": {
       "tagline": "Öğrencileri işbirlikçi öğrenme ile güçlendiriyoruz.",

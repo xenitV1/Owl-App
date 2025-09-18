@@ -855,12 +855,34 @@
   "comingSoon": {
     "theme": "Theme",
     "language": "Language",
-    "badge": "Educational Social Media Platform",
+    "badge": "Academic Work Environment",
     "title": "Coming Soon",
     "titleHighlight": "Soon!",
-    "subtitle": "Social media platform specially designed for students. Note sharing, collaboration and learning community.",
+    "subtitle": "Optimized work environment for students. Note sharing, collaboration and efficient learning community.",
     "notifyButton": "Get Notified",
     "demoButton": "Watch Demo",
+    "workEnvironment": {
+      "title": "Professional Work Environment",
+      "subtitle": "Efficient workspace designed for students",
+      "features": {
+        "focused": {
+          "title": "Focused Study",
+          "description": "Distraction-free environment focused solely on education"
+        },
+        "collaborative": {
+          "title": "Collaborative Learning",
+          "description": "Effective study groups with classmates and teachers"
+        },
+        "organized": {
+          "title": "Organized Content Management",
+          "description": "Systematically organize your notes, projects and resources"
+        },
+        "productive": {
+          "title": "Productive Study Tools",
+          "description": "Smart tools and features that optimize your learning process"
+        }
+      }
+    },
     "themes": {
       "light": "Modern light theme",
       "dark": "Modern dark theme",
@@ -868,9 +890,9 @@
       "retroDark": "80s nostalgic dark"
     },
     "stats": {
-      "users": "Users",
-      "content": "Content",
-      "schools": "Schools",
+      "users": "Active Students",
+      "content": "Shared Content",
+      "schools": "Partner Schools",
       "success": "Success Rate"
     },
     "features": {
@@ -902,11 +924,11 @@
       }
     },
     "cta": {
-      "title": "Ready to Transform Your Learning Experience?",
+      "title": "Ready to Transform Your Study Experience?",
       "subtitle": "Join thousands of students who are improving their education using the Owl platform.",
       "emailPlaceholder": "Enter your email address",
       "notifyButton": "Get Notified",
-      "disclaimer": "No credit card required. Free for students."
+      "disclaimer": "No credit card required. Affordable access for students."
     },
     "footer": {
       "tagline": "Empowering students through collaborative learning.",

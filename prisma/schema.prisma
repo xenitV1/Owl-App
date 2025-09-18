@@ -286,6 +286,18 @@ model UserMute {
   @@map("user_mutes")
 }
 
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  school    String?
+  interests String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("waitlist")
+}
+
 model ModerationAction {
   id          String               @id @default(cuid())
   type        ModerationActionType
