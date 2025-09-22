@@ -111,11 +111,11 @@ const nextConfig: NextConfig = {
           key: 'Content-Security-Policy',
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://*.firebaseio.com https://www.gstatic.com",
+            "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://*.firebaseio.com https://www.gstatic.com https://www.googletagmanager.com",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com",
+            "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com",
             "font-src 'self' data: https://fonts.gstatic.com",
-            "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss: https:",
+            "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://www.google-analytics.com https://www.googletagmanager.com wss: https:",
             "media-src 'self' https: blob:",
             "worker-src 'self' blob:",
             // Allow embedding trusted providers (Spotify, YouTube, Vimeo)
@@ -138,11 +138,11 @@ const nextConfig: NextConfig = {
         key: 'Content-Security-Policy',
         value: [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://*.firebaseio.com https://www.gstatic.com",
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://*.firebaseio.com https://www.gstatic.com https://www.googletagmanager.com",
           "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: https: blob:",
+          "img-src 'self' data: https: blob: https://www.googletagmanager.com",
           "font-src 'self' data:",
-          "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss: https:",
+          "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://www.google-analytics.com https://www.googletagmanager.com wss: https:",
           "media-src 'self' https: blob:",
           "worker-src 'self' blob:",
           // Allow embedding trusted providers (Spotify, YouTube, Vimeo)

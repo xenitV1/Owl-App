@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import AnalyticsListener from "@/components/AnalyticsListener";
 import "./globals.css";
 
 // Conditionally load Google Fonts only when not in Docker build
@@ -100,6 +102,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
+          `}
+        </Script>
+        <AnalyticsListener />
       </body>
     </html>
   );
