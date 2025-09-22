@@ -859,7 +859,7 @@
     "title": "Coming Soon",
     "titleHighlight": "Soon!",
     "subtitle": "Optimized work environment for students. Note sharing, collaboration and efficient learning community.",
-    "notifyButton": "Get Notified",
+    "notifyButton": "Join Whitelist",
     "demoButton": "Watch Demo",
     "workEnvironment": {
       "title": "Professional Work Environment",
@@ -927,8 +927,15 @@
       "title": "Ready to Transform Your Study Experience?",
       "subtitle": "Join thousands of students who are improving their education using the Owl platform.",
       "emailPlaceholder": "Enter your email address",
-      "notifyButton": "Get Notified",
-      "disclaimer": "No credit card required. Affordable access for students."
+      "notifyButton": "Join Whitelist",
+      "saving": "Saving...",
+      "disclaimer": "No credit card required. Affordable access for students.",
+      "description": "We'll notify you when the platform launches. Register by entering your email address in the form above.",
+      "benefits": {
+        "freeAccess": "Free early access",
+        "specialAnnouncements": "Special announcements",
+        "noSpam": "No spam, only important updates"
+      }
     },
     "footer": {
       "tagline": "Empowering students through collaborative learning.",

@@ -868,7 +868,7 @@
     "title": "Yakında",
     "titleHighlight": "Geliyor!",
     "subtitle": "Öğrenciler için optimize edilmiş çalışma ortamı. Not paylaşımı, işbirliği ve verimli öğrenme topluluğu.",
-    "notifyButton": "Haberdar Ol",
+    "notifyButton": "Beyaz Listeye Katıl",
     "demoButton": "Demo İzle",
     "workEnvironment": {
       "title": "Profesyonel Çalışma Ortamı",
@@ -936,8 +936,15 @@
       "title": "Çalışma Deneyiminizi Dönüştürmeye Hazır mısınız?",
       "subtitle": "Owl platformunu kullanarak eğitimlerini geliştiren binlerce öğrenciye katılın.",
       "emailPlaceholder": "E-posta adresinizi girin",
-      "notifyButton": "Haberdar Ol",
-      "disclaimer": "Kredi kartı gerekmez. Öğrenciler için uygun fiyatlı erişim."
+      "notifyButton": "Beyaz Listeye Katıl",
+      "saving": "Kaydediliyor...",
+      "disclaimer": "Kredi kartı gerekmez. Öğrenciler için uygun fiyatlı erişim.",
+      "description": "Platform açıldığında size haber vereceğiz. E-posta adresinizi yukarıdaki forma girerek kayıt olabilirsiniz.",
+      "benefits": {
+        "freeAccess": "Ücretsiz erken erişim",
+        "specialAnnouncements": "Özel duyurular",
+        "noSpam": "Spam yok, sadece önemli güncellemeler"
+      }
     },
     "footer": {
       "tagline": "Öğrencileri işbirlikçi öğrenme ile güçlendiriyoruz.",

@@ -149,7 +149,7 @@ export default function ComingSoonPage() {
                     {isLoading ? (
                       <>
                         <Clock className="mr-2 h-4 w-4 animate-spin" />
-                        Kaydediliyor...
+                        {t('cta.saving')}
                       </>
                     ) : (
                       <>
@@ -313,21 +313,21 @@ export default function ComingSoonPage() {
           
           <div className="max-w-2xl mx-auto">
             <p className="text-lg opacity-90 mb-6">
-              Platform açıldığında size haber vereceğiz. E-posta adresinizi yukarıdaki forma girerek kayıt olabilirsiniz.
+              {t('cta.description')}
             </p>
             
             <div className="flex flex-wrap justify-center gap-4 text-sm opacity-75">
               <span className="flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Ücretsiz erken erişim
+                {t('cta.benefits.freeAccess')}
               </span>
               <span className="flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Özel duyurular
+                {t('cta.benefits.specialAnnouncements')}
               </span>
               <span className="flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Spam yok, sadece önemli güncellemeler
+                {t('cta.benefits.noSpam')}
               </span>
             </div>
           </div>
