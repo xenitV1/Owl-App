@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import AnalyticsListener from "@/components/AnalyticsListener";
 import "./globals.css";
 
@@ -114,7 +115,9 @@ export default function RootLayout({
             gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
           `}
         </Script>
-        <AnalyticsListener />
+        <Suspense fallback={null}>
+          <AnalyticsListener />
+        </Suspense>
       </body>
     </html>
   );

@@ -154,7 +154,7 @@ export default function ComingSoonPage() {
                     ) : (
                       <>
                         <Mail className="mr-2 h-4 w-4" />
-                        {t('notifyButton')}
+                        {t('joinWhitelistButton')}
                       </>
                     )}
                   </Button>
