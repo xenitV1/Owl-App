@@ -12,7 +12,7 @@ export const db =
     datasources: {
       db: {
         url: process.env.NODE_ENV === 'production'
-          ? process.env.DATABASE_URL
+          ? (process.env.DATABASE_URL ?? 'file:./prisma/dev.db')
           : 'file:./prisma/dev.db'
       }
     }
