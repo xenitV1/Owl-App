@@ -24,8 +24,8 @@ function getAnchorPoint(card: { position: { x: number; y: number }; size: { widt
   }
 }
 
-function elasticQPath(p1: { x: number; y: number }, p2: { x: number; y: number }) {
-  // Control point halfway with offset for elastic curve
+// Simple spring-based control point for rubber-like feel
+function baseControlPoint(p1: { x: number; y: number }, p2: { x: number; y: number }) {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const len = Math.hypot(dx, dy) || 1;
@@ -34,7 +34,42 @@ function elasticQPath(p1: { x: number; y: number }, p2: { x: number; y: number }
   const tension = Math.min(80, len * 0.25);
   const cx = (p1.x + p2.x) / 2 + nx * tension;
   const cy = (p1.y + p2.y) / 2 + ny * tension;
-  return `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`;
+  return { cx, cy };
+}
+
+type Spring = { cx: number; cy: number; vx: number; vy: number };
+
+function springStep(prev: Spring, target: { cx: number; cy: number }, dt = 1 / 60) {
+  const k = 12; // spring stiffness
+  const c = 6; // damping
+  const ax = k * (target.cx - prev.cx) - c * prev.vx;
+  const ay = k * (target.cy - prev.cy) - c * prev.vy;
+  prev.vx += ax * dt;
+  prev.vy += ay * dt;
+  prev.cx += prev.vx * dt;
+  prev.cy += prev.vy * dt;
+}
+
+function elasticQPathWithSpring(key: string, p1: { x: number; y: number }, p2: { x: number; y: number }, springs: Map<string, Spring>) {
+  const target = baseControlPoint(p1, p2);
+  let s = springs.get(key);
+  if (!s) {
+    s = { cx: target.cx, cy: target.cy, vx: 0, vy: 0 };
+    springs.set(key, s);
+  }
+  // If target is effectively unchanged, lock spring to target to avoid idle wobble
+  const dx = target.cx - s.cx;
+  const dy = target.cy - s.cy;
+  const eps = 0.5;
+  if (Math.abs(dx) < eps && Math.abs(dy) < eps) {
+    s.cx = target.cx;
+    s.cy = target.cy;
+    s.vx = 0;
+    s.vy = 0;
+  } else {
+    springStep(s, target);
+  }
+  return `M ${p1.x} ${p1.y} Q ${s.cx} ${s.cy} ${p2.x} ${p2.y}`;
 }
 
 function getLiveWorldRect(cardId: string, pan: { x: number; y: number }, zoom: number) {
@@ -55,12 +90,13 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
   // rAF ticker while dragging for smooth updates
   const [tick, setTick] = useState(0);
   const rafRef = useRef<number | null>(null);
+  const springsRef = useRef<Map<string, { cx: number; cy: number; vx: number; vy: number }>>(new Map());
 
-  useEffect(() => {
-    const isAnyDragging = () => document.querySelector('[data-card-id][data-dragging="true"]') !== null;
+useEffect(() => {
+    const isActive = () => document.querySelector('[data-card-id][data-dragging="true"]') !== null || linking.isActive;
 
     const loop = () => {
-      if (isAnyDragging()) {
+      if (isActive()) {
         setTick(t => (t + 1) % 1000000);
         rafRef.current = requestAnimationFrame(loop);
       } else {
@@ -69,7 +105,7 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
     };
 
     const handleStart = () => {
-      if (rafRef.current == null && isAnyDragging()) rafRef.current = requestAnimationFrame(loop);
+      if (rafRef.current == null && isActive()) rafRef.current = requestAnimationFrame(loop);
     };
 
     document.addEventListener('mousemove', handleStart, { passive: true });
@@ -84,20 +120,21 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
       document.removeEventListener('touchend', handleStart as any);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [linking.isActive]);
 
-  // Prefer live DOM rects only for cards being dragged; fallback to stored state otherwise
+  // Recompute once on pan/zoom changes without starting continuous loop
+  useEffect(() => {
+    setTick(t => (t + 1) % 1000000);
+  }, [pan.x, pan.y, zoom]);
+
+  // Prefer live DOM rects for all cards during rendering; fallback to stored state if not available
   const cardMap = useMemo(() => {
     const map = new Map<string, { position: { x: number; y: number }; size: { width: number; height: number } }>();
     for (const c of cards) {
-      const el = typeof document !== 'undefined' ? (document.querySelector(`[data-card-id="${c.id}"]`) as HTMLElement | null) : null;
-      const isDragging = !!el && el.getAttribute('data-dragging') === 'true';
-      if (isDragging) {
-        const live = getLiveWorldRect(c.id, pan, zoom);
-        if (live) {
-          map.set(c.id, live);
-          continue;
-        }
+      const live = typeof document !== 'undefined' ? getLiveWorldRect(c.id, pan, zoom) : null;
+      if (live) {
+        map.set(c.id, live);
+        continue;
       }
       map.set(c.id, { position: c.position, size: c.size });
     }
@@ -112,7 +149,7 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
         if (!source || !target) return null;
         const p1 = getAnchorPoint(source, conn.sourceAnchor);
         const p2 = getAnchorPoint(target, conn.targetAnchor);
-        return { id: conn.id, d: elasticQPath(p1, p2) };
+        return { id: conn.id, d: elasticQPathWithSpring(conn.id, p1, p2, springsRef.current) };
       })
       .filter(Boolean) as Array<{ id: string; d: string }>;
   }, [connections, cardMap]);
@@ -123,7 +160,7 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
     if (!source) return null;
     const p1 = getAnchorPoint(source, linking.sourceAnchor);
     const p2 = linking.cursor;
-    return elasticQPath(p1, p2);
+    return elasticQPathWithSpring('temp', p1, p2, springsRef.current);
   }, [linking, cardMap]);
 
   return (
@@ -137,10 +174,11 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
           stroke="currentColor"
           strokeWidth={2}
           opacity={0.95}
+          strokeLinecap="round"
         />
       ))}
       {tempPath && (
-        <path d={tempPath} fill="none" stroke="currentColor" strokeDasharray="6 4" strokeWidth={2} opacity={0.8} />
+        <path d={tempPath} fill="none" stroke="currentColor" strokeDasharray="6 4" strokeWidth={2} opacity={0.8} strokeLinecap="round" />
       )}
     </svg>
   );
