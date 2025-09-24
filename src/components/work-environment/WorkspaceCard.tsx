@@ -20,11 +20,12 @@ import { PlatformContentCard } from './PlatformContentCard';
 import { useDragDrop } from '@/hooks/useDragDrop';
 import { RssFeedCard } from './RssFeedCard';
 import { OwlSearchCard } from './OwlSearchCard';
+import { SpotifyCard } from './SpotifyCard';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -137,6 +138,8 @@ interface WorkspaceCardProps {
   pan?: { x: number; y: number };
   zoom?: number;
 }
+
+type CardType = 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
 
 export const WorkspaceCard = memo(function WorkspaceCard({
   card,
@@ -310,6 +313,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
             initialQuery={card.content || ''}
           />
         );
+
+      case 'spotify':
+        return (<SpotifyCard />);
 
       default:
         return null;

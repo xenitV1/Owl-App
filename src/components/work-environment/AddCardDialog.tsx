@@ -21,13 +21,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink, BarChart3, Rss, Search } from 'lucide-react';
+import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink, BarChart3, Rss, Search, Music2 } from 'lucide-react';
 
 interface AddCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddCard: (cardData: {
-    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
     title: string;
     content?: string;
     // Additional data for specific card types
@@ -52,7 +52,7 @@ interface AddCardDialogProps {
 
 export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogProps) {
   const t = useTranslations('workEnvironment');
-  const [cardType, setCardType] = useState<'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch'>('richNote');
+  const [cardType, setCardType] = useState<'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify'>('richNote');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   
@@ -291,6 +291,17 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
                 >
                   <Rss className="w-4 h-4" />
                   <span className="text-sm">RSS Feed</span>
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="spotify" id="spotify" />
+                <Label
+                  htmlFor="spotify"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Music2 className="w-4 h-4" />
+                  <span className="text-sm">Spotify</span>
                 </Label>
               </div>
 

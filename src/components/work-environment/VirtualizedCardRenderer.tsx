@@ -5,7 +5,7 @@ import { WorkspaceCard } from './WorkspaceCard';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
   title: string;
   content?: string;
   position: { x: number; y: number };

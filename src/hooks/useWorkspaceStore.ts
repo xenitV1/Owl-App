@@ -18,7 +18,7 @@ export interface Connection {
 
 interface WorkspaceCard {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
   title: string;
   content?: string;
   position: { x: number; y: number };
