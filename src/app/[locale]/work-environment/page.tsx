@@ -103,7 +103,7 @@ function WorkEnvironmentContent() {
   }, [handleKeyDown, handleKeyUp]);
 
   const handleAddCard = useCallback((cardData: {
-    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
     title: string;
     url?: string;
     content?: string;
