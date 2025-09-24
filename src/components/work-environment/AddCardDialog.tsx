@@ -21,13 +21,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink, BarChart3, Rss } from 'lucide-react';
+import { FileText, Newspaper, BookOpen, Calendar, Timer, Kanban, Brain, Hash, Users, TrendingUp, ExternalLink, BarChart3, Rss, Search } from 'lucide-react';
 
 interface AddCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddCard: (cardData: {
-    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
     title: string;
     content?: string;
     // Additional data for specific card types
@@ -52,7 +52,7 @@ interface AddCardDialogProps {
 
 export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogProps) {
   const t = useTranslations('workEnvironment');
-  const [cardType, setCardType] = useState<'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed'>('richNote');
+  const [cardType, setCardType] = useState<'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch'>('richNote');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   
@@ -163,6 +163,9 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
         break;
       case 'rssFeed':
         // start with empty content; user will paste site URL inside the card
+        break;
+      case 'owlSearch':
+        // start with empty content; user will enter search query inside the card
         break;
     }
 
@@ -288,6 +291,17 @@ export function AddCardDialog({ open, onOpenChange, onAddCard }: AddCardDialogPr
                 >
                   <Rss className="w-4 h-4" />
                   <span className="text-sm">RSS Feed</span>
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="owlSearch" id="owlSearch" />
+                <Label
+                  htmlFor="owlSearch"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                  <span className="text-sm">Owl Search</span>
                 </Label>
               </div>
 
