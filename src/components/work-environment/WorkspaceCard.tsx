@@ -19,11 +19,12 @@ import FlashcardSystem from './FlashcardSystem';
 import { PlatformContentCard } from './PlatformContentCard';
 import { useDragDrop } from '@/hooks/useDragDrop';
 import { RssFeedCard } from './RssFeedCard';
+import { OwlSearchCard } from './OwlSearchCard';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 
 interface WorkspaceCardType {
   id: string;
-  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed';
+  type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
   title: string;
   content?: string;
   position: { x: number; y: number };
@@ -300,6 +301,14 @@ export const WorkspaceCard = memo(function WorkspaceCard({
       case 'rssFeed':
         return (
           <RssFeedCard cardId={card.id} cardData={card} onUpdate={onUpdate} />
+        );
+
+      case 'owlSearch':
+        return (
+          <OwlSearchCard 
+            cardId={card.id}
+            initialQuery={card.content || ''}
+          />
         );
 
       default:
