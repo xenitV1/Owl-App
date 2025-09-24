@@ -184,6 +184,10 @@ export interface WorkspaceStoreValue {
   getStudySessions: () => Promise<any[]>;
   // Connections API
   connections: Connection[];
+  // Grouping/locking
+  lockedGroups: Record<string, string[]>; // groupId -> cardIds
+  toggleLockGroup: (cardIds: string[]) => Promise<string>; // returns groupId
+  unlinkGroup: (groupId: string) => Promise<void>;
   addConnection: (conn: Connection) => Promise<void>;
   removeConnection: (connectionId: string) => Promise<void>;
   clearConnectionsForCard: (cardId: string) => Promise<void>;
@@ -210,6 +214,7 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
   const debouncedSaveRef = useRef<number | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [linking, setLinking] = useState<{ isActive: boolean; sourceCardId?: string; sourceAnchor?: AnchorSide; cursor?: { x: number; y: number } }>({ isActive: false });
+  const [lockedGroups, setLockedGroups] = useState<Record<string, string[]>>({});
 
   // Initialize IndexedDB
   const initializeDB = useCallback(async () => {
@@ -365,11 +370,56 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
       const newCards = prev.map(card => 
         card.id === cardId ? { ...card, ...updates } : card
       );
+      // If card is in a locked group and position changed, move siblings accordingly
+      const moved = newCards.find(c => c.id === cardId);
+      const prevCard = prev.find(c => c.id === cardId);
+      if (moved && prevCard && (moved.position.x !== prevCard.position.x || moved.position.y !== prevCard.position.y)) {
+        const groupId = Object.keys(lockedGroups).find(gid => lockedGroups[gid].includes(cardId));
+        if (groupId) {
+          const dx = moved.position.x - prevCard.position.x;
+          const dy = moved.position.y - prevCard.position.y;
+          // Smooth tween siblings in ~120ms
+          const siblings = lockedGroups[groupId].filter(id => id !== cardId);
+          if (siblings.length > 0) {
+            const startPositions = new Map<string, { x: number; y: number }>();
+            for (const id of siblings) {
+              const s = newCards.find(c => c.id === id);
+              if (s) startPositions.set(id, { x: s.position.x, y: s.position.y });
+            }
+            const totalDx = dx;
+            const totalDy = dy;
+            let startTs: number | null = null;
+            const duration = 120;
+            window.dispatchEvent(new CustomEvent('workspace:positionsAnimating-start'));
+            const step = (ts: number) => {
+              if (startTs == null) startTs = ts;
+              const t = Math.min(1, (ts - startTs) / duration);
+              const ease = t * (2 - t); // easeOutQuad
+              setCards(curr => {
+                const updated = curr.map(c => {
+                  if (!siblings.includes(c.id)) return c;
+                  const start = startPositions.get(c.id);
+                  if (!start) return c;
+                  return { ...c, position: { x: start.x + totalDx * ease, y: start.y + totalDy * ease } } as any;
+                });
+                scheduleSaveWorkspace(updated, 500);
+                return updated;
+              });
+              if (t < 1) {
+                requestAnimationFrame(step);
+              } else {
+                window.dispatchEvent(new CustomEvent('workspace:positionsAnimating-end'));
+              }
+            };
+            requestAnimationFrame(step);
+          }
+        }
+      }
       // Debounce frequent updates (dragging, resizing, typing)
       scheduleSaveWorkspace(newCards, 1000);
       return newCards;
     });
-  }, [scheduleSaveWorkspace]);
+  }, [scheduleSaveWorkspace, lockedGroups]);
 
   // Delete a card
   const deleteCard = useCallback(async (cardId: string) => {
@@ -774,6 +824,29 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     getStudySessions,
     // connections
     connections,
+    lockedGroups,
+    toggleLockGroup: async (cardIds: string[]) => {
+      const existing = Object.entries(lockedGroups).find(([, ids]) => ids.length === cardIds.length && ids.every(id => cardIds.includes(id)));
+      if (existing) {
+        const [gid] = existing;
+        setLockedGroups(prev => {
+          const copy = { ...prev };
+          delete copy[gid];
+          return copy;
+        });
+        return gid;
+      }
+      const gid = `group-${Date.now()}`;
+      setLockedGroups(prev => ({ ...prev, [gid]: [...new Set(cardIds)] }));
+      return gid;
+    },
+    unlinkGroup: async (groupId: string) => {
+      setLockedGroups(prev => {
+        const copy = { ...prev };
+        delete copy[groupId];
+        return copy;
+      });
+    },
     addConnection,
     removeConnection,
     clearConnectionsForCard,
