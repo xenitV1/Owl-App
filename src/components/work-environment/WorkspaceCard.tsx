@@ -4,12 +4,7 @@ import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  X,
-  Maximize2,
-  Minimize2,
-  Move
-} from 'lucide-react';
+import { X, Maximize2, Minimize2, Move, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RichNoteEditor } from './RichNoteEditor';
 import { PomodoroTimer } from './PomodoroTimer';
@@ -157,7 +152,21 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   const [isResizing, setIsResizing] = useState(false);
   
   const cardRef = useRef<HTMLDivElement>(null);
-  const { startLinking, completeLinking, linking, connections, removeConnectionsAt } = useWorkspaceStore();
+  const { startLinking, completeLinking, linking, connections, removeConnectionsAt, toggleLockGroup, lockedGroups } = useWorkspaceStore();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = (srcList: string[]) => {
+    try {
+      const audio = audioRef.current || new Audio();
+      audioRef.current = audio;
+      // Try provided sources, fallback to notification.mp3 in public
+      const src = srcList.find(Boolean) || '/notification.mp3';
+      audio.src = src;
+      audio.volume = 0.35;
+      audio.currentTime = 0;
+      void audio.play().catch(() => {});
+    } catch {}
+  };
 
   // Use optimized drag & drop hook
   const {
@@ -315,7 +324,7 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         );
 
       case 'spotify':
-        return (<SpotifyCard />);
+        return (<SpotifyCard cardId={card.id} cardData={card} />);
 
       default:
         return null;
@@ -457,6 +466,45 @@ export const WorkspaceCard = memo(function WorkspaceCard({
             ) : (
               <Maximize2 className="w-3 h-3" />
             )}
+          </Button>
+
+          {/* Lock with connections: hold Shift and click to lock selected pair */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Find directly connected cards to this card and lock with the first one for simplicity
+              const neighbors = connections
+                .filter(c => c.sourceCardId === card.id || c.targetCardId === card.id)
+                .map(c => c.sourceCardId === card.id ? c.targetCardId : c.sourceCardId);
+              if (neighbors.length > 0) {
+                const pair = [card.id, neighbors[0]];
+                // Determine current state (locked or not) to pick sound
+                const isLocked = Object.values(lockedGroups).some(ids => ids.length === pair.length && pair.every(id => ids.includes(id)));
+                toggleLockGroup(pair);
+                // Sound feedback
+                const lockSound = '/sounds/lock.mp3';
+                const unlockSound = '/sounds/unlock.mp3';
+                playSound([isLocked ? unlockSound : lockSound]);
+                // Visual pulse
+                const el = cardRef.current;
+                if (el) {
+                  el.classList.remove('ring-2','ring-primary','ring-offset-2');
+                  void el.offsetWidth; // reflow
+                  el.classList.add('ring-2','ring-primary','ring-offset-2');
+                  setTimeout(() => {
+                    el.classList.remove('ring-2','ring-primary','ring-offset-2');
+                  }, 300);
+                }
+              }
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="h-6 w-6 p-0"
+            title="Lock with connected card"
+          >
+            <Lock className="w-3 h-3" />
           </Button>
           
           <Button
