@@ -780,7 +780,15 @@
     "normalVideos": "Videolar",
     "shortVideos": "Shorts",
     "hide": "Gizle",
-    "showShorts": "Shorts'u Göster"
+    "showShorts": "Shorts'u Göster",
+    "category": {
+      "news": "Haber",
+      "tech": "Teknoloji",
+      "developer": "Geliştirici",
+      "science": "Bilim",
+      "academia": "Akademi",
+      "social": "Sosyal Medya"
+    }
   },
   "spotify": {
     "playlistTracks": "Playlist Şarkıları",
@@ -802,14 +810,6 @@
       "process": "İçerik işleniyor...",
       "enrich": "Küçük resimler ve özetler hazırlanıyor...",
       "done": "Hazır!"
-    },
-    "category": {
-      "social": "Sosyal Medya",
-      "news": "Haber",
-      "tech": "Teknoloji",
-      "developer": "Geliştirici",
-      "science": "Bilim",
-      "academia": "Akademi"
     }
   },
   "loading": {
