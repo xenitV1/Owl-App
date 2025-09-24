@@ -535,7 +535,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
               {videoType === 'spotify' && videoUrl && (
                 <iframe
                   src={extractSpotifyEmbedUrl(videoUrl) || 'https://open.spotify.com/embed/playlist/2VLBh9qpGUB7a6hQxIdGtw'}
-                  className="w-full h-full"
+                  style={{ width: '100%', height: '100%' }}
                   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                   loading="lazy"
                   title="Spotify"
