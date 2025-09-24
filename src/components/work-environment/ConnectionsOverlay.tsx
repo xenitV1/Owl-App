@@ -91,6 +91,7 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
   const [tick, setTick] = useState(0);
   const rafRef = useRef<number | null>(null);
   const springsRef = useRef<Map<string, { cx: number; cy: number; vx: number; vy: number }>>(new Map());
+  const [animating, setAnimating] = useState(false);
 
 useEffect(() => {
     const isActive = () => document.querySelector('[data-card-id][data-dragging="true"]') !== null || linking.isActive;
@@ -121,6 +122,17 @@ useEffect(() => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [linking.isActive]);
+
+  useEffect(() => {
+    const start = () => setAnimating(true);
+    const end = () => setAnimating(false);
+    window.addEventListener('workspace:positionsAnimating-start', start as any);
+    window.addEventListener('workspace:positionsAnimating-end', end as any);
+    return () => {
+      window.removeEventListener('workspace:positionsAnimating-start', start as any);
+      window.removeEventListener('workspace:positionsAnimating-end', end as any);
+    };
+  }, []);
 
   // Recompute once on pan/zoom changes without starting continuous loop
   useEffect(() => {
@@ -172,7 +184,7 @@ useEffect(() => {
           d={path.d}
           fill="none"
           stroke="currentColor"
-          strokeWidth={2}
+          strokeWidth={animating ? 2.5 : 2}
           opacity={0.95}
           strokeLinecap="round"
         />
