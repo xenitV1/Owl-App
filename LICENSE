@@ -37,6 +37,18 @@ The following uses are STRICTLY PROHIBITED:
 - Revenue Generation - Using the Project to generate income or profit
 - Proprietary Distribution - Distributing the Project under proprietary licenses
 
+3A. Non-Commercial Clarifications
+
+For avoidance of doubt, the following ARE considered Commercial Use and are therefore prohibited under this License without a separate commercial agreement:
+
+- Offering the Project (or derivative works) as part of a paid SaaS, PaaS, or hosted service
+- Using the Project in any revenue-generating context (including advertisements, subscriptions, paywalls, or sponsored deployments)
+- Internal use within a for-profit entity in production or for revenue-related activities
+- Providing consulting, support, or integration services where this Project is a material component of the deliverable
+- Bundling or distributing the Project within a product or service that is sold or monetized
+
+The following ARE generally permitted non-commercial uses: personal experimentation, academic coursework and research, open-source contributions back to this Project, and non-profit organization use without revenue generation. When in doubt, contact the copyright holder for clarification or a commercial license.
+
 4. Conditions
 
 If You distribute copies of the Project or derivative works, You must:
@@ -54,6 +66,10 @@ By contributing to this Project, You agree that:
 - Your contributions will be licensed under this same License
 - You have the right to make such contributions
 - Your contributions are made voluntarily and without expectation of commercial benefit
+
+5A. Contributor Certification and CLA Reference
+
+By submitting a contribution, You certify that You have the rights to submit it and that it is provided under the terms of this License. The Project may require contributors to accept a Developer Certificate of Origin (DCO) and/or a Contributor License Agreement (CLA). Where a CLA is in effect for this Project, its terms supplement this License for contributed materials.
 
 6. Attribution
 
@@ -94,3 +110,31 @@ The names "OWL-App" and "OWL", related logos, and any associated trademarks or s
 13. Governing Law and Venue
 
 This License shall be governed by and construed in accordance with the laws of the Republic of Türkiye, without regard to its conflict of laws principles. Any dispute arising out of or relating to this License shall be subject to the exclusive jurisdiction of the courts and enforcement offices of İstanbul (Çağlayan) Courts, and You consent to personal jurisdiction and venue therein.
+
+14. Third-Party Licenses and Notices
+
+You are responsible for complying with licenses applicable to third-party components included or used with the Project. See THIRD_PARTY_LICENSES.md and any files under the `licenses/` directory for notices that may be required in Your distributions.
+
+15. Patent License and Termination (Optional Grant)
+
+Subject to the terms and conditions of this License, each contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable (except as stated in this section) patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Project, where such license applies only to those patent claims licensable by such contributor that are necessarily infringed by their contribution(s) alone or by combination of their contribution(s) with the Project. If You initiate patent litigation (including a cross-claim or counterclaim) against any party alleging that the Project or a contribution incorporated within the Project constitutes direct or contributory patent infringement, then any patent licenses granted to You under this License for the Project shall terminate as of the date such litigation is filed.
+
+16. Indemnification
+
+To the maximum extent permitted by applicable law, You agree to defend, indemnify, and hold harmless the copyright holder and contributors from and against any claims, liabilities, damages, losses, and expenses (including reasonable attorneys’ fees) arising out of or in any way connected with Your use or distribution of the Project in violation of this License.
+
+17. Export Control
+
+You represent that You are not named on any U.S., EU, or other applicable government denied-party list and that You will not use or export the Project in violation of applicable export laws and regulations.
+
+18. Severability
+
+If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable, and the remaining provisions shall remain in full force and effect.
+
+19. Entire Agreement; No Waiver
+
+This License constitutes the entire agreement between the parties concerning its subject matter and supersedes all prior or contemporaneous understandings. No waiver of any term of this License shall be deemed a further or continuing waiver of such term or any other term.
+
+20. License Updates
+
+The copyright holder may publish revised and/or new versions of this License from time to time. Each version will be given a distinguishing version number. If You receive the Project under a specific version, You may continue to use it under that version; adoption of a later version is optional unless explicitly required by the copyright holder for future releases.

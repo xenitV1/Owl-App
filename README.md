@@ -379,6 +379,10 @@ The repository includes a community license that allows non‑commercial use. Fo
 - Community (Non‑Commercial): see `LICENSE`
 - Enterprise (Commercial): see `COMMERCIAL_LICENSE.md` and contact us below
 
+Official website: https://owl-app.com
+
+For clarity on what counts as non‑commercial vs commercial usage, see section "Non‑Commercial Clarifications" in `LICENSE`. Use of names, logos, and domains is governed by `TRADEMARKS.md`.
+
 ### Community vs Enterprise
 
 | Capability | Community (NC) | Enterprise |

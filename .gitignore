@@ -52,6 +52,7 @@ bun-debug.log*
 # Firebase/Emulators
 .firebase/
 owll-514ef-firebase-adminsdk-fbsvc-151ccc7716.json
+owlplatform-dc3e1a136ed2.json
 
 # Playwright reports
 playwright-report/
@@ -79,3 +80,4 @@ codeql.zip
 RELEASE_NOTES.md
 releases/
 .vercel
+.env*.local

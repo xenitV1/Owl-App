@@ -100,7 +100,7 @@ This Code of Conduct also applies when an individual is officially representing 
 
 If you experience or witness unacceptable behavior, or have any other concerns, please report it by contacting the community team at:
 
-📧 **Email**: [conduct@owl-platform.com](mailto:mehmet.apaydin0@outlook.com)
+📧 **Email**: [](mailto:mehmet.apaydin0@outlook.com)
 🐙 **GitHub**: Create a private issue or contact repository maintainers
 💬 **Platform**: Use the built-in reporting features within the OWL platform
 
