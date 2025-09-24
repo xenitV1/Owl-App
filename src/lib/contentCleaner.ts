@@ -1,5 +1,5 @@
-import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
+import { extractArticleFromHtml } from '@/lib/ai/contentExtractor';
 
 /**
  * Reading Mode benzeri içerik temizleme sistemi
@@ -28,43 +28,20 @@ export function cleanHtmlContent(rawHtml: string, url?: string): CleanedContent 
   }
 
   try {
-    // HTML'i DOM'a çevir
-    const dom = new JSDOM(rawHtml, { url });
-    const doc = dom.window.document;
-
-    // Önce spesifik content-id'leri kontrol et
-    const specificContent = extractSpecificContent(doc);
-    if (specificContent.success) {
-      return specificContent;
-    }
-
-    // Readability ile içeriği temizle
-    const reader = new Readability(doc, {
-      // Türkçe içerikler için özel ayarlar
-      charThreshold: 500, // Minimum karakter sayısı
-      nbTopCandidates: 5, // Aday sayısı
-    });
-
-    const article = reader.parse();
-
-    if (!article) {
-      // Readability başarısız olursa fallback olarak basit temizleme yap
-      return fallbackContentCleaning(rawHtml);
-    }
-
+    const extracted = extractArticleFromHtml(rawHtml, { url, minTextLength: 400 });
     return {
-      title: article.title || undefined,
-      content: article.content || '',
-      textContent: article.textContent || undefined,
-      excerpt: article.excerpt || undefined,
-      byline: article.byline || undefined,
-      siteName: article.siteName || undefined,
-      publishedTime: article.publishedTime || undefined,
-      image: (article as any).image || undefined,
-      success: true,
+      title: extracted.title,
+      content: extracted.contentHtml || extracted.contentText,
+      textContent: extracted.contentText,
+      excerpt: extracted.excerpt,
+      byline: extracted.author,
+      siteName: extracted.siteName,
+      publishedTime: extracted.publishedTime,
+      image: extracted.image,
+      success: (extracted.contentText || '').length > 100,
     };
   } catch (error) {
-    console.warn('[ContentCleaner] Readability failed, using fallback:', error);
+    console.warn('[ContentCleaner] AI extractor failed, using fallback:', error);
     return fallbackContentCleaning(rawHtml);
   }
 }
