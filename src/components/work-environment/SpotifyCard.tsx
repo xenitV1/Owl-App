@@ -5,6 +5,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { RefreshCw } from 'lucide-react';
 
 interface SpotifyProfile {
@@ -24,13 +25,28 @@ interface SpotifyPlaylist {
   external_urls?: { spotify?: string };
 }
 
-export function SpotifyCard() {
+interface SpotifySearchItem {
+  id: string;
+  name: string;
+  images?: Array<{ url: string }>;
+  type: 'track' | 'album' | 'artist' | 'playlist';
+}
+
+interface SpotifyCardProps {
+  cardId?: string;
+  cardData?: any;
+}
+
+export function SpotifyCard({ cardId, cardData }: SpotifyCardProps) {
   const { data: session, status } = useSession();
   const spotifyAccessToken = (session as any)?.spotifyAccessToken as string | undefined;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'track' | 'album' | 'artist' | 'playlist'>('playlist');
+  const [searchResults, setSearchResults] = useState<SpotifySearchItem[]>([]);
 
   const isReady = status !== 'loading';
   const isLoggedInToSpotify = !!spotifyAccessToken;
@@ -63,7 +79,60 @@ export function SpotifyCard() {
     if (spotifyAccessToken) loadData();
   }, [spotifyAccessToken]);
 
+  const toEmbed = (type: string, id: string) => `https://open.spotify.com/${type}/${id}`;
+
+  const runSearch = async () => {
+    if (!spotifyAccessToken || !searchQuery.trim()) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchWithToken(`https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=${searchType}&limit=10`);
+      const list: SpotifySearchItem[] = (data?.[searchType + 's']?.items || []).map((it: any) => ({
+        id: it.id,
+        name: it.name,
+        images: it.images || it.album?.images || [],
+        type: searchType,
+      }));
+      setSearchResults(list);
+    } catch (e: any) {
+      setError(e?.message || 'Spotify search error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const avatarUrl = useMemo(() => profile?.images?.[0]?.url, [profile]);
+
+  const createPlaylistCard = (playlist: SpotifyPlaylist) => {
+    try {
+      // Create a media card using existing video embedding logic (spotify)
+      const baseX = cardData?.position?.x ?? 0;
+      const baseY = cardData?.position?.y ?? 0;
+      const baseW = cardData?.size?.width ?? 400;
+      const offset = 40;
+
+      const newCard = {
+        id: `card-${Date.now()}`,
+        type: 'platformContent' as const,
+        title: playlist.name || 'Spotify Playlist',
+        content: JSON.stringify({
+          videoType: 'spotify',
+          videoUrl: `https://open.spotify.com/playlist/${playlist.id}`,
+          videoTitle: playlist.name,
+          connectedTo: cardId ? { sourceCardId: cardId } : undefined,
+        }),
+        position: { x: baseX + baseW + offset, y: baseY },
+        size: { width: 600, height: 420 },
+        zIndex: 1,
+      } as any;
+
+      // Defer addCard to parent via custom event to avoid tight coupling
+      const ev = new CustomEvent('workspace:addCard', { detail: newCard });
+      window.dispatchEvent(ev);
+    } catch (e) {
+      console.warn('[SpotifyCard] Failed to create playlist card', e);
+    }
+  };
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -80,7 +149,7 @@ export function SpotifyCard() {
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-auto">
+      <CardContent className="flex-1 overflow-auto pr-1">
         {!isReady || loading ? (
           <div className="flex items-center justify-center py-10 text-muted-foreground">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" /> Loading Spotify...
@@ -123,7 +192,7 @@ export function SpotifyCard() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {playlists.map((pl) => (
-                    <a key={pl.id} className="flex items-center gap-3 p-2 rounded-md border hover:bg-muted/40 transition" href={pl.external_urls?.spotify || `https://open.spotify.com/playlist/${pl.id}`} target="_blank" rel="noopener noreferrer">
+                    <a key={pl.id} className="flex items-center gap-3 p-2 rounded-md border hover:bg-muted/40 transition" href="#" onClick={(e) => { e.preventDefault(); createPlaylistCard(pl); }}>
                       {pl.images?.[0]?.url ? (
                         <img src={pl.images[0].url} alt={pl.name} className="w-12 h-12 rounded object-cover" />
                       ) : (
@@ -134,6 +203,38 @@ export function SpotifyCard() {
                         {pl.tracks?.total != null && (
                           <div className="text-xs text-muted-foreground">{pl.tracks.total} tracks</div>
                         )}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search */}
+            <div className="pt-2">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Search</div>
+              <div className="flex gap-2">
+                <Input placeholder={`Search ${searchType}s...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <select className="border rounded px-2 text-sm" value={searchType} onChange={(e) => setSearchType(e.target.value as any)}>
+                  <option value="playlist">Playlists</option>
+                  <option value="track">Tracks</option>
+                  <option value="album">Albums</option>
+                  <option value="artist">Artists</option>
+                </select>
+                <Button variant="outline" onClick={runSearch}>Go</Button>
+              </div>
+              {searchResults.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {searchResults.map((it) => (
+                    <a key={`${it.type}_${it.id}`} className="flex items-center gap-3 p-2 rounded-md border hover:bg-muted/40 transition" href="#" onClick={(e) => { e.preventDefault(); createPlaylistCard({ id: it.id, name: it.name, images: it.images } as any); }}>
+                      {it.images?.[0]?.url ? (
+                        <img src={it.images[0].url} alt={it.name} className="w-12 h-12 rounded object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded bg-muted" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{it.name}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{it.type}</div>
                       </div>
                     </a>
                   ))}
