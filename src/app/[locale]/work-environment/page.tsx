@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { SessionProvider } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, RotateCcw, ZoomIn, ZoomOut, Grid, Hand } from 'lucide-react';
@@ -28,6 +29,19 @@ function WorkEnvironmentContent() {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Track cursor globally while linking for smooth temporary line following the mouse
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      addCard({
+        ...detail,
+        zIndex: cards.length + 1,
+      });
+    };
+    window.addEventListener('workspace:addCard', handler as any);
+    return () => window.removeEventListener('workspace:addCard', handler as any);
+  }, [addCard, cards.length]);
+
   useEffect(() => {
     if (!linking.isActive) return;
     const handleMove = (e: MouseEvent) => {
@@ -103,7 +117,7 @@ function WorkEnvironmentContent() {
   }, [handleKeyDown, handleKeyUp]);
 
   const handleAddCard = useCallback((cardData: {
-    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch';
+    type: 'platformContent' | 'richNote' | 'calendar' | 'pomodoro' | 'taskBoard' | 'flashcards' | 'rssFeed' | 'owlSearch' | 'spotify';
     title: string;
     url?: string;
     content?: string;
@@ -302,8 +316,10 @@ function WorkEnvironmentContent() {
 
 export default function WorkEnvironmentPage() {
   return (
-    <WorkspaceStoreProvider>
-      <WorkEnvironmentContent />
-    </WorkspaceStoreProvider>
+    <SessionProvider>
+      <WorkspaceStoreProvider>
+        <WorkEnvironmentContent />
+      </WorkspaceStoreProvider>
+    </SessionProvider>
   );
 }
