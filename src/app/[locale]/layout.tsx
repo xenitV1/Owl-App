@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
 import AnalyticsListener from "@/components/AnalyticsListener";
 import "../globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -128,6 +129,8 @@ export default async function LocaleLayout({
   // Load messages explicitly based on the route param to avoid undefined locale issues
   const messages = (await import(`../../messages/${locale}.json`)).default;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   return (
     <ClientProviders locale={locale} messages={messages}>
       <ThemeLoader />
@@ -156,19 +159,24 @@ export default async function LocaleLayout({
       <Toaster />
       <DebugPanel />
       <ResizeObserverErrorHandler />
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="ga-init" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
-        `}
-      </Script>
-      <AnalyticsListener />
+      {isProduction && (
+        <>
+          <Analytics />
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
+            `}
+          </Script>
+          <AnalyticsListener />
+        </>
+      )}
     </ClientProviders>
   );
 }
