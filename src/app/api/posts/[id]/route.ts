@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { verifyIdToken } from '@/lib/firebase-admin';
+import { authOptions } from '@/lib/auth';import { db } from '@/lib/db';
 import apiDebugLogger, { withApiDebug } from '@/lib/apiDebug';
 
 export async function GET(
@@ -63,12 +61,16 @@ export async function GET(
     let isSaved = false;
     
     try {
+      let userEmail: string | null = null;
+      
+      // Use NextAuth session instead of Firebase tokens
       const session = await getServerSession(authOptions);
+
       if (session?.user?.email) {
         const currentUser = await db.user.findUnique({
           where: { email: session.user.email },
         });
-        
+
         if (currentUser) {
           // Check if user liked the post
           const like = await db.like.findUnique({
@@ -142,25 +144,10 @@ export async function DELETE(
       );
     }
 
-    // Check if user is authenticated
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    let effectiveEmail: string | null = session?.user?.email ?? null;
-    
-    // If no NextAuth session, try Firebase token
-    if (!effectiveEmail) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const token = authHeader.substring(7);
-          const decodedToken = await verifyIdToken(token);
-          effectiveEmail = decodedToken.email ?? null;
-        } catch (error) {
-          console.error('Invalid Firebase token:', error);
-        }
-      }
-    }
-    
-    if (!effectiveEmail) {
+
+    if (!session?.user?.email) {
       apiDebugLogger.logResponse(logEntry, 401, { error: 'Authentication required' });
       timer();
       return NextResponse.json(
@@ -171,7 +158,7 @@ export async function DELETE(
 
     // Get current user
     const currentUser = await db.user.findUnique({
-      where: { email: effectiveEmail },
+      where: { email: session.user.email },
     });
 
     if (!currentUser) {

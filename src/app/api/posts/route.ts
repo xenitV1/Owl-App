@@ -2,22 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-
-// Helper function to decode base64 strings that may contain Unicode
-const decodeFromBase64 = (str: string): string => {
-  try {
-    // Try standard atob first
-    return atob(str);
-  } catch (e) {
-    // If it fails, decode as UTF-8 bytes
-    const binaryString = atob(str);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  }
-};
 import { ContentFilterService } from '@/lib/contentFilter';
 import { ImageOptimizer } from '@/lib/imageOptimizer';
 import apiDebugLogger, { withApiDebug } from '@/lib/apiDebug';
@@ -81,232 +65,134 @@ export async function GET(request: NextRequest) {
       isPublic: true,
     };
 
+    // Get current user for block filtering
+    let currentUser: any = null;
+
+    // Try NextAuth session first
+    const session = await getServerSession(authOptions);
+    if (session?.user?.email) {
+      currentUser = await db.user.findUnique({
+        where: { email: session.user.email }
+      });
+    }
+
+    // Apply filters based on query parameters
     if (subject) {
       where.subject = subject;
     }
-
     if (school) {
       where.author = {
-        school: school,
+        school: school
       };
     }
 
-    if (search) {
-      where.OR = [
-        {
-          title: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          content: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          subject: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-      ];
-    }
-
-    // Handle following posts
-    if (following) {
-      // Try NextAuth session first
-      let userEmail: string | null = null;
-      const session = await getServerSession(authOptions);
-      if (session?.user?.email) {
-        userEmail = session.user.email as string;
-      } else {
-        // Fallback to Firebase token from header
-        const firebaseToken = request.headers.get('authorization')?.replace('Bearer ', '');
-        if (!firebaseToken) {
-          return NextResponse.json(
-            { error: 'Unauthorized to view following posts' },
-            { status: 401 }
-          );
-        }
-
-        try {
-          // Import Firebase Admin SDK
-          const admin = (await import('@/lib/firebase-admin')).default;
-
-          // Check if Firebase Admin is properly initialized
-          if (!admin.apps.length || !admin.app().options.credential) {
-            console.warn('Firebase Admin not properly configured, skipping token verification');
-            // For development, accept the token without verification
-            // This is not secure for production!
-            userEmail = 'development@example.com';
-          } else {
-            const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
-            userEmail = decodedToken.email || null;
-          }
-        } catch (error) {
-          console.error('Firebase token verification failed:', error);
-          // For development, if Firebase Admin is not configured, accept the request
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('Development mode: accepting request without Firebase token verification');
-            userEmail = 'development@example.com';
-          } else {
-            return NextResponse.json(
-              { error: 'Invalid authentication token' },
-              { status: 401 }
-            );
+    // Apply following filter
+    if (following && currentUser) {
+      where.author = {
+        ...where.author,
+        followers: {
+          some: {
+            followerId: currentUser.id
           }
         }
-      }
-
-      if (!userEmail) {
-        return NextResponse.json(
-          { error: 'Unauthorized to view following posts' },
-          { status: 401 }
-        );
-      }
-
-      const currentUser = await db.user.findUnique({
-        where: { email: userEmail },
-      });
-
-      if (!currentUser) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
-      const followingIds = await db.follow.findMany({
-        where: { followerId: currentUser.id },
-        select: { followingId: true },
-      });
-
-      where.authorId = {
-        in: followingIds.map(f => f.followingId),
       };
     }
 
-    // Determine ordering based on query parameters
-    let orderBy: any[] = [];
-    
+    // Apply trending/recent filters
+    let orderBy: any = { createdAt: 'desc' };
     if (trending) {
-      // For trending, order by engagement (likes + comments) and recency
       orderBy = [
-        {
-          likes: {
-            _count: 'desc',
-          },
-        },
-        {
-          comments: {
-            _count: 'desc',
-          },
-        },
-        {
-          createdAt: 'desc',
-        },
+        { likes: { _count: 'desc' } },
+        { comments: { _count: 'desc' } },
+        { createdAt: 'desc' }
       ];
     } else if (recent) {
-      // For recent, order by creation date
-      orderBy = [
-        {
-          createdAt: 'desc',
-        },
-      ];
-    } else {
-      // Default ordering
-      orderBy = [
-        {
-          likes: {
-            _count: 'desc',
-          },
-        },
-        {
-          comments: {
-            _count: 'desc',
-          },
-        },
-        {
-          createdAt: 'desc',
-        },
+      orderBy = { createdAt: 'desc' };
+    }
+
+    // Search functionality
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const posts = await db.post.findMany({
-      where,
-      include: {
+    // Apply block filtering
+    if (currentUser) {
+      where.NOT = {
         author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-            role: true,
-            school: true,
-            grade: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-            pools: true,
-          },
-        },
-      },
-      orderBy,
-      skip,
-      take: limit,
-    });
-
-    // Fetch image metadata for posts that have images
-    const postsWithImageMetadata = await Promise.all(
-      posts.map(async (post) => {
-        if (post.image) {
-          try {
-            const imageData = await db.postImage.findUnique({
-              where: { id: post.image },
-              select: {
-                width: true,
-                height: true,
-                placeholder: true,
-                responsive: true,
-              },
-            });
-            
-            return {
-              ...post,
-              imageMetadata: imageData,
-            };
-          } catch (error) {
-            console.error('Error fetching image metadata for post:', post.id, error);
-            return post;
-          }
+          OR: [
+            { blockedBy: { some: { blockerId: currentUser.id } } },
+            { blockedUsers: { some: { blockedId: currentUser.id } } }
+          ]
         }
-        return post;
-      })
-    );
+      };
+    }
 
-    const total = await db.post.count({ where });
+    // Get posts with total count
+    const [posts, totalPosts] = await Promise.all([
+      db.post.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              school: true,
+              grade: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+              pools: true,
+            },
+          },
+          likes: currentUser ? {
+            where: {
+              userId: currentUser.id
+            },
+            select: {
+              id: true
+            }
+          } : false,
+          pools: currentUser ? {
+            where: {
+              userId: currentUser.id
+            },
+            select: {
+              id: true
+            }
+          } : false,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      db.post.count({ where })
+    ]);
 
-    const response = NextResponse.json({
-      posts: postsWithImageMetadata,
+    // Transform posts to include isLiked and isSaved flags
+    const transformedPosts = posts.map(post => ({
+      ...post,
+      isLikedByCurrentUser: currentUser ? (post.likes && Array.isArray(post.likes) && post.likes.length > 0) : false,
+      isSavedByCurrentUser: currentUser ? (post.pools && Array.isArray(post.pools) && post.pools.length > 0) : false,
+      likes: undefined, // Remove the likes array from response
+      pools: undefined, // Remove the pools array from response
+    }));
+
+    return NextResponse.json({
+      posts: transformedPosts,
       pagination: {
         page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+        pages: Math.ceil(totalPosts / limit),
+        total: totalPosts,
+        hasMore: page < Math.ceil(totalPosts / limit)
+      }
     });
-
-    apiDebugLogger.logResponse(logEntry, 200, {
-      postsCount: posts.length,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
-    });
-    
-    timer();
-    return response;
   } catch (error) {
     apiDebugLogger.logError(logEntry, error);
     console.error('Error fetching posts:', error);
@@ -317,67 +203,57 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST method - Create new post
 export async function POST(request: NextRequest) {
-  const timer = apiDebugLogger.startTimer('POST /api/posts');
-  const logEntry = await apiDebugLogger.logRequest(request);
-  
-  try {
-    const session = await getServerSession(authOptions);
-    
-    let effectiveEmail: string | null = session?.user?.email ?? null;
-    // Dev-only fallback: allow Firebase-authenticated client to pass email header
-    if (!effectiveEmail && process.env.NODE_ENV !== 'production') {
-      const headerEmail = request.headers.get('x-user-email');
-      if (headerEmail) {
-        effectiveEmail = decodeFromBase64(headerEmail);
-      }
-    }
-    
-    if (!effectiveEmail) {
-      apiDebugLogger.logResponse(logEntry, 401, { error: 'Unauthorized' });
-      timer();
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+      const timer = apiDebugLogger.startTimer('POST /api/posts');
+      const logEntry = await apiDebugLogger.logRequest(request);
 
-    const headerName = request.headers.get('x-user-name') ? decodeFromBase64(request.headers.get('x-user-name')!) : undefined;
-    const defaultName = headerName || effectiveEmail.split('@')[0];
-    const user = await db.user.upsert({
-      where: { email: effectiveEmail },
-      create: {
-        email: effectiveEmail,
-        name: defaultName,
-        role: 'STUDENT',
-      },
-      update: {},
-    });
+      try {
+        // Use NextAuth session instead of Firebase tokens
+        const session = await getServerSession(authOptions);
 
-    const formData = await request.formData();
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
-    const subject = formData.get('subject') as string;
-    const image = formData.get('image') as File;
+        if (!session?.user?.email) {
+          return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+          );
+        }
 
-      console.log('Post creation data:', {
-      title: title?.substring(0, 50),
-      hasContent: !!content,
-      subject,
-      hasImage: !!image,
-      imageSize: image?.size
-    });
+        const user = await db.user.findUnique({
+          where: { email: session.user.email }
+        });
 
-    if (!title || !title.trim()) {
-      apiDebugLogger.logResponse(logEntry, 400, { error: 'Title is required' });
-      timer();
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      );
-    }
+        if (!user) {
+          return NextResponse.json(
+            { error: 'User not found' },
+            { status: 404 }
+          );
+        }
 
-    let imagePath: string | null = null;
+        const formData = await request.formData();
+        const title = formData.get('title') as string;
+        const content = formData.get('content') as string;
+        const subject = formData.get('subject') as string;
+        const image = formData.get('image') as File;
+
+        console.log('Post creation data:', {
+          title: title?.substring(0, 50),
+          hasContent: !!content,
+          subject,
+          hasImage: !!image,
+          imageSize: image?.size
+        });
+
+        if (!title || !title.trim()) {
+          apiDebugLogger.logResponse(logEntry, 400, { error: 'Title is required' });
+          timer();
+          return NextResponse.json(
+            { error: 'Title is required' },
+            { status: 400 }
+          );
+        }
+
+        let imagePath: string | null = null;
     let imageMetadata: {
       buffer: Buffer;
       responsiveImages?: any;
