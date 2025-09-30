@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getAuth } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-
 // GET /api/communities - Get all communities or search communities
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +13,37 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     let whereClause: any = {};
-    
+
+    // Get current user for block filtering
+    const session = await getServerSession(authOptions);
+    const currentUser = session?.user?.email ? await db.user.findUnique({
+      where: { email: session.user.email }
+    }) : null;
+
+    // Add block filtering for members
+    let memberFilter: any = {};
+    if (currentUser) {
+      const blockedUserIds = await db.userBlock.findMany({
+        where: { blockerId: currentUser.id },
+        select: { blockedId: true }
+      }).then(blocks => blocks.map(b => b.blockedId));
+
+      const blockingUserIds = await db.userBlock.findMany({
+        where: { blockedId: currentUser.id },
+        select: { blockerId: true }
+      }).then(blocks => blocks.map(b => b.blockerId));
+
+      const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+      if (allBlockedIds.length > 0) {
+        memberFilter.user = {
+          id: {
+            notIn: allBlockedIds
+          }
+        };
+      }
+    }
+
     if (search) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -34,6 +63,7 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         members: {
+          where: memberFilter,
           include: {
             user: {
               select: {
@@ -79,13 +109,25 @@ export async function GET(request: NextRequest) {
 // POST /api/communities - Create a new community
 export async function POST(request: NextRequest) {
   try {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
 
-    if (!currentUser) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get current user from database
+    const currentUser = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -119,7 +161,7 @@ export async function POST(request: NextRequest) {
         avatar: avatar || null,
         members: {
           create: {
-            userId: currentUser.uid,
+            userId: currentUser.id,
             role: 'admin'
           }
         }
