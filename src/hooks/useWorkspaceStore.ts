@@ -186,6 +186,7 @@ export interface WorkspaceStoreValue {
   connections: Connection[];
   // Grouping/locking
   lockedGroups: Record<string, string[]>; // groupId -> cardIds
+  lockedGroupOffsets: Record<string, Record<string, { dx: number; dy: number }>>; // groupId -> cardId -> offset from first card
   toggleLockGroup: (cardIds: string[]) => Promise<string>; // returns groupId
   unlinkGroup: (groupId: string) => Promise<void>;
   addConnection: (conn: Connection) => Promise<void>;
@@ -215,6 +216,48 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
   const [connections, setConnections] = useState<Connection[]>([]);
   const [linking, setLinking] = useState<{ isActive: boolean; sourceCardId?: string; sourceAnchor?: AnchorSide; cursor?: { x: number; y: number } }>({ isActive: false });
   const [lockedGroups, setLockedGroups] = useState<Record<string, string[]>>({});
+  const [lockedGroupOffsets, setLockedGroupOffsets] = useState<Record<string, Record<string, { dx: number; dy: number }>>>({});
+  
+  // Connection audio refs
+  const connectionAddSoundRef = useRef<HTMLAudioElement | null>(null);
+  const connectionRemoveSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize connection audio
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      connectionAddSoundRef.current = new Audio('/sounds/connection-add.mp3');
+      connectionAddSoundRef.current.volume = 0.4;
+      connectionAddSoundRef.current.preload = 'auto';
+      
+      connectionRemoveSoundRef.current = new Audio('/sounds/connection-remove.mp3');
+      connectionRemoveSoundRef.current.volume = 0.4;
+      connectionRemoveSoundRef.current.preload = 'auto';
+      
+      // Preload
+      connectionAddSoundRef.current.load();
+      connectionRemoveSoundRef.current.load();
+    }
+  }, []);
+
+  // Play connection add sound
+  const playConnectionAddSound = useCallback(() => {
+    if (connectionAddSoundRef.current) {
+      connectionAddSoundRef.current.currentTime = 0;
+      connectionAddSoundRef.current.play().catch(err => {
+        console.warn('[Workspace] Failed to play connection add sound:', err);
+      });
+    }
+  }, []);
+
+  // Play connection remove sound
+  const playConnectionRemoveSound = useCallback(() => {
+    if (connectionRemoveSoundRef.current) {
+      connectionRemoveSoundRef.current.currentTime = 0;
+      connectionRemoveSoundRef.current.play().catch(err => {
+        console.warn('[Workspace] Failed to play connection remove sound:', err);
+      });
+    }
+  }, []);
 
   // Initialize IndexedDB
   const initializeDB = useCallback(async () => {
@@ -292,6 +335,7 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
   }, [saveWorkspace]);
 
   const addConnection = useCallback(async (conn: Connection) => {
+    playConnectionAddSound();
     setConnections(prev => {
       const next = [...prev, conn];
       return next;
@@ -303,10 +347,54 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     } catch (e) {
       console.error('Failed to save connection:', e);
     }
-  }, [isIndexedDBReady]);
+  }, [isIndexedDBReady, playConnectionAddSound]);
 
   const removeConnection = useCallback(async (connectionId: string) => {
+    // Play remove sound
+    playConnectionRemoveSound();
+    
+    // Find the connection being removed
+    const removedConn = connections.find(c => c.id === connectionId);
+    
     setConnections(prev => prev.filter(c => c.id !== connectionId));
+    
+    // Auto-unlock if connection is removed
+    if (removedConn) {
+      const affectedCards = [removedConn.sourceCardId, removedConn.targetCardId];
+      
+      // Check if these cards are in a locked group
+      Object.entries(lockedGroups).forEach(([groupId, cardIds]) => {
+        const hasAffectedCard = affectedCards.some(id => cardIds.includes(id));
+        if (hasAffectedCard) {
+          // Check if cards are still connected after removal
+          const remainingConnections = connections.filter(c => c.id !== connectionId);
+          const stillConnected = affectedCards.every(cardId => {
+            return cardIds.filter(id => id !== cardId).some(otherId => {
+              return remainingConnections.some(c =>
+                (c.sourceCardId === cardId && c.targetCardId === otherId) ||
+                (c.targetCardId === cardId && c.sourceCardId === otherId)
+              );
+            });
+          });
+          
+          // If not connected anymore, unlock the group
+          if (!stillConnected) {
+            console.log(`[Workspace] Auto-unlocking group ${groupId} - connection removed`);
+            setLockedGroups(prev => {
+              const copy = { ...prev };
+              delete copy[groupId];
+              return copy;
+            });
+            setLockedGroupOffsets(prev => {
+              const copy = { ...prev };
+              delete copy[groupId];
+              return copy;
+            });
+          }
+        }
+      });
+    }
+    
     try {
       if (isIndexedDBReady) {
         await workspaceDB.delete('connections', connectionId);
@@ -314,14 +402,86 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     } catch (e) {
       console.error('Failed to delete connection:', e);
     }
-  }, [isIndexedDBReady]);
+  }, [isIndexedDBReady, connections, lockedGroups, playConnectionRemoveSound]);
 
   const removeConnectionsAt = useCallback(async (cardId: string, anchor: AnchorSide) => {
+    // Find connections to be removed
+    const connectionsToRemove = connections.filter(c => 
+      (c.sourceCardId === cardId && c.sourceAnchor === anchor) ||
+      (c.targetCardId === cardId && c.targetAnchor === anchor)
+    );
+    
+    // Play remove sound if connections exist
+    if (connectionsToRemove.length > 0) {
+      playConnectionRemoveSound();
+    }
+    
     // Update state
     setConnections(prev => prev.filter(c => !(
       (c.sourceCardId === cardId && c.sourceAnchor === anchor) ||
       (c.targetCardId === cardId && c.targetAnchor === anchor)
     )));
+    
+    // Auto-unlock affected groups
+    if (connectionsToRemove.length > 0) {
+      const affectedCardIds = new Set<string>();
+      connectionsToRemove.forEach(conn => {
+        affectedCardIds.add(conn.sourceCardId);
+        affectedCardIds.add(conn.targetCardId);
+      });
+      
+      // Check and unlock affected groups
+      Object.entries(lockedGroups).forEach(([groupId, cardIds]) => {
+        const hasAffectedCard = Array.from(affectedCardIds).some(id => cardIds.includes(id));
+        if (hasAffectedCard) {
+          // Check if cards are still connected after removal
+          const remainingConnections = connections.filter(c => !connectionsToRemove.includes(c));
+          
+          // Use BFS to check connectivity
+          const isGroupStillConnected = () => {
+            if (cardIds.length <= 1) return true;
+            
+            const visited = new Set<string>();
+            const queue = [cardIds[0]];
+            
+            while (queue.length > 0) {
+              const current = queue.shift()!;
+              if (visited.has(current)) continue;
+              visited.add(current);
+              
+              // Find neighbors in the group that are still connected
+              const neighbors = remainingConnections
+                .filter(c => 
+                  (c.sourceCardId === current && cardIds.includes(c.targetCardId)) ||
+                  (c.targetCardId === current && cardIds.includes(c.sourceCardId))
+                )
+                .map(c => c.sourceCardId === current ? c.targetCardId : c.sourceCardId)
+                .filter(id => !visited.has(id));
+              
+              queue.push(...neighbors);
+            }
+            
+            return visited.size === cardIds.length;
+          };
+          
+          // If not fully connected anymore, unlock the group
+          if (!isGroupStillConnected()) {
+            console.log(`[Workspace] Auto-unlocking group ${groupId} - connection(s) removed at anchor`);
+            setLockedGroups(prev => {
+              const copy = { ...prev };
+              delete copy[groupId];
+              return copy;
+            });
+            setLockedGroupOffsets(prev => {
+              const copy = { ...prev };
+              delete copy[groupId];
+              return copy;
+            });
+          }
+        }
+      });
+    }
+    
     // Persist
     try {
       if (isIndexedDBReady) {
@@ -337,10 +497,33 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     } catch (e) {
       console.error('Failed to remove connections at anchor:', e);
     }
-  }, [isIndexedDBReady]);
+  }, [isIndexedDBReady, connections, lockedGroups, playConnectionRemoveSound]);
 
   const clearConnectionsForCard = useCallback(async (cardId: string) => {
+    // Find all connections to be removed for this card
+    const connectionsToRemove = connections.filter(c => 
+      c.sourceCardId === cardId || c.targetCardId === cardId
+    );
+    
     setConnections(prev => prev.filter(c => c.sourceCardId !== cardId && c.targetCardId !== cardId));
+    
+    // Auto-unlock any groups containing this card
+    Object.entries(lockedGroups).forEach(([groupId, cardIds]) => {
+      if (cardIds.includes(cardId)) {
+        console.log(`[Workspace] Auto-unlocking group ${groupId} - card removed from workspace`);
+        setLockedGroups(prev => {
+          const copy = { ...prev };
+          delete copy[groupId];
+          return copy;
+        });
+        setLockedGroupOffsets(prev => {
+          const copy = { ...prev };
+          delete copy[groupId];
+          return copy;
+        });
+      }
+    });
+    
     try {
       if (isIndexedDBReady) {
         const all = await workspaceDB.getAll<Connection>('connections');
@@ -352,7 +535,7 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     } catch (e) {
       console.error('Failed to clear connections for card:', e);
     }
-  }, [isIndexedDBReady]);
+  }, [isIndexedDBReady, connections, lockedGroups, playConnectionRemoveSound]);
 
   // Add a new card
   const addCard = useCallback(async (card: WorkspaceCard) => {
@@ -365,61 +548,59 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
   }, [saveWorkspace]);
 
   // Update an existing card
+  // Track which card initiated the last position update to prevent loops
+  const lastDraggedCardRef = useRef<string | null>(null);
+
   const updateCard = useCallback(async (cardId: string, updates: Partial<WorkspaceCard>) => {
     setCards(prev => {
       const newCards = prev.map(card => 
         card.id === cardId ? { ...card, ...updates } : card
       );
-      // If card is in a locked group and position changed, move siblings accordingly
+      // If card is in a locked group and position changed, move siblings with rigid body physics
       const moved = newCards.find(c => c.id === cardId);
       const prevCard = prev.find(c => c.id === cardId);
       if (moved && prevCard && (moved.position.x !== prevCard.position.x || moved.position.y !== prevCard.position.y)) {
         const groupId = Object.keys(lockedGroups).find(gid => lockedGroups[gid].includes(cardId));
-        if (groupId) {
-          const dx = moved.position.x - prevCard.position.x;
-          const dy = moved.position.y - prevCard.position.y;
-          // Smooth tween siblings in ~120ms
-          const siblings = lockedGroups[groupId].filter(id => id !== cardId);
-          if (siblings.length > 0) {
-            const startPositions = new Map<string, { x: number; y: number }>();
-            for (const id of siblings) {
-              const s = newCards.find(c => c.id === id);
-              if (s) startPositions.set(id, { x: s.position.x, y: s.position.y });
-            }
-            const totalDx = dx;
-            const totalDy = dy;
-            let startTs: number | null = null;
-            const duration = 120;
-            window.dispatchEvent(new CustomEvent('workspace:positionsAnimating-start'));
-            const step = (ts: number) => {
-              if (startTs == null) startTs = ts;
-              const t = Math.min(1, (ts - startTs) / duration);
-              const ease = t * (2 - t); // easeOutQuad
-              setCards(curr => {
-                const updated = curr.map(c => {
-                  if (!siblings.includes(c.id)) return c;
-                  const start = startPositions.get(c.id);
-                  if (!start) return c;
-                  return { ...c, position: { x: start.x + totalDx * ease, y: start.y + totalDy * ease } } as any;
-                });
-                scheduleSaveWorkspace(updated, 500);
-                return updated;
-              });
-              if (t < 1) {
-                requestAnimationFrame(step);
-              } else {
-                window.dispatchEvent(new CustomEvent('workspace:positionsAnimating-end'));
+        
+        // Only update if this card initiated the drag (prevent cascade updates)
+        if (groupId && lockedGroupOffsets[groupId] && lastDraggedCardRef.current !== cardId) {
+          lastDraggedCardRef.current = cardId;
+          
+          const baseCardOffset = lockedGroupOffsets[groupId][cardId];
+          if (baseCardOffset) {
+            // Calculate the new base position (first card's position)
+            const baseX = moved.position.x - baseCardOffset.dx;
+            const baseY = moved.position.y - baseCardOffset.dy;
+            
+            // Update all cards in group instantly to maintain offsets
+            const groupCardIds = lockedGroups[groupId].filter(id => id !== cardId);
+            newCards.forEach((card, index) => {
+              if (groupCardIds.includes(card.id)) {
+                const offset = lockedGroupOffsets[groupId][card.id];
+                if (offset) {
+                  newCards[index] = {
+                    ...card,
+                    position: {
+                      x: baseX + offset.dx,
+                      y: baseY + offset.dy,
+                    },
+                  };
+                }
               }
-            };
-            requestAnimationFrame(step);
+            });
           }
+          
+          // Reset after a short delay
+          setTimeout(() => {
+            lastDraggedCardRef.current = null;
+          }, 100);
         }
       }
       // Debounce frequent updates (dragging, resizing, typing)
       scheduleSaveWorkspace(newCards, 1000);
       return newCards;
     });
-  }, [scheduleSaveWorkspace, lockedGroups]);
+  }, [scheduleSaveWorkspace, lockedGroups, lockedGroupOffsets]);
 
   // Delete a card
   const deleteCard = useCallback(async (cardId: string) => {
@@ -825,6 +1006,7 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
     // connections
     connections,
     lockedGroups,
+    lockedGroupOffsets,
     toggleLockGroup: async (cardIds: string[]) => {
       const existing = Object.entries(lockedGroups).find(([, ids]) => ids.length === cardIds.length && ids.every(id => cardIds.includes(id)));
       if (existing) {
@@ -834,14 +1016,43 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
           delete copy[gid];
           return copy;
         });
+        setLockedGroupOffsets(prev => {
+          const copy = { ...prev };
+          delete copy[gid];
+          return copy;
+        });
         return gid;
       }
       const gid = `group-${Date.now()}`;
+      
+      // Calculate offsets for all cards relative to first card
+      const firstCardId = cardIds[0];
+      const firstCard = cards.find(c => c.id === firstCardId);
+      if (firstCard) {
+        const offsets: Record<string, { dx: number; dy: number }> = {};
+        cardIds.forEach(cardId => {
+          const card = cards.find(c => c.id === cardId);
+          if (card) {
+            offsets[cardId] = {
+              dx: card.position.x - firstCard.position.x,
+              dy: card.position.y - firstCard.position.y,
+            };
+          }
+        });
+        
+        setLockedGroupOffsets(prev => ({ ...prev, [gid]: offsets }));
+      }
+      
       setLockedGroups(prev => ({ ...prev, [gid]: [...new Set(cardIds)] }));
       return gid;
     },
     unlinkGroup: async (groupId: string) => {
       setLockedGroups(prev => {
+        const copy = { ...prev };
+        delete copy[groupId];
+        return copy;
+      });
+      setLockedGroupOffsets(prev => {
         const copy = { ...prev };
         delete copy[groupId];
         return copy;
