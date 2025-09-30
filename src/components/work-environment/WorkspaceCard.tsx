@@ -152,8 +152,9 @@ export const WorkspaceCard = memo(function WorkspaceCard({
   const [isResizing, setIsResizing] = useState(false);
   
   const cardRef = useRef<HTMLDivElement>(null);
-  const { startLinking, completeLinking, linking, connections, removeConnectionsAt, toggleLockGroup, lockedGroups } = useWorkspaceStore();
+  const { startLinking, completeLinking, linking, connections, removeConnectionsAt, toggleLockGroup, lockedGroups, lockedGroupOffsets } = useWorkspaceStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [groupDragDelta, setGroupDragDelta] = useState({ x: 0, y: 0 });
 
   const playSound = (srcList: string[]) => {
     try {
@@ -168,6 +169,100 @@ export const WorkspaceCard = memo(function WorkspaceCard({
     } catch {}
   };
 
+  // Synchronized audio-visual feedback for lock/unlock
+  const playSyncedLockFeedback = (isCurrentlyLocked: boolean, element: HTMLElement) => {
+    const lockSound = '/sounds/lock.mp3';
+    const unlockSound = '/sounds/unlock.mp3';
+    
+    try {
+      // Create audio element
+      const audio = new Audio();
+      const soundFile = isCurrentlyLocked ? unlockSound : lockSound;
+      audio.src = soundFile;
+      audio.volume = 0.4;
+      audio.currentTime = 0;
+
+      // Clean up any existing animations
+      element.classList.remove(
+        'ring-2', 'ring-4',
+        'ring-green-500', 'ring-blue-500', 
+        'ring-orange-500', 'ring-red-500',
+        'ring-offset-2', 'ring-offset-4'
+      );
+      element.style.animation = '';
+      void element.offsetWidth; // force reflow
+
+      // Start audio and animation simultaneously
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          // Audio started successfully - trigger animation
+          if (isCurrentlyLocked) {
+            // Unlocking - warm orange glow
+            element.classList.add('ring-4', 'ring-orange-500', 'ring-offset-2');
+            element.style.animation = 'unlock-pulse 0.6s ease-out';
+          } else {
+            // Locking - cool green glow
+            element.classList.add('ring-4', 'ring-green-500', 'ring-offset-2');
+            element.style.animation = 'lock-pulse 0.6s ease-out';
+          }
+
+          // Clean up after animation (600ms to match audio duration)
+          setTimeout(() => {
+            element.classList.remove(
+              'ring-4',
+              'ring-green-500', 'ring-blue-500',
+              'ring-orange-500', 'ring-red-500',
+              'ring-offset-2'
+            );
+            element.style.animation = '';
+          }, 600);
+        }).catch(() => {
+          // Audio blocked - still show visual feedback
+          if (isCurrentlyLocked) {
+            element.classList.add('ring-4', 'ring-orange-500', 'ring-offset-2');
+            element.style.animation = 'unlock-pulse 0.6s ease-out';
+          } else {
+            element.classList.add('ring-4', 'ring-green-500', 'ring-offset-2');
+            element.style.animation = 'lock-pulse 0.6s ease-out';
+          }
+
+          setTimeout(() => {
+            element.classList.remove(
+              'ring-4',
+              'ring-green-500', 'ring-orange-500',
+              'ring-offset-2'
+            );
+            element.style.animation = '';
+          }, 600);
+        });
+      }
+    } catch (error) {
+      console.error('Lock feedback error:', error);
+    }
+  };
+
+  // Handle real-time drag for locked groups
+  const handleDragMove = useCallback((delta: { x: number; y: number }) => {
+    // Check if this card is in a locked group
+    const groupId = Object.keys(lockedGroups).find(gid => lockedGroups[gid].includes(card.id));
+    if (groupId) {
+      // Get all cards in the group
+      const groupCardIds = lockedGroups[groupId];
+      
+      // Dispatch custom event with delta for all group cards
+      window.dispatchEvent(new CustomEvent('workspace:dragUpdate', { 
+        detail: { 
+          cardId: card.id, 
+          delta, 
+          groupId,
+          groupCardIds // All cards in the group
+        } 
+      }));
+    }
+  }, [card.id, lockedGroups]);
+
   // Use optimized drag & drop hook
   const {
     isDragging,
@@ -177,12 +272,64 @@ export const WorkspaceCard = memo(function WorkspaceCard({
     id: card.id,
     position: card.position,
     onUpdate,
+    onDragMove: handleDragMove,
     gridSnap,
     gridSize: 20,
     disabled: isFullscreen,
     pan,
     zoom,
   });
+
+  // Reset group drag delta when not dragging and update final positions
+  useEffect(() => {
+    if (!isDragging) {
+      // Clear visual delta
+      setGroupDragDelta({ x: 0, y: 0 });
+      
+      // Notify connections that drag ended
+      window.dispatchEvent(new CustomEvent('workspace:dragEnd'));
+    }
+  }, [isDragging]);
+
+  // Listen for drag updates from other cards in the same group
+  useEffect(() => {
+    const handleDragUpdate = (e: CustomEvent) => {
+      const { cardId, delta, groupId } = e.detail;
+      
+      // If another card in my group is being dragged, apply the same delta
+      if (cardId !== card.id && groupId && lockedGroups[groupId]?.includes(card.id)) {
+        setGroupDragDelta(delta);
+      }
+    };
+
+    const handleDragEnd = () => {
+      // Clear group drag delta when any drag ends
+      setGroupDragDelta({ x: 0, y: 0 });
+    };
+
+    window.addEventListener('workspace:dragUpdate', handleDragUpdate as EventListener);
+    window.addEventListener('workspace:dragEnd', handleDragEnd);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchend', handleDragEnd);
+    
+    return () => {
+      window.removeEventListener('workspace:dragUpdate', handleDragUpdate as EventListener);
+      window.removeEventListener('workspace:dragEnd', handleDragEnd);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [card.id, lockedGroups]);
+
+  // Clear group drag delta when card position changes (after drag is committed)
+  const prevPositionRef = useRef(card.position);
+  useEffect(() => {
+    // Check if position actually changed
+    if (prevPositionRef.current.x !== card.position.x || prevPositionRef.current.y !== card.position.y) {
+      prevPositionRef.current = card.position;
+      // Position has been updated by store, clear the visual delta
+      setGroupDragDelta({ x: 0, y: 0 });
+    }
+  }, [card.position]);
 
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     // Only select if clicking on the card itself, not on buttons or content
@@ -433,6 +580,10 @@ export const WorkspaceCard = memo(function WorkspaceCard({
         height: isFullscreen ? undefined : card.size.height,
         zIndex: isFullscreen ? 9999 : card.zIndex,
         ...style,
+        // Apply group drag delta ONLY if this card is NOT being dragged (other cards in group)
+        transform: !isDragging && (groupDragDelta.x !== 0 || groupDragDelta.y !== 0)
+          ? `translate3d(${groupDragDelta.x}px, ${groupDragDelta.y}px, 0)`
+          : style.transform,
       }}
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
@@ -468,43 +619,68 @@ export const WorkspaceCard = memo(function WorkspaceCard({
             )}
           </Button>
 
-          {/* Lock with connections: hold Shift and click to lock selected pair */}
+          {/* Lock with connections: lock all connected cards together */}
           <Button
             size="sm"
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              // Find directly connected cards to this card and lock with the first one for simplicity
-              const neighbors = connections
-                .filter(c => c.sourceCardId === card.id || c.targetCardId === card.id)
-                .map(c => c.sourceCardId === card.id ? c.targetCardId : c.sourceCardId);
-              if (neighbors.length > 0) {
-                const pair = [card.id, neighbors[0]];
-                // Determine current state (locked or not) to pick sound
-                const isLocked = Object.values(lockedGroups).some(ids => ids.length === pair.length && pair.every(id => ids.includes(id)));
-                toggleLockGroup(pair);
-                // Sound feedback
-                const lockSound = '/sounds/lock.mp3';
-                const unlockSound = '/sounds/unlock.mp3';
-                playSound([isLocked ? unlockSound : lockSound]);
-                // Visual pulse
+              
+              // Find ALL connected cards using graph traversal (BFS)
+              const getAllConnectedCards = (startCardId: string): string[] => {
+                const visited = new Set<string>();
+                const queue = [startCardId];
+                
+                while (queue.length > 0) {
+                  const currentId = queue.shift()!;
+                  if (visited.has(currentId)) continue;
+                  
+                  visited.add(currentId);
+                  
+                  // Find all neighbors
+                  const neighbors = connections
+                    .filter(c => c.sourceCardId === currentId || c.targetCardId === currentId)
+                    .map(c => c.sourceCardId === currentId ? c.targetCardId : c.sourceCardId)
+                    .filter(id => !visited.has(id));
+                  
+                  queue.push(...neighbors);
+                }
+                
+                return Array.from(visited);
+              };
+              
+              const connectedCards = getAllConnectedCards(card.id);
+              
+              if (connectedCards.length > 1) {
+                // Determine current state (locked or not)
+                const isLocked = Object.values(lockedGroups).some(ids => 
+                  ids.length === connectedCards.length && 
+                  connectedCards.every(id => ids.includes(id))
+                );
+                
+                // Toggle lock state for all connected cards
+                toggleLockGroup(connectedCards);
+                
+                // Synchronized audio-visual feedback
                 const el = cardRef.current;
                 if (el) {
-                  el.classList.remove('ring-2','ring-primary','ring-offset-2');
-                  void el.offsetWidth; // reflow
-                  el.classList.add('ring-2','ring-primary','ring-offset-2');
-                  setTimeout(() => {
-                    el.classList.remove('ring-2','ring-primary','ring-offset-2');
-                  }, 300);
+                  playSyncedLockFeedback(isLocked, el);
                 }
+                
+                console.log(`[Workspace] ${isLocked ? 'Unlocked' : 'Locked'} ${connectedCards.length} connected cards`);
+              } else {
+                console.log('[Workspace] No connections to lock');
               }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             className="h-6 w-6 p-0"
-            title="Lock with connected card"
+            title={`${Object.values(lockedGroups).some(ids => ids.includes(card.id)) ? '🔓 Unlock' : '🔒 Lock'} - Green glow for lock, Orange glow for unlock`}
           >
-            <Lock className="w-3 h-3" />
+            <Lock className={cn(
+              "w-3 h-3 transition-colors",
+              Object.values(lockedGroups).some(ids => ids.includes(card.id)) && "text-green-600 dark:text-green-400"
+            )} />
           </Button>
           
           <Button
