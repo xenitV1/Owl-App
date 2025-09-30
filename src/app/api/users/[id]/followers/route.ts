@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';import { db } from '@/lib/db';
 interface RouteContext {
   params: Promise<{
     id: string;
@@ -24,9 +24,46 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
+    // Get current user for block filtering
+    let currentUser: any = null;
+    let userEmail: string | null = null;
+    
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
+
+    if (session?.user?.email) {
+      currentUser = await db.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true }
+      });
+    }
+
+    // Build where clause with block filtering
+    const where: any = { followingId: userId };
+    
+    if (currentUser) {
+      const blockedUserIds = await db.userBlock.findMany({
+        where: { blockerId: currentUser.id },
+        select: { blockedId: true }
+      }).then(blocks => blocks.map(b => b.blockedId));
+
+      const blockingUserIds = await db.userBlock.findMany({
+        where: { blockedId: currentUser.id },
+        select: { blockerId: true }
+      }).then(blocks => blocks.map(b => b.blockerId));
+
+      const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+      if (allBlockedIds.length > 0) {
+        where.followerId = {
+          notIn: allBlockedIds
+        };
+      }
+    }
+
     // Get followers with pagination
     const followers = await db.follow.findMany({
-      where: { followingId: userId },
+      where,
       include: {
         follower: {
           select: {
@@ -50,7 +87,7 @@ export async function GET(
 
     // Get total count for pagination
     const total = await db.follow.count({
-      where: { followingId: userId }
+      where
     });
 
     return NextResponse.json({
