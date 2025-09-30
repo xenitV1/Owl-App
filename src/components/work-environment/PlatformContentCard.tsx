@@ -34,7 +34,8 @@ import {
 } from 'lucide-react';
 import { VideoPlayer } from '@/components/media/VideoPlayer';
 import { useLoadingMessages } from '@/hooks/useLoadingMessages';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { getLocalizedSubjectLabel } from '@/lib/utils';
 import { WebContentViewer } from './WebContentViewer';
 
 
@@ -128,6 +129,7 @@ interface ApiResponse {
 
 export function PlatformContentCard({ cardId, cardData, config }: PlatformContentCardProps) {
   const t = useTranslations();
+  const locale = useLocale();
 
   const [contentType, setContentType] = useState(config?.contentType || 'posts');
   const [data, setData] = useState<Post[] | Community[] | User[]>([]);
@@ -316,7 +318,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
             )}
             {post.subject && (
               <Badge variant="outline" className="text-xs mb-2">
-                {post.subject}
+                {getLocalizedSubjectLabel(post.subject, locale)}
               </Badge>
             )}
             <div className="flex items-center gap-4 text-xs text-muted-foreground">

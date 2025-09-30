@@ -9,9 +9,13 @@ interface ConnectionsOverlayProps {
   zoom: number;
 }
 
-function getAnchorPoint(card: { position: { x: number; y: number }; size: { width: number; height: number } }, side: AnchorSide) {
+function getAnchorPoint(
+  card: { position: { x: number; y: number }; size: { width: number; height: number } }, 
+  side: AnchorSide
+) {
   const { x, y } = card.position;
   const { width, height } = card.size;
+  
   switch (side) {
     case 'top':
       return { x: x + width / 2, y: y };
@@ -93,6 +97,20 @@ export const ConnectionsOverlay = memo(function ConnectionsOverlay({ cards, conn
   const springsRef = useRef<Map<string, { cx: number; cy: number; vx: number; vy: number }>>(new Map());
   const [animating, setAnimating] = useState(false);
 
+  // Listen for drag updates to force tick update for smooth connection rendering
+  useEffect(() => {
+    const handleDragUpdate = () => {
+      // Force re-render to update connections based on live DOM positions
+      setTick(t => (t + 1) % 1000000);
+    };
+
+    window.addEventListener('workspace:dragUpdate', handleDragUpdate);
+    
+    return () => {
+      window.removeEventListener('workspace:dragUpdate', handleDragUpdate);
+    };
+  }, []);
+
 useEffect(() => {
     const isActive = () => document.querySelector('[data-card-id][data-dragging="true"]') !== null || linking.isActive;
 
@@ -143,12 +161,16 @@ useEffect(() => {
   const cardMap = useMemo(() => {
     const map = new Map<string, { position: { x: number; y: number }; size: { width: number; height: number } }>();
     for (const c of cards) {
+      // Try to get live position from DOM (includes all transforms)
       const live = typeof document !== 'undefined' ? getLiveWorldRect(c.id, pan, zoom) : null;
+      
       if (live) {
+        // Use live position - it already includes all CSS transforms
         map.set(c.id, live);
-        continue;
+      } else {
+        // Fallback: use stored position
+        map.set(c.id, { position: c.position, size: c.size });
       }
-      map.set(c.id, { position: c.position, size: c.size });
     }
     return map;
   }, [cards, pan, zoom, tick]);
