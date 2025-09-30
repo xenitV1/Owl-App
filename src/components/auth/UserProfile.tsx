@@ -6,15 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { logoutUser } from '@/lib/firebase';
+import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 
 export const UserProfile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, dbUser } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logoutUser();
+      await signOut({ callbackUrl: '/' });
       toast.success('Successfully signed out!');
     } catch (error) {
       toast.error('Failed to sign out. Please try again.');
@@ -24,9 +24,13 @@ export const UserProfile: React.FC = () => {
 
   if (!user) return null;
 
+  const displayName = dbUser?.name || user.name || '';
+  const avatarUrl = dbUser?.avatar || undefined;
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
+      .filter(Boolean)
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
@@ -38,10 +42,9 @@ export const UserProfile: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            {/* Top navigation avatar: Never show user's uploaded image, only show default empty image */}
-            <AvatarImage src={undefined} alt={user.displayName || 'User'} />
+            <AvatarImage src={avatarUrl} alt={displayName || 'User'} />
             <AvatarFallback>
-              {user.displayName ? getInitials(user.displayName) : <User className="h-4 w-4" />}
+              {displayName ? getInitials(displayName) : <User className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -49,10 +52,9 @@ export const UserProfile: React.FC = () => {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
-            {user.displayName && (
-              <p className="font-medium">{user.displayName}</p>
+            {displayName && (
+              <p className="font-medium">{displayName}</p>
             )}
-            {/* Email removed from display - only used for authentication */}
           </div>
         </div>
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
