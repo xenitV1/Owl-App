@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Play,
@@ -33,16 +34,26 @@ export function PomodoroTimer({ cardId, onClose }: PomodoroTimerProps) {
   const [showSettings, setShowSettings] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
+  const completeAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const { cards, startPomodoro, pausePomodoro, resetPomodoro } = useWorkspaceStore();
+  const { cards, startPomodoro, pausePomodoro, resetPomodoro, updateCard } = useWorkspaceStore();
   const card = cards.find(c => c.id === cardId);
   const pomodoroData = card?.pomodoroData;
 
-  // Initialize audio for notifications
+  // Initialize audio for notifications (preload for instant playback)
   useEffect(() => {
-    audioRef.current = new Audio('/notification.mp3'); // You'll need to add this audio file
-    audioRef.current.volume = 0.5;
+    startAudioRef.current = new Audio('/sounds/pomodoro-start.mp3');
+    startAudioRef.current.volume = 0.6;
+    startAudioRef.current.preload = 'auto';
+    
+    completeAudioRef.current = new Audio('/sounds/pomodoro-complete.mp3');
+    completeAudioRef.current.volume = 0.7;
+    completeAudioRef.current.preload = 'auto';
+    
+    // Preload both sounds
+    startAudioRef.current.load();
+    completeAudioRef.current.load();
   }, []);
 
   // Timer logic
@@ -74,22 +85,45 @@ export function PomodoroTimer({ cardId, onClose }: PomodoroTimerProps) {
     }
   }, [pomodoroData]);
 
-  const playNotification = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {
-        // Fallback to browser notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Pomodoro Timer', {
-            body: isBreak ? 'Break time is over! Time to focus.' : 'Focus session completed! Take a break.',
-            icon: '/favicon.ico'
-          });
-        }
-      });
+  const playStartSound = useCallback(() => {
+    if (startAudioRef.current) {
+      // Reset to beginning for instant replay
+      startAudioRef.current.currentTime = 0;
+      // Play immediately (synchronous with click)
+      const playPromise = startAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('[Pomodoro] Failed to play start sound:', err);
+        });
+      }
+      console.log('[Pomodoro] Start sound played');
     }
-  };
+  }, []);
+
+  const playCompleteSound = useCallback(() => {
+    if (completeAudioRef.current) {
+      // Reset to beginning for instant replay
+      completeAudioRef.current.currentTime = 0;
+      // Play immediately
+      const playPromise = completeAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('[Pomodoro] Failed to play complete sound:', err);
+          // Fallback to browser notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Pomodoro Timer', {
+              body: isBreak ? 'Break time is over! Time to focus.' : 'Focus session completed! Take a break.',
+              icon: '/favicon.ico'
+            });
+          }
+        });
+      }
+      console.log('[Pomodoro] Complete sound played');
+    }
+  }, [isBreak]);
 
   const handleSessionComplete = () => {
-    playNotification();
+    playCompleteSound();
     setIsRunning(false);
 
     if (isBreak) {
@@ -116,6 +150,7 @@ export function PomodoroTimer({ cardId, onClose }: PomodoroTimerProps) {
   };
 
   const handleStart = () => {
+    playStartSound();
     startPomodoro(cardId);
   };
 
@@ -274,22 +309,259 @@ export function PomodoroTimer({ cardId, onClose }: PomodoroTimerProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="flex-1 p-6">
-          <div className="space-y-4">
+        <TabsContent value="settings" className="flex-1 p-6 overflow-y-auto">
+          <div className="space-y-6">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Settings className="w-5 h-5" />
               Timer Settings
             </h3>
 
-            <div className="text-sm text-muted-foreground">
-              Settings will be implemented in the next update.
-              Current defaults:
-              <ul className="mt-2 space-y-1">
-                <li>• Focus: {pomodoroData?.workDuration || 25} minutes</li>
-                <li>• Short Break: {pomodoroData?.breakDuration || 5} minutes</li>
-                <li>• Long Break: {pomodoroData?.longBreakDuration || 15} minutes</li>
-                <li>• Sessions until long break: {pomodoroData?.sessionsUntilLongBreak || 4}</li>
-              </ul>
+            <div className="space-y-4">
+              {/* Work Duration */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  Focus Duration (minutes)
+                </label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(5, (pomodoroData.workDuration || 25) - 5);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          workDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    -5
+                  </Button>
+                  <Input
+                    type="number"
+                    min="5"
+                    max="60"
+                    step="5"
+                    value={pomodoroData?.workDuration || 25}
+                    onChange={(e) => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(5, Math.min(60, parseInt(e.target.value) || 25));
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          workDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                    className="flex-1 text-center font-mono font-bold text-lg h-10"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.min(60, (pomodoroData.workDuration || 25) + 5);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          workDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    +5
+                  </Button>
+                </div>
+              </div>
+
+              {/* Short Break Duration */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Timer className="w-4 h-4" />
+                  Short Break (minutes)
+                </label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(1, (pomodoroData.breakDuration || 5) - 1);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          breakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    -1
+                  </Button>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="15"
+                    step="1"
+                    value={pomodoroData?.breakDuration || 5}
+                    onChange={(e) => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(1, Math.min(15, parseInt(e.target.value) || 5));
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          breakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                    className="flex-1 text-center font-mono font-bold text-lg h-10"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.min(15, (pomodoroData.breakDuration || 5) + 1);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          breakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    +1
+                  </Button>
+                </div>
+              </div>
+
+              {/* Long Break Duration */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Coffee className="w-4 h-4" />
+                  Long Break (minutes)
+                </label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(10, (pomodoroData.longBreakDuration || 15) - 5);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          longBreakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    -5
+                  </Button>
+                  <Input
+                    type="number"
+                    min="10"
+                    max="30"
+                    step="5"
+                    value={pomodoroData?.longBreakDuration || 15}
+                    onChange={(e) => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.max(10, Math.min(30, parseInt(e.target.value) || 15));
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          longBreakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                    className="flex-1 text-center font-mono font-bold text-lg h-10"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newDuration = Math.min(30, (pomodoroData.longBreakDuration || 15) + 5);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          longBreakDuration: newDuration 
+                        } as any
+                      });
+                    }}
+                  >
+                    +5
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sessions until long break */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Sessions Until Long Break
+                </label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newSessions = Math.max(2, (pomodoroData.sessionsUntilLongBreak || 4) - 1);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          sessionsUntilLongBreak: newSessions 
+                        } as any
+                      });
+                    }}
+                  >
+                    -1
+                  </Button>
+                  <Input
+                    type="number"
+                    min="2"
+                    max="8"
+                    step="1"
+                    value={pomodoroData?.sessionsUntilLongBreak || 4}
+                    onChange={(e) => {
+                      if (!pomodoroData) return;
+                      const newSessions = Math.max(2, Math.min(8, parseInt(e.target.value) || 4));
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          sessionsUntilLongBreak: newSessions 
+                        } as any
+                      });
+                    }}
+                    className="flex-1 text-center font-mono font-bold text-lg h-10"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!pomodoroData) return;
+                      const newSessions = Math.min(8, (pomodoroData.sessionsUntilLongBreak || 4) + 1);
+                      updateCard(cardId, {
+                        pomodoroData: { 
+                          ...pomodoroData, 
+                          sessionsUntilLongBreak: newSessions 
+                        } as any
+                      });
+                    }}
+                  >
+                    +1
+                  </Button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 Tip: Changes apply to the next session
+                </p>
+              </div>
             </div>
           </div>
         </TabsContent>
