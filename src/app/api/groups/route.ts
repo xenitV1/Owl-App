@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuth } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // GET /api/groups - Get user's groups
 export async function GET(request: NextRequest) {
@@ -79,13 +79,25 @@ export async function GET(request: NextRequest) {
 // POST /api/groups - Create a new private group
 export async function POST(request: NextRequest) {
   try {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
 
-    if (!currentUser) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -108,7 +120,7 @@ export async function POST(request: NextRequest) {
         members: {
           create: [
             {
-              userId: currentUser.uid,
+              userId: user.id,
               role: 'admin'
             },
             ...(invitedUserIds || []).map((userId: string) => ({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuth } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{
@@ -13,13 +13,26 @@ interface RouteContext {
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
 
-    if (!currentUser) {
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -37,7 +50,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const membership = await db.groupMember.findUnique({
       where: {
         userId_groupId: {
-          userId: currentUser.uid,
+          userId: user.id,
           groupId: params.id
         }
       }
@@ -127,13 +140,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
 
-    if (!currentUser) {
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -151,7 +177,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const membership = await db.groupMember.findUnique({
       where: {
         userId_groupId: {
-          userId: currentUser.uid,
+          userId: user.id,
           groupId: params.id
         }
       }
@@ -165,7 +191,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     // Only admins can remove other users, users can remove themselves
-    if (currentUser.uid !== userId && membership.role !== 'admin') {
+    if (user.id !== userId && membership.role !== 'admin') {
       return NextResponse.json(
         { error: 'Only group admins can remove other members' },
         { status: 403 }

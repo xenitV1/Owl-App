@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuth } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{
@@ -17,13 +17,25 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
 
-    if (!currentUser) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -31,7 +43,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const membership = await db.groupMember.findUnique({
       where: {
         userId_groupId: {
-          userId: currentUser.uid,
+          userId: user.id,
           groupId: params.id
         }
       }
@@ -116,13 +128,26 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
 
-    if (!currentUser) {
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -130,7 +155,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const membership = await db.groupMember.findUnique({
       where: {
         userId_groupId: {
-          userId: currentUser.uid,
+          userId: user.id,
           groupId: params.id
         }
       }
@@ -160,7 +185,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         content: content?.trim() || null,
         image: image || null,
         subject: subject?.trim() || null,
-        authorId: currentUser.uid,
+        authorId: user.id,
         groupId: params.id,
         isPublic: false // Group posts are private by default
       },
