@@ -359,6 +359,7 @@ export default function PostDetailPage() {
               <ContentInteraction
                 likes={likeCount}
                 comments={post._count.comments}
+                pools={post._count.pools}
                 isLiked={isLiked}
                 isSaved={isSaved}
                 onLike={handleLike}

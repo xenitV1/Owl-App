@@ -22,11 +22,16 @@ export default function SavedPage() {
   const { loading, isGuest, user } = useAuth();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<PoolCategory[]>([]);
+  const [totalItemsCount, setTotalItemsCount] = useState(0);
   const t = useTranslations('saved');
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/pool-categories');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      const response = await fetch('/api/pool-categories', { headers });
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -106,6 +111,7 @@ export default function SavedPage() {
           <PoolManagement
             onCategorySelect={setSelectedCategoryId}
             selectedCategoryId={selectedCategoryId}
+            totalItemsCount={totalItemsCount}
           />
         </div>
 
@@ -114,6 +120,8 @@ export default function SavedPage() {
           <SavedPosts
             selectedCategoryId={selectedCategoryId}
             categories={categories}
+            onItemsCountChange={setTotalItemsCount}
+            onCategoriesRefresh={fetchCategories}
           />
         </div>
       </div>

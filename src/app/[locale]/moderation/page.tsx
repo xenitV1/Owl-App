@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/contexts/AuthContext';
 import { ModerationDashboard } from '@/components/moderation/ModerationDashboard';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Shield, AlertTriangle } from 'lucide-react';
@@ -10,35 +10,27 @@ import { Shield, AlertTriangle } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default function ModerationPage() {
-  const { data: session, status } = useSession();
+  const { user, dbUser, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (session?.user?.email) {
+      if (user && dbUser) {
         try {
-          const response = await fetch('/api/users/profile');
-          if (response.ok) {
-            const data = await response.json();
-            setIsAdmin(data.user.role === 'ADMIN');
-          }
+          setIsAdmin(dbUser.role === 'ADMIN');
         } catch (error) {
           console.error('Error checking admin status:', error);
         } finally {
           setLoading(false);
         }
-      } else {
+      } else if (!authLoading) {
         setLoading(false);
       }
     };
 
-    if (status === 'authenticated') {
-      checkAdminStatus();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
-    }
-  }, [session, status]);
+    checkAdminStatus();
+  }, [user, dbUser, authLoading]);
 
   if (loading) {
     return (
@@ -48,7 +40,7 @@ export default function ModerationPage() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <AuthGuard>
         <div>Loading...</div>

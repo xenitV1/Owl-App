@@ -32,7 +32,7 @@ const SUBJECTS = [
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tr = useTranslations('roles');
-  const { loading, isGuest, user } = useAuth();
+  const { loading, isGuest, user, dbUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const { fontSize, setFontSize } = useFontSize();
   
@@ -57,7 +57,7 @@ export default function SettingsPage() {
           const response = await fetch('/api/users/profile', {
             headers: {
               ...(user?.email ? { 'x-user-email': user.email } : {}),
-              ...(user?.displayName ? { 'x-user-name': user.displayName } : {}),
+              ...(dbUser?.name ? { 'x-user-name': dbUser.name } : {}),
             },
           });
           if (response.ok) {
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         headers: {
           'Content-Type': 'application/json',
           ...(user?.email ? { 'x-user-email': user.email } : {}),
-          ...(user?.displayName ? { 'x-user-name': user.displayName } : {}),
+          ...(dbUser?.name ? { 'x-user-name': dbUser.name } : {}),
         },
         body: JSON.stringify(formData),
       });
@@ -191,13 +191,13 @@ export default function SettingsPage() {
                 <Avatar className="h-20 w-20 mb-3">
                   {/* Settings page avatar: Show user's uploaded image only when they have uploaded one */}
                   {/* After Google signup, show default empty image until user uploads their own image */}
-                  <AvatarImage src={undefined} alt={user?.displayName || 'User'} />
+                  <AvatarImage src={undefined} alt={dbUser?.name || 'User'} />
                   <AvatarFallback className="text-lg">
-                    {user?.displayName ? getInitials(user.displayName) : 'U'}
+                    {dbUser?.name ? getInitials(dbUser.name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold">{user?.displayName || 'User'}</h3>
+                  <h3 className="font-semibold">{dbUser?.name || 'User'}</h3>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                   <Badge variant="secondary" className="mt-1">
                     Student
