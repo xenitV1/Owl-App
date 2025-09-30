@@ -6,8 +6,9 @@ import { createLikeNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -35,15 +36,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if post exists
+    // Check if post exists and if user is blocked
     const post = await db.post.findUnique({
       where: { id: postId },
+      include: {
+        author: true
+      }
     });
 
     if (!post) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if user is blocked by post author or vice versa
+    const isBlocked = await db.userBlock.findFirst({
+      where: {
+        OR: [
+          { blockerId: user.id, blockedId: post.authorId },
+          { blockerId: post.authorId, blockedId: user.id }
+        ]
+      }
+    });
+
+    if (isBlocked) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
       );
     }
 

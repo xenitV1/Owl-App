@@ -32,6 +32,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 });
     }
 
+    // Check if current user has blocked the target user or vice versa
+    const blockedUsers = await db.userBlock.findMany({
+      where: { blockerId: currentUser.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUsers = await db.userBlock.findMany({
+      where: { blockedId: currentUser.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUsers, ...blockingUsers];
+
+    if (allBlockedIds.includes(followingId)) {
+      return NextResponse.json({
+        error: 'Cannot follow a blocked user or a user who has blocked you'
+      }, { status: 400 });
+    }
+
     // Check if already following
     const existingFollow = await db.follow.findUnique({
       where: {
@@ -48,9 +67,9 @@ export async function POST(request: NextRequest) {
         where: { id: existingFollow.id }
       });
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Unfollowed successfully',
-        following: false 
+        following: false
       });
     } else {
       // Follow
@@ -64,9 +83,9 @@ export async function POST(request: NextRequest) {
       // Create notification for the user being followed
       await createFollowNotification(followingId, currentUser.id);
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Followed successfully',
-        following: true 
+        following: true
       });
     }
   } catch (error) {
