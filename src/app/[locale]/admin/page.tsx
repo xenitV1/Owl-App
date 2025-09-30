@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/contexts/AuthContext';
 import { LazyAdminDashboard } from '@/components/lazy';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Shield, AlertTriangle } from 'lucide-react';
@@ -9,41 +9,33 @@ import { prefetchComponents } from '@/components/lazy';
 import Head from 'next/head';
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
+  const { user, dbUser, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (session?.user?.email) {
+      if (user && dbUser) {
         try {
-          const response = await fetch('/api/users/profile');
-          if (response.ok) {
-            const data = await response.json();
-            const adminStatus = data.user.role === 'ADMIN';
-            setIsAdmin(adminStatus);
-            
-            // Prefetch admin components if user is admin
-            if (adminStatus) {
-              prefetchComponents.prefetchAdminComponents();
-            }
+          const adminStatus = dbUser.role === 'ADMIN';
+          setIsAdmin(adminStatus);
+          
+          // Prefetch admin components if user is admin
+          if (adminStatus) {
+            prefetchComponents.prefetchAdminComponents();
           }
         } catch (error) {
           console.error('Error checking admin status:', error);
         } finally {
           setLoading(false);
         }
-      } else {
+      } else if (!authLoading) {
         setLoading(false);
       }
     };
 
-    if (status === 'authenticated') {
-      checkAdminStatus();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
-    }
-  }, [session, status]);
+    checkAdminStatus();
+  }, [user, dbUser, authLoading]);
 
   if (loading) {
     return (
@@ -61,7 +53,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <>
         <Head>

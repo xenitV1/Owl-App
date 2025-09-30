@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { SessionProvider } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, RotateCcw, ZoomIn, ZoomOut, Grid, Hand } from 'lucide-react';
@@ -10,6 +9,7 @@ import { AddCardDialog } from '@/components/work-environment/AddCardDialog';
 import { InfiniteCanvas } from '@/components/work-environment/InfiniteCanvas';
 import { VirtualizedCardRenderer } from '@/components/work-environment/VirtualizedCardRenderer';
 import { PerformanceMonitor } from '@/components/work-environment/PerformanceMonitor';
+import { MiniMap } from '@/components/work-environment/MiniMap';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
 import { WorkspaceStoreProvider } from '@/hooks/useWorkspaceStore';
 import { ConnectionsOverlay } from '@/components/work-environment/ConnectionsOverlay';
@@ -27,20 +27,69 @@ function WorkEnvironmentContent() {
   const { cards, addCard, updateCard, deleteCard, loadWorkspace, isIndexedDBReady, isLoading, connections, linking, updateLinkCursor, cancelLinking } = useWorkspaceStore();
   
   const canvasRef = useRef<HTMLDivElement>(null);
+  const addSoundRef = useRef<HTMLAudioElement | null>(null);
+  const deleteSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize workspace audio
+  useEffect(() => {
+    addSoundRef.current = new Audio('/sounds/card-add.mp3');
+    addSoundRef.current.volume = 0.5;
+    addSoundRef.current.preload = 'auto';
+    
+    deleteSoundRef.current = new Audio('/sounds/card-delete.mp3');
+    deleteSoundRef.current.volume = 0.5;
+    deleteSoundRef.current.preload = 'auto';
+    
+    // Preload both sounds
+    addSoundRef.current.load();
+    deleteSoundRef.current.load();
+  }, []);
+
+  // Play card add sound
+  const playAddSound = useCallback(() => {
+    if (addSoundRef.current) {
+      addSoundRef.current.currentTime = 0;
+      addSoundRef.current.play().catch(err => {
+        console.warn('[Workspace] Failed to play add sound:', err);
+      });
+    }
+  }, []);
+
+  // Play card delete sound
+  const playDeleteSound = useCallback(() => {
+    if (deleteSoundRef.current) {
+      deleteSoundRef.current.currentTime = 0;
+      deleteSoundRef.current.play().catch(err => {
+        console.warn('[Workspace] Failed to play delete sound:', err);
+      });
+    }
+  }, []);
+
+  // Wrapper for addCard with sound
+  const addCardWithSound = useCallback(async (card: any) => {
+    playAddSound();
+    await addCard(card);
+  }, [addCard, playAddSound]);
+
+  // Wrapper for deleteCard with sound
+  const deleteCardWithSound = useCallback(async (cardId: string) => {
+    playDeleteSound();
+    await deleteCard(cardId);
+  }, [deleteCard, playDeleteSound]);
 
   // Track cursor globally while linking for smooth temporary line following the mouse
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail) return;
-      addCard({
+      addCardWithSound({
         ...detail,
         zIndex: cards.length + 1,
       });
     };
     window.addEventListener('workspace:addCard', handler as any);
     return () => window.removeEventListener('workspace:addCard', handler as any);
-  }, [addCard, cards.length]);
+  }, [addCardWithSound, cards.length]);
 
   useEffect(() => {
     if (!linking.isActive) return;
@@ -57,6 +106,45 @@ function WorkEnvironmentContent() {
   }, [linking.isActive, pan.x, pan.y, zoom]);
 
   // Note: Workspace loading is handled by useWorkspaceStore hook automatically
+
+  // Auto-center on cards when workspace loads
+  useEffect(() => {
+    if (cards.length > 0 && !isLoading) {
+      // Calculate bounding box of all cards
+      let minX = Infinity, minY = Infinity;
+      let maxX = -Infinity, maxY = -Infinity;
+      
+      cards.forEach(card => {
+        minX = Math.min(minX, card.position.x);
+        minY = Math.min(minY, card.position.y);
+        maxX = Math.max(maxX, card.position.x + card.size.width);
+        maxY = Math.max(maxY, card.position.y + card.size.height);
+      });
+      
+      // Calculate center of all cards
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      
+      // Calculate required zoom to fit all cards (with 20% padding)
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      const scaleX = viewportWidth / (width * 1.2);
+      const scaleY = viewportHeight / (height * 1.2);
+      const optimalZoom = Math.min(scaleX, scaleY, 1); // Max zoom 1x for readability
+      
+      // Set zoom and pan to center on cards
+      setZoom(optimalZoom);
+      setPan({
+        x: viewportWidth / 2 - centerX * optimalZoom,
+        y: viewportHeight / 2 - centerY * optimalZoom,
+      });
+      
+      console.log(`[Workspace] Auto-centered on ${cards.length} cards at zoom ${(optimalZoom * 100).toFixed(0)}%`);
+    }
+  }, [cards.length, isLoading]); // Only run when cards are loaded
 
   const handleZoomIn = useCallback(() => {
     setZoom(prev => Math.min(prev * 1.2, 5));
@@ -84,14 +172,14 @@ function WorkEnvironmentContent() {
       setSelectedCardId(null);
     }
     if (e.key === 'Delete' && selectedCardId && !isInEditor) {
-      deleteCard(selectedCardId);
+      deleteCardWithSound(selectedCardId);
       setSelectedCardId(null);
     }
     if (e.key === ' ' && !isInEditor) {
       e.preventDefault();
       setPanMode(true);
     }
-  }, [selectedCardId, deleteCard]);
+  }, [selectedCardId, deleteCardWithSound]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     // Check if the target is inside a rich note editor or any input/textarea
@@ -138,9 +226,10 @@ function WorkEnvironmentContent() {
       zIndex: cards.length + 1,
     };
 
+    playAddSound();
     addCard(newCard);
     setIsAddCardOpen(false);
-  }, [addCard, cards.length, pan, zoom]);
+  }, [addCard, cards.length, pan, zoom, playAddSound]);
 
   // Show loading state while IndexedDB initializes
   if (isLoading) {
@@ -186,7 +275,7 @@ function WorkEnvironmentContent() {
         </div>
 
         {/* Canvas Controls */}
-        <div className="absolute bottom-4 left-4 z-50">
+        <div className="absolute bottom-4 left-[244px] z-50">
           <Card className="p-2 bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <Button
@@ -294,7 +383,7 @@ function WorkEnvironmentContent() {
               selectedCardId={selectedCardId}
               onSelect={setSelectedCardId}
               onUpdate={updateCard}
-              onDelete={deleteCard}
+              onDelete={deleteCardWithSound}
               gridSnap={gridSnap}
               onCardHover={setIsHoveringCard}
             />
@@ -308,6 +397,14 @@ function WorkEnvironmentContent() {
           onAddCard={handleAddCard}
         />
 
+        {/* Mini Map */}
+        <MiniMap 
+          cards={cards} 
+          pan={pan} 
+          zoom={zoom} 
+          onNavigate={setPan}
+        />
+
         {/* Performance Monitor */}
         <PerformanceMonitor cardCount={cards.length} />
       </div>
@@ -316,10 +413,8 @@ function WorkEnvironmentContent() {
 
 export default function WorkEnvironmentPage() {
   return (
-    <SessionProvider>
-      <WorkspaceStoreProvider>
-        <WorkEnvironmentContent />
-      </WorkspaceStoreProvider>
-    </SessionProvider>
+    <WorkspaceStoreProvider>
+      <WorkEnvironmentContent />
+    </WorkspaceStoreProvider>
   );
 }
