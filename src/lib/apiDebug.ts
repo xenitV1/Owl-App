@@ -107,6 +107,10 @@ class ApiDebugLogger {
     }
 
     try {
+      // Avoid parsing body for GET/HEAD requests
+      if (request.method === 'GET' || request.method === 'HEAD') {
+        return undefined;
+      }
       const contentType = request.headers.get('content-type');
       
       if (contentType?.includes('application/json')) {
