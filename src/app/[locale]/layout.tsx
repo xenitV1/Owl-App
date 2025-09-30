@@ -3,9 +3,6 @@ import Script from "next/script";
 import AnalyticsListener from "@/components/AnalyticsListener";
 import "../globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { FontSizeProvider } from "@/contexts/FontSizeContext";
 import { ThemeLoader } from "@/components/ui/theme-loader";
 import { Navigation } from "@/components/layout/Navigation";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
@@ -72,6 +69,8 @@ if (process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES !== '1') {
   };
 }
 
+import { ClientProviders } from './client-providers';
+
 const locales = ['en', 'tr'];
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -83,9 +82,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     authors: [{ name: "OWL-App Team" }],
     metadataBase: new URL('https://owl-app.com'),
     icons: {
-      icon: '/logo.png',
-      shortcut: '/logo.png',
-      apple: '/logo.png',
+      icon: [
+        { url: '/favicon.ico' },
+        { url: '/favicon.png', sizes: '32x32' }
+      ],
+      shortcut: '/favicon.ico',
+      apple: '/favicon.ico',
     },
     openGraph: {
       title: "OWL-App - Academic Social Learning Platform",
@@ -127,52 +129,46 @@ export default async function LocaleLayout({
   const messages = (await import(`../../messages/${locale}.json`)).default;
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <AuthProvider>
-        <ThemeProvider>
-          <FontSizeProvider>
-            <ThemeLoader />
-            <div className="min-h-screen flex flex-col">
-              <SkipLinks
-                links={[
-                  { href: '#main-content', label: 'Skip to main content' },
-                  { href: '#navigation', label: 'Skip to navigation' }
-                ]}
-              />
-              <header role="banner">
-                <Navigation />
-              </header>
-              <main
-                id="main-content"
-                role="main"
-                tabIndex={-1}
-                className="flex-1 pb-16 md:pb-0 focus:outline-none"
-              >
-                {children}
-              </main>
-              <footer role="contentinfo" className="border-t bg-background">
-                <MobileNavigation />
-              </footer>
-            </div>
-            <Toaster />
-            <DebugPanel />
-            <ResizeObserverErrorHandler />
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);} 
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
-              `}
-            </Script>
-            <AnalyticsListener />
-          </FontSizeProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </NextIntlClientProvider>
+    <ClientProviders locale={locale} messages={messages}>
+      <ThemeLoader />
+      <div className="min-h-screen flex flex-col">
+        <SkipLinks
+          links={[
+            { href: '#main-content', label: 'Skip to main content' },
+            { href: '#navigation', label: 'Skip to navigation' }
+          ]}
+        />
+        <header role="banner">
+          <Navigation />
+        </header>
+        <main
+          id="main-content"
+          role="main"
+          tabIndex={-1}
+          className="flex-1 pb-16 md:pb-0 focus:outline-none"
+        >
+          {children}
+        </main>
+        <footer role="contentinfo" className="border-t bg-background">
+          <MobileNavigation />
+        </footer>
+      </div>
+      <Toaster />
+      <DebugPanel />
+      <ResizeObserverErrorHandler />
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="ga-init" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false });
+        `}
+      </Script>
+      <AnalyticsListener />
+    </ClientProviders>
   );
 }
