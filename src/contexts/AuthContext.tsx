@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from 'firebase/auth';
-import { onAuthStateChangedListener } from '@/lib/firebase';
+import { useSession } from 'next-auth/react';
+import type { User as NextAuthUser } from 'next-auth';
 
 interface DatabaseUser {
   id: string;
@@ -15,7 +15,7 @@ interface DatabaseUser {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: NextAuthUser | null;
   dbUser: DatabaseUser | null;
   loading: boolean;
   isAuthenticated: boolean;
@@ -43,58 +43,57 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, status } = useSession();
   const [dbUser, setDbUser] = useState<DatabaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const loading = status === 'loading';
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChangedListener(async (firebaseUser) => {
-      setUser(firebaseUser);
+    // If user is authenticated, fetch their profile from database
+    if (session?.user?.email && !loading) {
+      // Only fetch database user info if not on coming soon page
+      const isComingSoonPage = window.location.pathname.includes('/coming-soon');
 
-      if (firebaseUser?.email) {
-        // Only fetch database user info if not on coming soon page
-        const isComingSoonPage = window.location.pathname.includes('/coming-soon');
-        
-        if (!isComingSoonPage) {
-          try {
-            const token = await firebaseUser.getIdToken();
-            const response = await fetch('/api/users/profile', {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-            if (response.ok) {
-              const userData = await response.json();
-              setDbUser(userData);
-            } else {
-              console.warn('Failed to fetch user profile:', response.status);
-              setDbUser(null);
-            }
-          } catch (error) {
-            console.error('Failed to fetch user profile:', error);
-            setDbUser(null);
-          }
+      if (!isComingSoonPage) {
+        // Since we added user profile to session in auth.ts, we can use it directly
+        const sessionUser = session.user as any;
+        if (sessionUser.id && sessionUser.email) {
+          setDbUser({
+            id: sessionUser.id,
+            email: sessionUser.email,
+            name: sessionUser.name,
+            avatar: sessionUser.avatar,
+            role: sessionUser.role,
+            school: sessionUser.school,
+            grade: sessionUser.grade,
+          });
         } else {
-          // On coming soon page, don't try to fetch user profile
-          setDbUser(null);
+          // Fallback to API call if session doesn't have profile data
+          fetch('/api/users/profile')
+            .then(response => response.ok ? response.json() : null)
+            .then(userData => {
+              setDbUser(userData);
+            })
+            .catch(error => {
+              console.error('Failed to fetch user profile:', error);
+              setDbUser(null);
+            });
         }
       } else {
+        // On coming soon page, don't try to fetch user profile
         setDbUser(null);
       }
-
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
+    } else {
+      setDbUser(null);
+    }
+  }, [session, loading]);
 
   const value = {
-    user,
+    user: session?.user || null,
     dbUser,
     loading,
-    isAuthenticated: !!user,
-    isGuest: !user,
+    isAuthenticated: !!session?.user,
+    isGuest: !session?.user,
   };
 
   return (
