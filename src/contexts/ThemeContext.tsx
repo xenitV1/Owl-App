@@ -4,9 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'next-themes';
 
 interface ThemeContextType {
-  theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark';
-  setTheme: (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => void;
-  resolvedTheme: 'light' | 'dark' | 'retro-light' | 'retro-dark';
+  theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass';
+  setTheme: (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => void;
+  resolvedTheme: 'light' | 'dark' | 'retro-light' | 'retro-dark' | 'glass';
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,14 +29,16 @@ interface ThemeProviderProps {
 
 const InnerThemeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme: nextTheme, setTheme: setNextTheme, resolvedTheme: nextResolvedTheme } = useNextTheme();
-  const [customTheme, setCustomTheme] = useState<'retro-light' | 'retro-dark' | null>(null);
+  const [customTheme, setCustomTheme] = useState<'retro-light' | 'retro-dark' | 'glass' | null>(null);
 
-  // Handle retro themes separately
-  const isRetroTheme = customTheme || (nextTheme as string)?.startsWith('retro-');
-  const currentTheme = isRetroTheme ? (customTheme || nextTheme as 'retro-light' | 'retro-dark') : nextTheme;
-  const resolvedTheme = isRetroTheme ? (customTheme || nextTheme as 'retro-light' | 'retro-dark') : nextResolvedTheme;
+  const customThemeClasses = new Set(['retro-light', 'retro-dark', 'glass']);
 
-  // Initialize from localStorage on mount (supports retro themes)
+  // Handle custom class-based themes (retro-* and glass)
+  const isCustomTheme = !!customTheme || customThemeClasses.has((nextTheme as string));
+  const currentTheme = isCustomTheme ? (customTheme || nextTheme as 'retro-light' | 'retro-dark' | 'glass') : nextTheme;
+  const resolvedTheme = isCustomTheme ? (customTheme || nextTheme as 'retro-light' | 'retro-dark' | 'glass') : nextResolvedTheme;
+
+  // Initialize from localStorage on mount (supports custom themes)
   useEffect(() => {
     const stored = (typeof window !== 'undefined' && localStorage.getItem('theme')) as
       | 'light'
@@ -44,32 +46,33 @@ const InnerThemeBridge: React.FC<{ children: React.ReactNode }> = ({ children })
       | 'system'
       | 'retro-light'
       | 'retro-dark'
+      | 'glass'
       | null;
-    if (stored === 'retro-light' || stored === 'retro-dark') {
-      setCustomTheme(stored);
+    if (stored && customThemeClasses.has(stored)) {
+      setCustomTheme(stored as 'retro-light' | 'retro-dark' | 'glass');
       // Ensure class applied immediately
-      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.remove('light', 'dark', 'retro-light', 'retro-dark', 'glass');
       document.documentElement.classList.add(stored);
     }
   }, []);
 
-  // Apply theme classes to document when retro is active
+  // Apply theme classes to document when a custom theme is active
   useEffect(() => {
-    if (isRetroTheme) {
-      const cls = (customTheme || (nextTheme as string)) as 'retro-light' | 'retro-dark';
-      document.documentElement.classList.remove('light', 'dark', 'retro-light', 'retro-dark');
+    if (isCustomTheme) {
+      const cls = (customTheme || (nextTheme as string)) as 'retro-light' | 'retro-dark' | 'glass';
+      document.documentElement.classList.remove('light', 'dark', 'retro-light', 'retro-dark', 'glass');
       document.documentElement.classList.add(cls);
       // Persist retro to localStorage
       try { localStorage.setItem('theme', cls); } catch {}
     } else {
-      // Clean retro classes; allow next-themes to manage light/dark/system
-      document.documentElement.classList.remove('retro-light', 'retro-dark');
+      // Clean custom classes; allow next-themes to manage light/dark/system
+      document.documentElement.classList.remove('retro-light', 'retro-dark', 'glass');
     }
-  }, [isRetroTheme, customTheme, nextTheme]);
+  }, [isCustomTheme, customTheme, nextTheme]);
 
-  const setTheme = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => {
-    if (newTheme.startsWith('retro-')) {
-      setCustomTheme(newTheme as 'retro-light' | 'retro-dark');
+  const setTheme = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => {
+    if (newTheme === 'glass' || (typeof newTheme === 'string' && newTheme.startsWith('retro-'))) {
+      setCustomTheme(newTheme as 'retro-light' | 'retro-dark' | 'glass');
       // Persist explicitly so it survives reloads
       try { localStorage.setItem('theme', newTheme); } catch {}
       // Keep next-themes in a neutral state
@@ -82,9 +85,9 @@ const InnerThemeBridge: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   const contextValue: ThemeContextType = {
-    theme: (currentTheme as 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') ?? 'system',
+    theme: (currentTheme as 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') ?? 'system',
     setTheme,
-    resolvedTheme: (resolvedTheme as 'light' | 'dark' | 'retro-light' | 'retro-dark') ?? 'light',
+    resolvedTheme: (resolvedTheme as 'light' | 'dark' | 'retro-light' | 'retro-dark' | 'glass') ?? 'light',
   };
 
   return (

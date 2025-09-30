@@ -6,6 +6,7 @@ interface UseDragDropOptions {
   id: string;
   position: { x: number; y: number };
   onUpdate: (updates: { position: { x: number; y: number } }) => void;
+  onDragMove?: (delta: { x: number; y: number }) => void; // Real-time drag updates
   gridSnap?: boolean;
   gridSize?: number;
   disabled?: boolean;
@@ -17,6 +18,7 @@ export function useDragDrop({
   id,
   position,
   onUpdate,
+  onDragMove,
   gridSnap = true,
   gridSize = 20,
   disabled = false,
@@ -39,8 +41,14 @@ export function useDragDrop({
     const next = pendingDeltaRef.current;
     pendingDeltaRef.current = null;
     setVisualDelta(next);
+    
+    // Notify real-time drag move for locked group updates
+    if (onDragMove) {
+      onDragMove(next);
+    }
+    
     rafRef.current = null;
-  }, []);
+  }, [onDragMove]);
 
   // Handle drag start
   const handleDragStart = useCallback((event: React.MouseEvent | React.TouchEvent) => {
