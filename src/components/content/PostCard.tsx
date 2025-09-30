@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,9 @@ import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-di
 import { SimpleImageLightbox } from '@/components/ui/image-lightbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Heart, MessageCircle, Bookmark, Clock, Eye, MoreVertical, Flag, Trash2 } from 'lucide-react';
+import { useBlockCheck } from '@/hooks/useBlockCheck';
+import { Clock, Eye, MoreVertical, Flag, Trash2 } from 'lucide-react';
+import { getLocalizedSubjectLabel, getLocalizedGradeLabel } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +100,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isBlocked, isLoading: blockLoading } = useBlockCheck(post.author.id);
 
   const handleLike = async () => {
     if (!onLike || isLikeLoading) return;
@@ -140,14 +143,11 @@ export const PostCard: React.FC<PostCardProps> = ({
 
     setIsDeleteLoading(true);
     try {
-      // Get Firebase token for authentication
-      const token = user ? await user.getIdToken() : null;
-      
+      // Use NextAuth session (cookie-based, no token needed)
       const response = await fetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
       });
 
@@ -206,20 +206,32 @@ export const PostCard: React.FC<PostCardProps> = ({
     router.push(`/${locale}/posts/${post.id}`);
   };
 
+  const handleUserProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    router.push(`/${locale}/profile/${post.author.id}`);
+  };
+
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
     setShowImageLightbox(true);
   };
 
+  // Don't render anything for blocked users
+  if (isBlocked && !blockLoading) {
+    return null;
+  }
+
   return (
     <>
       <Card 
-        className="w-full cursor-pointer overflow-hidden" 
-        onClick={handleCardClick}
+        className="w-full overflow-hidden"
       >
         <CardHeader className="pb-3 overflow-hidden">
           <div className="flex items-start gap-3 w-full min-w-0">
-            <Avatar className="flex-shrink-0">
+            <Avatar 
+              className="flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/20 hover:scale-105 transition-all duration-200" 
+              onClick={handleUserProfileClick}
+            >
               <AvatarImage src={post.author.avatar} alt={post.author.name} />
               <AvatarFallback>
                 {getInitials(post.author.name)}
@@ -227,7 +239,10 @@ export const PostCard: React.FC<PostCardProps> = ({
             </Avatar>
             <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
               <div className="flex items-center justify-between gap-2 w-full min-w-0">
-                <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                <div 
+                  className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden cursor-pointer hover:bg-accent/50 rounded-md px-2 py-1 -mx-2 -my-1 transition-all duration-200"
+                  onClick={handleUserProfileClick}
+                >
                   <h3 className="font-semibold truncate">{post.author.name}</h3>
                   {post.author.role && (
                     <Badge variant="secondary" className="text-xs flex-shrink-0">
@@ -282,13 +297,13 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </Badge>
                 )}
                 {post.author.grade && (
-                  <Badge variant="outline" size="truncate" className="text-xs" title={post.author.grade}>
-                    {post.author.grade}
+                  <Badge variant="outline" size="truncate" className="text-xs" title={getLocalizedGradeLabel(post.author.grade, locale)}>
+                    {getLocalizedGradeLabel(post.author.grade, locale)}
                   </Badge>
                 )}
                 {post.subject && (
-                  <Badge variant="default" size="truncate" className="text-xs" title={post.subject}>
-                    {post.subject}
+                  <Badge variant="default" size="truncate" className="text-xs" title={getLocalizedSubjectLabel(post.subject, locale)}>
+                    {getLocalizedSubjectLabel(post.subject, locale)}
                   </Badge>
                 )}
                 {showCategory && post.category && (
@@ -312,13 +327,19 @@ export const PostCard: React.FC<PostCardProps> = ({
         
         <CardContent className="space-y-3">
           {/* Title */}
-          <CardTitle className="text-lg leading-tight line-clamp-2">
+          <CardTitle 
+            className="text-lg leading-tight line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+            onClick={handleCardClick}
+          >
             {post.title}
           </CardTitle>
           
           {/* Content */}
           {post.content && (
-            <div className="text-sm text-muted-foreground leading-relaxed break-words break-all whitespace-pre-wrap">
+            <div 
+              className="text-sm text-muted-foreground leading-relaxed break-words break-all whitespace-pre-wrap cursor-pointer hover:text-foreground transition-colors"
+              onClick={handleCardClick}
+            >
               <ContentPreview content={post.content} />
             </div>
           )}
@@ -345,6 +366,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <ContentInteraction
               likes={post._count.likes}
               comments={post._count.comments}
+              pools={post._count.pools}
               isLiked={isLiked}
               isSaved={isSaved}
               onLike={handleLike}

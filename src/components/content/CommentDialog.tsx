@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Comment {
   id: string;
@@ -49,12 +50,20 @@ export const CommentDialog: React.FC<CommentDialogProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchComments = async (pageNum: number = 1, append: boolean = false) => {
     try {
       setIsLoading(true);
+      
+      // Use NextAuth session (cookie-based, no token needed)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
       const response = await fetch(
-        `/api/comments?postId=${postId}&page=${pageNum}&limit=10`
+        `/api/comments?postId=${postId}&page=${pageNum}&limit=10`,
+        { headers }
       );
       
       if (!response.ok) {

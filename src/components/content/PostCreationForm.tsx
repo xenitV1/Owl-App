@@ -48,7 +48,7 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, dbUser } = useAuth();
 
   const { currentMessage } = useLoadingMessages({
     isLoading: (externalIsSubmitting ?? isLoading),
@@ -160,7 +160,7 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
         headers: {
           // Dev fallback: let server identify Firebase user in non-production
           ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
-          ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+          ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
         },
       });
 
