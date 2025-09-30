@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-
 export async function GET(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -47,8 +47,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -76,7 +77,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if category with this name already exists for this user
     const existingCategory = await db.poolCategory.findFirst({
       where: {
         userId: user.id,

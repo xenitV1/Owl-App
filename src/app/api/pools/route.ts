@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-
+import { authOptions } from '@/lib/auth';import { db } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -115,8 +114,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -143,6 +143,29 @@ export async function GET(request: NextRequest) {
     const whereClause: any = { userId: user.id };
     if (categoryId) {
       whereClause.categoryId = categoryId;
+    }
+
+    // Add block filtering - exclude posts from blocked users
+    const blockedUserIds = await db.userBlock.findMany({
+      where: { blockerId: user.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUserIds = await db.userBlock.findMany({
+      where: { blockedId: user.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+    // Update where clause to exclude blocked users' posts
+    if (allBlockedIds.length > 0) {
+      whereClause.post = {
+        ...whereClause.post,
+        authorId: {
+          notIn: allBlockedIds
+        }
+      };
     }
 
     const [pools, totalCount] = await Promise.all([
