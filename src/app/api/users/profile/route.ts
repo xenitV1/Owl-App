@@ -2,50 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { verifyIdToken } from '@/lib/firebase-admin';
-
-// Helper function to decode base64 strings that may contain Unicode
-const decodeFromBase64 = (str: string): string => {
-  try {
-    // Try standard atob first
-    return atob(str);
-  } catch (e) {
-    // If it fails, decode as UTF-8 bytes
-    const binaryString = atob(str);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  }
-};
 
 export async function GET(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    let effectiveEmail: string | null = session?.user?.email ?? null;
 
-    // If no NextAuth session, try Firebase token
-    if (!effectiveEmail) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const token = authHeader.substring(7);
-          const decodedToken = await verifyIdToken(token);
-          effectiveEmail = decodedToken.email ?? null;
-        } catch (error) {
-          console.error('Invalid Firebase token:', error);
-        }
-      }
-    }
-
-    // Development fallback
-    if (!effectiveEmail && process.env.NODE_ENV !== 'production') {
-      const headerEmail = request.headers.get('x-user-email');
-      if (headerEmail) effectiveEmail = decodeFromBase64(headerEmail);
-    }
-    
-    if (!effectiveEmail) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -53,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await db.user.findUnique({
-      where: { email: effectiveEmail },
+      where: { email: session.user.email },
       select: {
         id: true,
         email: true,
@@ -72,18 +35,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      if (process.env.NODE_ENV !== 'production') {
-        const name = request.headers.get('x-user-name') ? decodeFromBase64(request.headers.get('x-user-name')!) : effectiveEmail.split('@')[0];
-        const created = await db.user.create({
-          data: { email: effectiveEmail, name, role: 'STUDENT' }
-        });
-        return NextResponse.json(created);
-      } else {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(user);
@@ -111,30 +66,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    let effectiveEmail: string | null = session?.user?.email ?? null;
 
-    // If no NextAuth session, try Firebase token
-    if (!effectiveEmail) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const token = authHeader.substring(7);
-          const decodedToken = await verifyIdToken(token);
-          effectiveEmail = decodedToken.email ?? null;
-        } catch (error) {
-          console.error('Invalid Firebase token:', error);
-        }
-      }
-    }
-
-    // Development fallback
-    if (!effectiveEmail && process.env.NODE_ENV !== 'production') {
-      const headerEmail = request.headers.get('x-user-email');
-      if (headerEmail) effectiveEmail = decodeFromBase64(headerEmail);
-    }
-    
-    if (!effectiveEmail) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -142,20 +77,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const user = await db.user.findUnique({
-      where: { email: effectiveEmail },
+      where: { email: session.user.email },
     });
 
     if (!user) {
-      if (process.env.NODE_ENV !== 'production') {
-        const name = request.headers.get('x-user-name') ? decodeFromBase64(request.headers.get('x-user-name')!) : effectiveEmail.split('@')[0];
-        const created = await db.user.create({ data: { email: effectiveEmail, name, role: 'STUDENT' } });
-        return NextResponse.json(created);
-      } else {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     const { name, bio, school, grade, favoriteSubject, role, avatar, emailNotifications, pushNotifications } = await request.json();
