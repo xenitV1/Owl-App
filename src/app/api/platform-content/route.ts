@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-
-// Helper function to decode base64 strings that may contain Unicode
-const decodeFromBase64 = (str: string): string => {
-  try {
-    return atob(str);
-  } catch (e) {
-    const binaryString = atob(str);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  }
-};
-
+import { authOptions } from '@/lib/auth';import { db } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -32,7 +16,11 @@ export async function GET(request: NextRequest) {
 
     // Get current user for following posts
     let currentUser: { id: string } | null = null;
+    let userEmail: string | null = null;
+    
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
+
     if (session?.user?.email) {
       currentUser = await db.user.findUnique({
         where: { email: session.user.email },
@@ -48,10 +36,10 @@ export async function GET(request: NextRequest) {
         return await getCommunities({ limit, skip, search });
       
       case 'users':
-        return await getUsers({ limit, skip, search });
+        return await getUsers({ limit, skip, search, currentUser });
       
       case 'trending':
-        return await getTrendingPosts({ limit, skip, subject });
+        return await getTrendingPosts({ limit, skip, subject, currentUser });
       
       case 'following':
         if (!currentUser) {
@@ -63,7 +51,7 @@ export async function GET(request: NextRequest) {
         return await getFollowingPosts({ limit, skip, currentUser });
       
       case 'discover':
-        return await getDiscoverContent({ limit, skip });
+        return await getDiscoverContent({ limit, skip, currentUser });
       
       default:
         return NextResponse.json(
@@ -210,7 +198,7 @@ async function getCommunities({ limit, skip, search }: any) {
   });
 }
 
-async function getUsers({ limit, skip, search }: any) {
+async function getUsers({ limit, skip, search, currentUser }: any) {
   const where: any = {};
 
   if (search) {
@@ -219,6 +207,30 @@ async function getUsers({ limit, skip, search }: any) {
       { email: { contains: search, mode: 'insensitive' } },
       { school: { contains: search, mode: 'insensitive' } },
     ];
+  }
+
+  // currentUser is passed as parameter from main GET function
+
+  // Add block filtering
+  if (currentUser) {
+    const blockedUserIds = await db.userBlock.findMany({
+      where: { blockerId: currentUser.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUserIds = await db.userBlock.findMany({
+      where: { blockedId: currentUser.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+    if (allBlockedIds.length > 0) {
+      where.id = {
+        ...where.id,
+        notIn: allBlockedIds
+      };
+    }
   }
 
   const users = await db.user.findMany({
@@ -264,13 +276,34 @@ async function getUsers({ limit, skip, search }: any) {
   });
 }
 
-async function getTrendingPosts({ limit, skip, subject }: any) {
+async function getTrendingPosts({ limit, skip, subject, currentUser }: any) {
   const where: any = {
     isPublic: true,
   };
 
   if (subject) {
     where.subject = subject;
+  }
+
+  // Add block filtering - exclude posts from blocked users
+  if (currentUser) {
+    const blockedUserIds = await db.userBlock.findMany({
+      where: { blockerId: currentUser.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUserIds = await db.userBlock.findMany({
+      where: { blockedId: currentUser.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+    if (allBlockedIds.length > 0) {
+      where.authorId = {
+        notIn: allBlockedIds
+      };
+    }
   }
 
   const posts = await db.post.findMany({
@@ -340,13 +373,34 @@ async function getFollowingPosts({ limit, skip, currentUser }: any) {
     select: { followingId: true },
   });
 
-  const posts = await db.post.findMany({
-    where: {
-      isPublic: true,
-      authorId: {
-        in: followingIds.map(f => f.followingId),
-      },
+  const where: any = {
+    isPublic: true,
+    authorId: {
+      in: followingIds.map(f => f.followingId),
     },
+  };
+
+  // Add block filtering - exclude posts from blocked users
+  const blockedUserIds = await db.userBlock.findMany({
+    where: { blockerId: currentUser.id },
+    select: { blockedId: true }
+  }).then(blocks => blocks.map(b => b.blockedId));
+
+  const blockingUserIds = await db.userBlock.findMany({
+    where: { blockedId: currentUser.id },
+    select: { blockerId: true }
+  }).then(blocks => blocks.map(b => b.blockerId));
+
+  const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+  if (allBlockedIds.length > 0) {
+    where.authorId = {
+      in: followingIds.map(f => f.followingId).filter(id => !allBlockedIds.includes(id)),
+    };
+  }
+
+  const posts = await db.post.findMany({
+    where,
     include: {
       author: {
         select: {
@@ -380,14 +434,7 @@ async function getFollowingPosts({ limit, skip, currentUser }: any) {
     take: limit,
   });
 
-  const total = await db.post.count({
-    where: {
-      isPublic: true,
-      authorId: {
-        in: followingIds.map(f => f.followingId),
-      },
-    },
-  });
+  const total = await db.post.count({ where });
 
   return NextResponse.json({
     type: 'following',
@@ -401,7 +448,7 @@ async function getFollowingPosts({ limit, skip, currentUser }: any) {
   });
 }
 
-async function getDiscoverContent({ limit, skip }: any) {
+async function getDiscoverContent({ limit, skip, currentUser }: any) {
   // Get popular subjects
   const popularSubjects = await db.post.groupBy({
     by: ['subject'],
@@ -422,11 +469,34 @@ async function getDiscoverContent({ limit, skip }: any) {
     take: 10,
   });
 
-  // Get recent posts
+  // Get recent posts with block filtering
+  const where: any = {
+    isPublic: true,
+  };
+
+  // Add block filtering - exclude posts from blocked users
+  if (currentUser) {
+    const blockedUserIds = await db.userBlock.findMany({
+      where: { blockerId: currentUser.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUserIds = await db.userBlock.findMany({
+      where: { blockedId: currentUser.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+    if (allBlockedIds.length > 0) {
+      where.authorId = {
+        notIn: allBlockedIds
+      };
+    }
+  }
+
   const recentPosts = await db.post.findMany({
-    where: {
-      isPublic: true,
-    },
+    where,
     include: {
       author: {
         select: {

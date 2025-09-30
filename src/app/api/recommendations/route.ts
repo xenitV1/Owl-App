@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-
+import { authOptions } from '@/lib/auth';import { db } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -268,6 +270,20 @@ async function getUserRecommendations(currentUser: any, limit: number) {
 
     const excludedIds = [currentUser.id, ...followingIds.map(f => f.followingId)];
 
+    // Get blocked users (both directions)
+    const blockedUserIds = await db.userBlock.findMany({
+      where: { blockerId: currentUser.id },
+      select: { blockedId: true }
+    }).then(blocks => blocks.map(b => b.blockedId));
+
+    const blockingUserIds = await db.userBlock.findMany({
+      where: { blockedId: currentUser.id },
+      select: { blockerId: true }
+    }).then(blocks => blocks.map(b => b.blockerId));
+
+    const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+    const finalExcludedIds = [...excludedIds, ...allBlockedIds];
+
     // Get user's engagement patterns for collaborative filtering
     const userEngagement = await db.user.findUnique({
       where: { id: currentUser.id },
@@ -322,7 +338,7 @@ async function getUserRecommendations(currentUser: any, limit: number) {
               },
             },
             userId: {
-              notIn: excludedIds,
+              notIn: finalExcludedIds,
             },
           },
           select: {
@@ -341,7 +357,7 @@ async function getUserRecommendations(currentUser: any, limit: number) {
     // Build recommendation query with multiple strategies
     const where: any = {
       id: {
-        notIn: excludedIds,
+        notIn: finalExcludedIds,
       },
       role: 'STUDENT',
     };
