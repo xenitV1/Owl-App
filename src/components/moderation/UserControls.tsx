@@ -63,9 +63,18 @@ export function UserControls({
 
       if (!response.ok) {
         const data = await response.json();
+        console.error('Block API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          targetUserId,
+          blockReason
+        });
         throw new Error(data.error || 'Failed to block user');
       }
 
+      const data = await response.json();
+      console.log('Block successful:', data);
       setSuccess(true);
       onBlockChange?.(true);
       setTimeout(() => {

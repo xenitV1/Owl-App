@@ -39,11 +39,7 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className={`relative ${sizeClasses[size]} ${
-        isDarkTheme
-          ? 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg p-2 border border-blue-500/20 shadow-lg shadow-blue-500/20'
-          : ''
-      }`}>
+      <div className={`relative ${sizeClasses[size]}`}>
         <Image
           src="/logo.png"
           alt="Owl Logo"
@@ -52,14 +48,10 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
           priority
           sizes={`${sizeClasses[size]}`}
         />
-        {/* Karanlık temalar (dark ve retro-dark) için parıltı efekti */}
-        {isDarkTheme && (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent rounded-lg pointer-events-none" />
-        )}
       </div>
       {showText && (
         <span className={`font-bold ${textSizes[size]} text-foreground ${
-          isDarkTheme ? 'drop-shadow-lg' : ''
+          ''
         }`}>
           Owl
         </span>

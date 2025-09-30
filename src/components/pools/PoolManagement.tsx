@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Droplets, Plus, Edit, Trash2, FolderOpen, BookOpen } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PoolCategory {
   id: string;
@@ -26,6 +27,7 @@ interface PoolCategory {
 interface PoolManagementProps {
   onCategorySelect?: (categoryId: string | null) => void;
   selectedCategoryId?: string | null;
+  totalItemsCount?: number;
 }
 
 const ICON_OPTIONS = [
@@ -52,7 +54,7 @@ const COLOR_OPTIONS = [
   { value: '#14B8A6', label: 'Teal', color: 'bg-teal-500' },
 ];
 
-export default function PoolManagement({ onCategorySelect, selectedCategoryId }: PoolManagementProps) {
+export default function PoolManagement({ onCategorySelect, selectedCategoryId, totalItemsCount }: PoolManagementProps) {
   const t = useTranslations('saved');
   const [categories, setCategories] = useState<PoolCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,10 +66,18 @@ export default function PoolManagement({ onCategorySelect, selectedCategoryId }:
     color: '#3B82F6',
     icon: 'Bookmark'
   });
+  const { user } = useAuth();
+
+  const getAuthHeaders = () => {
+    return {
+      'Content-Type': 'application/json',
+    } as Record<string, string>;
+  };
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/pool-categories');
+      const headers = getAuthHeaders();
+      const response = await fetch('/api/pool-categories', { headers });
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -81,11 +91,10 @@ export default function PoolManagement({ onCategorySelect, selectedCategoryId }:
 
   const handleCreateCategory = async () => {
     try {
+      const headers = getAuthHeaders();
       const response = await fetch('/api/pool-categories', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(formData),
       });
 
@@ -108,11 +117,10 @@ export default function PoolManagement({ onCategorySelect, selectedCategoryId }:
     if (!editingCategory) return;
 
     try {
+      const headers = getAuthHeaders();
       const response = await fetch(`/api/pool-categories/${editingCategory.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(formData),
       });
 
@@ -137,14 +145,16 @@ export default function PoolManagement({ onCategorySelect, selectedCategoryId }:
     }
 
     try {
+      const headers = getAuthHeaders();
       const response = await fetch(`/api/pool-categories/${categoryId}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (response.ok) {
         await fetchCategories();
-        if (selectedCategoryId === categoryId) {
-          onCategorySelect?.(null);
+        if (selectedCategoryId === categoryId && onCategorySelect) {
+          onCategorySelect(null);
         }
       }
     } catch (error) {
@@ -301,7 +311,7 @@ export default function PoolManagement({ onCategorySelect, selectedCategoryId }:
                 <div>
                   <div className="font-medium">{t('allSavedItems')}</div>
                   <div className="text-sm text-gray-500">
-                    {categories.reduce((total, cat) => total + cat._count.pools, 0)} {t('items')}
+                    {totalItemsCount || 0} {t('items')}
                   </div>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Monitor, Palette, Sparkles } from 'lucide-react';
+import { Moon, Sun, Monitor, Palette, Sparkles, GlassWater } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,13 +19,13 @@ export const ThemeToggle: React.FC = () => {
     setMounted(true);
   }, []);
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => {
     setTheme(newTheme);
     // Save theme preference to user profile
     saveThemePreference(newTheme);
   };
 
-  const saveThemePreference = async (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark') => {
+  const saveThemePreference = async (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => {
     try {
       const response = await fetch('/api/user/preferences', {
         method: 'PUT',
@@ -49,6 +49,9 @@ export const ThemeToggle: React.FC = () => {
     if (theme === 'retro-light' || theme === 'retro-dark') {
       return <Sparkles className="h-4 w-4" />;
     }
+    if (theme === 'glass') {
+      return <GlassWater className="h-4 w-4" />;
+    }
     return theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
   };
 
@@ -61,6 +64,9 @@ export const ThemeToggle: React.FC = () => {
     }
     if (theme === 'retro-dark') {
       return 'Retro Dark';
+    }
+    if (theme === 'glass') {
+      return 'Glass';
     }
     return theme.charAt(0).toUpperCase() + theme.slice(1);
   };
@@ -93,6 +99,10 @@ export const ThemeToggle: React.FC = () => {
         <DropdownMenuItem onClick={() => handleThemeChange('retro-dark')}>
           <Palette className="mr-2 h-4 w-4" />
           <span>Retro Dark</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('glass')}>
+          <GlassWater className="mr-2 h-4 w-4" />
+          <span>Glass</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

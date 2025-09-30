@@ -40,6 +40,30 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const [previousUnreadCount, setPreviousUnreadCount] = useState(0);
+  const notificationSoundRef = React.useRef<HTMLAudioElement | null>(null);
+
+  // Initialize notification sound
+  useEffect(() => {
+    notificationSoundRef.current = new Audio('/sounds/notification-received.mp3');
+    notificationSoundRef.current.volume = 0.5;
+    notificationSoundRef.current.preload = 'auto';
+    notificationSoundRef.current.load();
+  }, []);
+
+  // Play sound when new notification arrives
+  useEffect(() => {
+    if (unreadCount > previousUnreadCount && previousUnreadCount > 0) {
+      // New notification arrived (don't play on initial load)
+      if (notificationSoundRef.current) {
+        notificationSoundRef.current.currentTime = 0;
+        notificationSoundRef.current.play().catch(err => {
+          console.warn('[Notifications] Failed to play notification sound:', err);
+        });
+      }
+    }
+    setPreviousUnreadCount(unreadCount);
+  }, [unreadCount, previousUnreadCount]);
 
   const fetchNotifications = async () => {
     try {

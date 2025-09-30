@@ -15,6 +15,7 @@ const encodeToBase64 = (str: string): string => {
   }
 };
 import { useAuth } from '@/contexts/AuthContext';
+import { useBlockCheck } from '@/hooks/useBlockCheck';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { PostCard } from '@/components/content/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Save, X, Calendar, BookOpen, Users, MessageCircle, Heart, Bookmark, UserPlus, UserMinus, Users2 } from 'lucide-react';
+import { Edit, Save, X, Calendar, BookOpen, Users, MessageCircle, Heart, Droplets, Bookmark, UserPlus, UserMinus, Users2 } from 'lucide-react';
+import Link from 'next/link';
 import { UserControls } from '@/components/moderation/UserControls';
 
 // İngilizce değerler (veritabanında saklanan)
@@ -156,6 +158,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   const t = useTranslations();
   const trRoles = useTranslations('roles');
   const locale = useLocale();
+  const { isBlocked, isLoading: blockLoading } = useBlockCheck(userId || '');
   
   // Fallback locale if useLocale fails
   const currentLocale = locale || 'en';
@@ -166,8 +169,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
+  const [unblockingUsers, setUnblockingUsers] = useState<Set<string>>(new Set());
   const [editForm, setEditForm] = useState({
     name: '',
     role: 'STUDENT',
@@ -187,12 +193,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   const fetchProfile = async () => {
     try {
       const targetUserId = userId || dbUser?.id;
-      if (!targetUserId) return;
+      
+      if (!targetUserId || !user) {
+        return;
+      }
 
       const response = await fetch(`/api/users?userId=${targetUserId}`, {
         headers: {
           ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
-          ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+          ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
         },
       });
       let data;
@@ -202,7 +211,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           const byEmail = await fetch(`/api/users?email=${encodeURIComponent(user.email)}`, {
             headers: {
               'x-user-email': encodeToBase64(user.email),
-              ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+              ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
             },
           });
           if (!byEmail.ok) {
@@ -237,14 +246,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
         bio: data.bio || '',
         avatar: data.avatar || undefined,
       });
-      
-      // Debug: Veritabanından gelen değerleri kontrol et
-      console.log('Profile data from DB:', data);
-      console.log('Grade from DB:', data.grade);
-      console.log('Favorite Subject from DB:', data.favoriteSubject);
-      console.log('Corrected Grade:', correctedGrade);
-      console.log('Corrected Subject:', correctedSubject);
-      console.log('Current locale:', currentLocale);
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
@@ -258,14 +259,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   const fetchUserPosts = async (pageNum: number = 1, append: boolean = false) => {
     try {
       const targetUserId = userId || dbUser?.id;
-      if (!targetUserId) return;
+      if (!targetUserId || !user) return;
 
       const response = await fetch(
         `/api/users/posts?userId=${targetUserId}&page=${pageNum}&limit=6`,
         {
           headers: {
             ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
-            ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+            ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
           },
         }
       );
@@ -299,7 +300,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
         headers: {
           'Content-Type': 'application/json',
           ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
-          ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+          ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
         },
         body: JSON.stringify(editForm),
       });
@@ -357,7 +358,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       if (response.ok) {
         const data = await response.json();
         const isUserBlocked = data.blockedUsers.some((block: any) => block.blockedId === profile.id);
-        setIsBlocked(isUserBlocked);
+        setIsBlockedByMe(isUserBlocked);
       }
     } catch (error) {
       console.error('Error checking block status:', error);
@@ -366,7 +367,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
   const checkMuteStatus = async () => {
     if (!profile || isOwnProfile || isGuest) return;
-    
+
     try {
       const response = await fetch('/api/mutes');
       if (response.ok) {
@@ -376,6 +377,58 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       }
     } catch (error) {
       console.error('Error checking mute status:', error);
+    }
+  };
+
+  const fetchBlockedUsers = async () => {
+    if (isGuest) return;
+
+    try {
+      const response = await fetch('/api/blocks');
+      if (response.ok) {
+        const data = await response.json();
+        setBlockedUsers(data.blockedUsers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching blocked users:', error);
+    }
+  };
+
+  const unblockUser = async (blockedUserId: string) => {
+    // Start unblocking animation
+    setUnblockingUsers(prev => new Set(prev).add(blockedUserId));
+
+    try {
+      const response = await fetch(`/api/blocks/${blockedUserId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Add a small delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        setBlockedUsers(prev => prev.filter(user => user.blockedId !== blockedUserId));
+        toast({
+          title: t('common.success'),
+          description: t('profile.unblockedSuccessfully'),
+        });
+      } else {
+        throw new Error('Failed to unblock user');
+      }
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      toast({
+        title: t('common.error'),
+        description: t('profile.unblockError'),
+        variant: "destructive",
+      });
+    } finally {
+      // Remove from unblocking state
+      setUnblockingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(blockedUserId);
+        return newSet;
+      });
     }
   };
 
@@ -435,10 +488,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       setIsLoading(false);
     };
 
-    if (!isGuest) {
+    // Clear profile data when user logs out
+    if (isGuest || !user) {
+      setProfile(null);
+      setPosts([]);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isGuest && user) {
       loadData();
     }
-  }, [userId, dbUser, isGuest]);
+  }, [userId, dbUser, isGuest, user]);
 
   useEffect(() => {
     if (profile && !isOwnProfile && !isGuest) {
@@ -447,6 +508,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       checkMuteStatus();
     }
   }, [profile, isOwnProfile, isGuest]);
+
+  useEffect(() => {
+    if (isOwnProfile && !isGuest && user) {
+      fetchBlockedUsers();
+    }
+  }, [isOwnProfile, isGuest, user]);
 
   const getInitials = (name: string) => {
     return name
@@ -517,7 +584,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           headers: {
             'Content-Type': 'application/json',
             ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
-            ...(user?.displayName ? { 'x-user-name': encodeToBase64(user.displayName) } : {}),
+            ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
           },
           body: JSON.stringify({
             name: editForm.name,
@@ -563,6 +630,25 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     const year = date.getFullYear();
     return t('userProfile.dateFormat', { month, day, year });
   };
+
+  // Show blocked message if user is blocked
+  if (isBlocked && !blockLoading && !isOwnProfile) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">{t('common.blocked')}</h3>
+              <p className="text-muted-foreground">
+                {t('profile.blockedMessage')}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -796,9 +882,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
                       <UserControls
                         targetUserId={profile.id}
                         targetUserName={profile.name || t('common.user')}
-                        isBlocked={isBlocked}
+                        isBlocked={isBlockedByMe}
                         isMuted={isMuted}
-                        onBlockChange={setIsBlocked}
+                        onBlockChange={setIsBlockedByMe}
                         onMuteChange={setIsMuted}
                       >
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -885,6 +971,38 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           </Card>
         </div>
         
+        {/* Quick Tabs */}
+        <div className="flex items-center gap-2 mb-6">
+          {(isOwnProfile || isFollowing) && (
+            <Link href={`/${currentLocale}/profile/likes`} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-accent">
+              <Heart className="h-4 w-4" />
+              <span>Likes</span>
+            </Link>
+          )}
+          {(isOwnProfile || isFollowing) && (
+            <Link href={`/${currentLocale}/profile/comments`} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-accent">
+              <MessageCircle className="h-4 w-4" />
+              <span>Comments</span>
+            </Link>
+          )}
+          {isOwnProfile && (
+            <Link href={`/${currentLocale}/saved`} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-accent">
+              <Droplets className="h-4 w-4" />
+              <span>Pool</span>
+            </Link>
+          )}
+          {isOwnProfile && (
+            <Button
+              variant="outline"
+              onClick={() => setShowBlockedUsers(true)}
+              className="inline-flex items-center gap-2 px-3 py-2"
+            >
+              <Users2 className="h-4 w-4" />
+              <span>Blocked ({blockedUsers.length})</span>
+            </Button>
+          )}
+        </div>
+
         {/* User Posts */}
         <div>
           <h2 className="text-2xl font-bold mb-6">
@@ -931,6 +1049,83 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
             </>
           )}
         </div>
+
+        {/* Blocked Users Modal */}
+        <Dialog open={showBlockedUsers} onOpenChange={setShowBlockedUsers}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users2 className="h-5 w-5" />
+                {t('profile.blockedUsers')}
+              </DialogTitle>
+              <DialogDescription>
+                {t('profile.blockedUsersDescription')}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[60vh] overflow-y-auto">
+              {blockedUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">{t('profile.noBlockedUsers')}</h3>
+                  <p className="text-muted-foreground">
+                    {t('profile.noBlockedUsersDescription')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {blockedUsers.map((blockedUser) => {
+                    const isUnblocking = unblockingUsers.has(blockedUser.blockedId);
+
+                    return (
+                      <div
+                        key={blockedUser.id}
+                        className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                          isUnblocking ? 'opacity-75 scale-98' : 'opacity-100 scale-100'
+                        }`}
+                      >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={blockedUser.blocked.avatar} alt={blockedUser.blocked.name} />
+                          <AvatarFallback>
+                            {blockedUser.blocked.name ? getInitials(blockedUser.blocked.name) : 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{blockedUser.blocked.name || t('common.anonymousUser')}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {t('profile.blockedOn')} {new Date(blockedUser.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => unblockUser(blockedUser.blockedId)}
+                        disabled={unblockingUsers.has(blockedUser.blockedId)}
+                        className={`transition-all duration-300 ${
+                          unblockingUsers.has(blockedUser.blockedId)
+                            ? 'bg-green-50 border-green-200 text-green-700 animate-pulse'
+                            : 'hover:bg-red-50 hover:border-red-200 hover:text-red-700'
+                        }`}
+                      >
+                        {unblockingUsers.has(blockedUser.blockedId) ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span>{t('profile.unblocking')}</span>
+                          </div>
+                        ) : (
+                          t('profile.unblock')
+                        )}
+                      </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

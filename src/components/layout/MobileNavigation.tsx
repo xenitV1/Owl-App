@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { Home, Search, Users, User, BookOpen, Bookmark, Settings } from 'lucide-react';
+import { Home, Search, Users, User, BookOpen, Droplets, Settings } from 'lucide-react';
 
 export const MobileNavigation: React.FC = () => {
   const t = useTranslations('navigation');
@@ -16,7 +16,7 @@ export const MobileNavigation: React.FC = () => {
     { name: t('home'), href: `/${locale}`, icon: Home },
     { name: t('discover'), href: `/${locale}/discover`, icon: Search },
     { name: t('following'), href: `/${locale}/following`, icon: Users },
-    { name: t('saved'), href: `/${locale}/saved`, icon: Bookmark },
+    { name: t('saved'), href: `/${locale}/saved`, icon: Droplets },
     { name: t('profile'), href: `/${locale}/profile`, icon: User },
     { name: t('communities'), href: `/${locale}/communities`, icon: BookOpen },
   ];

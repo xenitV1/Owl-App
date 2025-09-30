@@ -72,17 +72,8 @@ export function ImageLightbox({
 
   const currentImage = images[currentIndex];
 
-  // Debug logging utility
-  const logAction = (action: string, details?: any) => {
-    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-    console.group(`🖼️ [ImageLightbox] ${timestamp} - ${action}`);
-    if (details) {
-      Object.entries(details).forEach(([key, value]) => {
-        console.log(`${key}:`, value);
-      });
-    }
-    console.groupEnd();
-  };
+  // Debug logging utility (disabled - no-op to avoid console output)
+  const logAction = (_action: string, _details?: any) => {};
 
   // Reset zoom, rotation when image changes
   useEffect(() => {

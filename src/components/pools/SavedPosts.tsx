@@ -9,7 +9,9 @@ import { PostCard } from '@/components/content/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import PoolItemActions from '@/components/pools/PoolItemActions';
 import SavedPostCard from '@/components/pools/SavedPostCard';
+import { MasonryGrid } from '@/components/ui/masonry-grid';
 import { Droplets, Filter, Grid, List } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Post {
   id: string;
@@ -49,9 +51,11 @@ interface PoolCategory {
 interface SavedPostsProps {
   selectedCategoryId?: string | null;
   categories: PoolCategory[];
+  onItemsCountChange?: (count: number) => void;
+  onCategoriesRefresh?: () => void;
 }
 
-export default function SavedPosts({ selectedCategoryId, categories }: SavedPostsProps) {
+export default function SavedPosts({ selectedCategoryId, categories, onItemsCountChange, onCategoriesRefresh }: SavedPostsProps) {
   const t = useTranslations('saved');
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +63,13 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+
+  const getAuthHeaders = () => {
+    return {
+      'Content-Type': 'application/json',
+    } as Record<string, string>;
+  };
 
   const fetchSavedPosts = async () => {
     try {
@@ -68,7 +79,8 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
         params.append('categoryId', selectedCategoryId);
       }
 
-      const response = await fetch(`/api/pools?${params}`);
+      const headers = getAuthHeaders();
+      const response = await fetch(`/api/pools?${params}`, { headers });
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts);
@@ -76,6 +88,11 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
         // Initialize saved posts set
         const savedSet = new Set<string>(data.posts.map((post: Post) => post.id));
         setSavedPosts(savedSet);
+        
+        // Notify parent component about items count
+        if (onItemsCountChange) {
+          onItemsCountChange(data.posts.length);
+        }
       }
     } catch (error) {
       console.error('Error fetching saved posts:', error);
@@ -86,11 +103,10 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
 
   const handleLike = async (postId: string) => {
     try {
+      const headers = getAuthHeaders();
       const response = await fetch('/api/likes', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ postId }),
       });
 
@@ -124,11 +140,10 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
 
   const handleSave = async (postId: string) => {
     try {
+      const headers = getAuthHeaders();
       const response = await fetch('/api/pools', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ postId }),
       });
 
@@ -165,17 +180,20 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
 
   const handleMoveToCategory = async (postId: string, categoryId: string | null) => {
     try {
+      const headers = getAuthHeaders();
       const response = await fetch(`/api/pools/${postId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ categoryId }),
       });
 
       if (response.ok) {
         // Refresh the posts list
         fetchSavedPosts();
+        // Refresh categories to update counts
+        if (onCategoriesRefresh) {
+          onCategoriesRefresh();
+        }
       }
     } catch (error) {
       console.error('Error moving post to category:', error);
@@ -184,11 +202,10 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
 
   const handleRemove = async (postId: string) => {
     try {
+      const headers = getAuthHeaders();
       const response = await fetch('/api/pools', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ postId }),
       });
 
@@ -330,27 +347,50 @@ export default function SavedPosts({ selectedCategoryId, categories }: SavedPost
             </p>
           </div>
         ) : (
-          <div className={
-            viewMode === 'grid' 
-              ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3" 
-              : "space-y-4"
-          }>
-            {sortedPosts.map((post) => (
-              <SavedPostCard
-                key={post.id}
-                post={post}
-                currentUserId={undefined} // Will be set by AuthContext
-                isLiked={likedPosts.has(post.id)}
-                isSaved={savedPosts.has(post.id)}
-                onLike={handleLike}
-                onSave={handleSave}
-                categories={categories}
-                onMoveToCategory={handleMoveToCategory}
-                onRemove={handleRemove}
-                viewMode={viewMode}
+          <>
+            {viewMode === 'grid' ? (
+              <MasonryGrid
+                items={sortedPosts}
+                columns={[1, 2]}
+                gap={[16, 20]}
+                media={[640, 768]}
+                useBalancedLayout={true}
+                renderItem={(post) => (
+                  <SavedPostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={undefined} // Will be set by AuthContext
+                    isLiked={likedPosts.has(post.id)}
+                    isSaved={savedPosts.has(post.id)}
+                    onLike={handleLike}
+                    onSave={handleSave}
+                    categories={categories}
+                    onMoveToCategory={handleMoveToCategory}
+                    onRemove={handleRemove}
+                    viewMode={viewMode}
+                  />
+                )}
               />
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedPosts.map((post) => (
+                  <SavedPostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={undefined} // Will be set by AuthContext
+                    isLiked={likedPosts.has(post.id)}
+                    isSaved={savedPosts.has(post.id)}
+                    onLike={handleLike}
+                    onSave={handleSave}
+                    categories={categories}
+                    onMoveToCategory={handleMoveToCategory}
+                    onRemove={handleRemove}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

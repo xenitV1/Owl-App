@@ -71,12 +71,12 @@ export default function PoolItemActions({
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Collection</label>
-                  <Select value={selectedCategoryId || ''} onValueChange={(value) => setSelectedCategoryId(value || null)}>
+                  <Select value={selectedCategoryId || 'uncategorized'} onValueChange={(value) => setSelectedCategoryId(value === 'uncategorized' ? null : value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select a collection" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value="uncategorized">
                         <div className="flex items-center gap-2">
                           <Bookmark className="h-4 w-4" />
                           Uncategorized
