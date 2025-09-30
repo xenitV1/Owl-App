@@ -54,12 +54,19 @@ bun-debug.log*
 owll-514ef-firebase-adminsdk-fbsvc-151ccc7716.json
 owlplatform-dc3e1a136ed2.json
 
+# Google OAuth Secrets (CRITICAL - Never commit!)
+client_secret_*.json
+
 # Playwright reports
 playwright-report/
 blob-report/
+test-results/
 
 # Prisma artifacts
+prisma/*.db
 prisma/*.db-journal
+prisma/db/*.db
+prisma/prisma/*.db
 prisma/schema-dev.prisma
 
 # OS
