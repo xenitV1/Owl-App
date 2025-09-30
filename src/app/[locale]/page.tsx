@@ -24,6 +24,8 @@ interface Post {
   image?: string;
   subject?: string;
   createdAt: string;
+  isLikedByCurrentUser?: boolean;
+  isSavedByCurrentUser?: boolean;
   author: {
     id: string;
     name: string;
@@ -72,10 +74,10 @@ export default function Home() {
 
   // Component lifecycle logging
   useEffect(() => {
-    debugLogger.logComponentMount('Home', { 
-      isGuest, 
-      user: user?.uid, 
-      loading 
+    debugLogger.logComponentMount('Home', {
+      isGuest,
+      user: dbUser?.id,
+      loading
     });
     
     return () => {
@@ -150,8 +152,14 @@ export default function Home() {
         append
       });
       
+      // Use NextAuth session (cookie-based, no token needed)
       const response = await fetch(
-        `/api/posts?page=${pageNum}&limit=10&subject=${subjectParam}`
+        `/api/posts?page=${pageNum}&limit=10&subject=${subjectParam}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
       
       if (!response.ok) {
@@ -166,6 +174,34 @@ export default function Home() {
         postsCount: data.posts?.length || 0,
         pagination: data.pagination
       });
+      
+      // Update liked and saved posts from backend data
+      if (data.posts && data.posts.length > 0) {
+        const newLikedPosts = new Set(likedPosts);
+        const newSavedPosts = new Set(savedPosts);
+        
+        data.posts.forEach((post: Post) => {
+          if (post.isLikedByCurrentUser) {
+            newLikedPosts.add(post.id);
+          } else {
+            newLikedPosts.delete(post.id);
+          }
+          
+          if (post.isSavedByCurrentUser) {
+            newSavedPosts.add(post.id);
+          } else {
+            newSavedPosts.delete(post.id);
+          }
+        });
+        
+        setLikedPosts(newLikedPosts);
+        setSavedPosts(newSavedPosts);
+        
+        debugLogger.debug('ui', 'Updated like/save states from backend', {
+          likedCount: newLikedPosts.size,
+          savedCount: newSavedPosts.size
+        });
+      }
       
       if (append) {
         setPosts(prev => [...prev, ...data.posts]);
@@ -202,6 +238,7 @@ export default function Home() {
     try {
       debugLogger.logNetworkRequest('POST', '/api/likes', { postId });
       
+      // Use NextAuth session (cookie-based, no token needed)
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: {
@@ -259,6 +296,7 @@ export default function Home() {
     try {
       debugLogger.logNetworkRequest('POST', '/api/pools', { postId });
       
+      // Use NextAuth session (cookie-based, no token needed)
       const response = await fetch('/api/pools', {
         method: 'POST',
         headers: {
@@ -428,8 +466,8 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-3">
-            <Logo size="lg" showText={false} />
             {t('home.title')}
+            <Logo size="lg" showText={false} />
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t('home.subtitle')}

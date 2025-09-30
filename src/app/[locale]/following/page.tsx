@@ -9,7 +9,6 @@ import { PostCard } from '@/components/content/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Clock, RefreshCw } from 'lucide-react';
-import { auth } from '@/lib/firebase';
 import { useTranslations, useLocale } from 'next-intl';
 
 interface Post {
@@ -66,15 +65,8 @@ export default function FollowingPage() {
 
   const fetchFollowingPosts = async (pageNum: number = 1, append: boolean = false) => {
     try {
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) {
-        throw new Error('No authentication token available');
-      }
-
       const response = await fetch(`/api/posts?following=true&page=${pageNum}&limit=10`, {
         headers: {
-          'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -106,13 +98,8 @@ export default function FollowingPage() {
     if (!user || isGuest) return;
 
     try {
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) return;
-
-      const response = await fetch(`/api/users/${user.uid}/following?limit=6`, {
+      const response = await fetch(`/api/users/${dbUser?.id}/following?limit=6`, {
         headers: {
-          'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -152,14 +139,9 @@ export default function FollowingPage() {
     if (isGuest) return;
 
     try {
-      // Get Firebase ID token
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) return;
-
       const response = await fetch('/api/follow', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ followingId: userId }),

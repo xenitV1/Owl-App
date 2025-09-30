@@ -59,7 +59,7 @@ interface PrivateGroup {
 }
 
 export default function CommunitiesPage() {
-  const { user, isGuest } = useAuth();
+  const { user, dbUser, isGuest } = useAuth();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [myCommunities, setMyCommunities] = useState<Community[]>([]);
   const [myGroups, setMyGroups] = useState<PrivateGroup[]>([]);
@@ -86,7 +86,7 @@ export default function CommunitiesPage() {
     if (isGuest || !user) return;
     
     try {
-      const response = await fetch(`/api/communities?userId=${user.uid}&joined=true&limit=50`);
+      const response = await fetch(`/api/communities?userId=${dbUser?.id}&joined=true&limit=50`);
       if (response.ok) {
         const data = await response.json();
         setMyCommunities(data.communities || []);
@@ -100,7 +100,7 @@ export default function CommunitiesPage() {
     if (isGuest || !user) return;
     
     try {
-      const response = await fetch(`/api/groups?userId=${user.uid}&limit=50`);
+      const response = await fetch(`/api/groups?userId=${dbUser?.id}&limit=50`);
       if (response.ok) {
         const data = await response.json();
         setMyGroups(data.groups || []);
@@ -178,7 +178,7 @@ export default function CommunitiesPage() {
     if (isGuest) return;
     
     try {
-      const response = await fetch(`/api/groups/${groupId}/invite?userId=${user?.uid}`, {
+      const response = await fetch(`/api/groups/${groupId}/invite?userId=${dbUser?.id}`, {
         method: 'DELETE',
       });
 
@@ -316,7 +316,7 @@ export default function CommunitiesPage() {
       {viewingCommunity && (
         <LazyCommunityFeed
           communityId={viewingCommunity}
-          currentUserId={user?.uid}
+          currentUserId={dbUser?.id}
           onBack={handleBackToList}
         />
       )}
@@ -325,7 +325,7 @@ export default function CommunitiesPage() {
       {viewingGroup && (
         <LazyGroupFeed
           groupId={viewingGroup}
-          currentUserId={user?.uid}
+          currentUserId={dbUser?.id}
           onBack={handleBackToList}
         />
       )}
@@ -406,7 +406,7 @@ export default function CommunitiesPage() {
                       <CommunityCard
                         key={community.id}
                         community={community}
-                        currentUserId={user?.uid}
+                        currentUserId={dbUser?.id}
                         isMember={isMemberOfCommunity(community.id)}
                         onJoin={handleJoinCommunity}
                         onLeave={handleLeaveCommunity}
@@ -437,7 +437,7 @@ export default function CommunitiesPage() {
                           <CommunityCard
                             key={community.id}
                             community={community}
-                            currentUserId={user?.uid}
+                            currentUserId={dbUser?.id}
                             isMember={true}
                             onLeave={handleLeaveCommunity}
                             onView={handleViewCommunity}
@@ -465,7 +465,7 @@ export default function CommunitiesPage() {
                           <GroupCard
                             key={group.id}
                             group={group}
-                            currentUserId={user?.uid}
+                            currentUserId={dbUser?.id}
                             isMember={true}
                             onLeave={handleLeaveGroup}
                             onInvite={handleInviteToGroup}

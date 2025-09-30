@@ -22,6 +22,8 @@ interface Post {
   image?: string;
   subject?: string;
   createdAt: string;
+  isLikedByCurrentUser?: boolean;
+  isSavedByCurrentUser?: boolean;
   author: {
     id: string;
     name: string;
@@ -89,10 +91,33 @@ export default function DiscoverPage() {
 
   const fetchTrendingPosts = async () => {
     try {
-      const response = await fetch('/api/posts?trending=true&limit=12');
+      // Use NextAuth session (cookie-based, no token needed)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch('/api/posts?trending=true&limit=12', { headers });
       if (response.ok) {
         const data = await response.json();
         setTrendingPosts(data.posts || []);
+        
+        // Update liked and saved posts from backend data
+        if (data.posts && data.posts.length > 0) {
+          const newLikedPosts = new Set(likedPosts);
+          const newSavedPosts = new Set(savedPosts);
+          
+          data.posts.forEach((post: Post) => {
+            if (post.isLikedByCurrentUser) {
+              newLikedPosts.add(post.id);
+            }
+            if (post.isSavedByCurrentUser) {
+              newSavedPosts.add(post.id);
+            }
+          });
+          
+          setLikedPosts(newLikedPosts);
+          setSavedPosts(newSavedPosts);
+        }
       }
     } catch (error) {
       console.error('Error fetching trending posts:', error);
@@ -115,7 +140,12 @@ export default function DiscoverPage() {
 
   const fetchPopularSubjects = async () => {
     try {
-      const response = await fetch('/api/posts?subjects=true&limit=10');
+      // Use NextAuth session (cookie-based, no token needed)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch('/api/posts?subjects=true&limit=10', { headers });
       if (response.ok) {
         const data = await response.json();
         setPopularSubjects(data.subjects || []);
@@ -127,10 +157,33 @@ export default function DiscoverPage() {
 
   const fetchRecentPosts = async () => {
     try {
-      const response = await fetch('/api/posts?recent=true&limit=12');
+      // Use NextAuth session (cookie-based, no token needed)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch('/api/posts?recent=true&limit=12', { headers });
       if (response.ok) {
         const data = await response.json();
         setRecentPosts(data.posts || []);
+        
+        // Update liked and saved posts from backend data
+        if (data.posts && data.posts.length > 0) {
+          const newLikedPosts = new Set(likedPosts);
+          const newSavedPosts = new Set(savedPosts);
+          
+          data.posts.forEach((post: Post) => {
+            if (post.isLikedByCurrentUser) {
+              newLikedPosts.add(post.id);
+            }
+            if (post.isSavedByCurrentUser) {
+              newSavedPosts.add(post.id);
+            }
+          });
+          
+          setLikedPosts(newLikedPosts);
+          setSavedPosts(newSavedPosts);
+        }
       }
     } catch (error) {
       console.error('Error fetching recent posts:', error);
@@ -154,11 +207,34 @@ export default function DiscoverPage() {
     if (!searchQuery.trim()) return;
     
     try {
-      const response = await fetch(`/api/posts?search=${encodeURIComponent(searchQuery)}&limit=20`);
+      // Use NextAuth session (cookie-based, no token needed)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch(`/api/posts?search=${encodeURIComponent(searchQuery)}&limit=20`, { headers });
       if (response.ok) {
         const data = await response.json();
         setTrendingPosts(data.posts || []);
         setActiveTab('trending');
+        
+        // Update liked and saved posts from search results
+        if (data.posts && data.posts.length > 0) {
+          const newLikedPosts = new Set(likedPosts);
+          const newSavedPosts = new Set(savedPosts);
+          
+          data.posts.forEach((post: Post) => {
+            if (post.isLikedByCurrentUser) {
+              newLikedPosts.add(post.id);
+            }
+            if (post.isSavedByCurrentUser) {
+              newSavedPosts.add(post.id);
+            }
+          });
+          
+          setLikedPosts(newLikedPosts);
+          setSavedPosts(newSavedPosts);
+        }
       }
     } catch (error) {
       console.error('Error searching posts:', error);
