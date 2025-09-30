@@ -21,8 +21,37 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
+    // Get current user for block filtering
+    const session = await getServerSession(authOptions);
+    const currentUser = session?.user?.email ? await db.user.findUnique({
+      where: { email: session.user.email }
+    }) : null;
+
+    // Build where clause with block filtering
+    const where: any = { postId };
+    
+    if (currentUser) {
+      const blockedUserIds = await db.userBlock.findMany({
+        where: { blockerId: currentUser.id },
+        select: { blockedId: true }
+      }).then(blocks => blocks.map(b => b.blockedId));
+
+      const blockingUserIds = await db.userBlock.findMany({
+        where: { blockedId: currentUser.id },
+        select: { blockerId: true }
+      }).then(blocks => blocks.map(b => b.blockerId));
+
+      const allBlockedIds = [...blockedUserIds, ...blockingUserIds];
+
+      if (allBlockedIds.length > 0) {
+        where.authorId = {
+          notIn: allBlockedIds
+        };
+      }
+    }
+
     const comments = await db.comment.findMany({
-      where: { postId },
+      where,
       include: {
         author: {
           select: {
@@ -65,8 +94,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
