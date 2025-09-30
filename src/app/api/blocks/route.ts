@@ -4,32 +4,45 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { blockedId, reason } = body;
+
+  if (!blockedId) {
+    return NextResponse.json({ error: 'Blocked user ID is required' }, { status: 400 });
+  }
+
+  // Get the current user
+  const user = await db.user.findUnique({
+    where: { email: session.user.email }
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { blockedId, reason } = body;
-
-    if (!blockedId) {
-      return NextResponse.json({ error: 'Blocked user ID is required' }, { status: 400 });
-    }
-
-    // Get the current user
-    const user = await db.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
 
     // Check if user is trying to block themselves
     if (user.id === blockedId) {
+      console.log('Block attempt: User trying to block themselves', { userId: user.id, blockedId });
       return NextResponse.json({ error: 'Cannot block yourself' }, { status: 400 });
+    }
+
+    // Check if target user exists
+    const targetUser = await db.user.findUnique({
+      where: { id: blockedId },
+      select: { id: true, email: true, name: true }
+    });
+
+    if (!targetUser) {
+      console.log('Block attempt: Target user not found', { blockedId });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if already blocked
@@ -43,10 +56,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingBlock) {
+      console.log('Block attempt: User already blocked', { blockerId: user.id, blockedId });
       return NextResponse.json({ error: 'User is already blocked' }, { status: 400 });
     }
 
     // Create the block
+    console.log('Creating block', {
+      blockerId: user.id,
+      blockedId: blockedId,
+      blockerEmail: user.email,
+      blockedEmail: targetUser.email
+    });
+
     const block = await db.userBlock.create({
       data: {
         blockerId: user.id,
@@ -74,15 +95,23 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ 
+    console.log('Block created successfully', { blockId: block.id });
+
+    return NextResponse.json({
       message: 'User blocked successfully',
-      block 
+      block
     });
 
-  } catch (error) {
-    console.error('Error blocking user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      console.error('Error details:', {
+        userId: user?.id,
+        userEmail: user?.email,
+        blockedId: blockedId,
+        reason: reason
+      });
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }
 
 export async function GET(request: NextRequest) {
