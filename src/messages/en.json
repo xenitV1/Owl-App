@@ -1122,6 +1122,57 @@
       "contact": "For questions:"
     }
   },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about OWL Platform",
+    "backButton": "Go Back",
+    "questions": {
+      "whatIsOwl": {
+        "question": "What is OWL Platform?",
+        "answer": "OWL Platform is a next-generation academic social platform that enables students to share study notes, create AI-powered content, and learn together."
+      },
+      "whenLaunch": {
+        "question": "When will the platform launch?",
+        "answer": "The platform is currently in development. Our launch is coming soon. Join the waitlist to be among the first to know."
+      },
+      "pricing": {
+        "question": "How much does it cost?",
+        "answer": "OWL Platform will be free for students. Affordable premium plans will be available for advanced features. Early registrants will receive special discounts."
+      },
+      "aiFeatures": {
+        "question": "How do AI features work?",
+        "answer": "Our AI system automatically generates flashcards, summaries, and Q&A sets from your documents. It uses Gemini AI to produce high-quality educational content."
+      },
+      "dataSecurity": {
+        "question": "Is my data secure?",
+        "answer": "Yes! We protect your data in compliance with KVKK and GDPR standards. We implement SSL encryption, secure storage, and regular security audits."
+      },
+      "fileFormats": {
+        "question": "What file formats do you support?",
+        "answer": "We support PDF, Word (DOCX), PowerPoint (PPTX), text files, and images. Our AI system can automatically extract content from these files."
+      },
+      "studyGroups": {
+        "question": "How do I create study groups?",
+        "answer": "Once the platform is active, you'll be able to easily create groups with classmates, share notes, and collaborate together."
+      },
+      "mobileApp": {
+        "question": "Is there a mobile app?",
+        "answer": "We're currently working on the web platform. Mobile apps are in our future plans."
+      },
+      "contentSharing": {
+        "question": "How can I share my content?",
+        "answer": "You'll be able to share your notes and study materials with communities or private groups. Privacy control is entirely yours."
+      },
+      "support": {
+        "question": "How can I get support?",
+        "answer": "You can reach us at mehmet.apaydin0@outlook.com. We'll also offer live support once the platform is active."
+      }
+    },
+    "contactCard": {
+      "title": "Question not here?",
+      "button": "Contact Us"
+    }
+  },
   "ai": {
     "title": "Create Content with AI",
     "description": "Automatically generate educational content from your documents",

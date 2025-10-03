@@ -1127,6 +1127,57 @@
       "contact": "Sorularınız için:"
     }
   },
+  "faq": {
+    "title": "Sık Sorulan Sorular",
+    "subtitle": "OWL Platform hakkında merak ettikleriniz",
+    "backButton": "Geri Dön",
+    "questions": {
+      "whatIsOwl": {
+        "question": "OWL Platform nedir?",
+        "answer": "OWL Platform, öğrencilerin ders notlarını paylaşmasını, AI destekli içerik oluşturmasını ve birlikte öğrenmesini sağlayan yeni nesil bir akademik sosyal platformdur."
+      },
+      "whenLaunch": {
+        "question": "Platform ne zaman aktif olacak?",
+        "answer": "Platform şu anda geliştirme aşamasında. Lansmanımız yakında gerçekleşecek. Beyaz listeye kaydolarak ilk haberdar olanlar arasında olabilirsiniz."
+      },
+      "pricing": {
+        "question": "Platformun ücreti ne kadar?",
+        "answer": "OWL Platform öğrenciler için ücretsiz olacak. Premium özellikler için uygun fiyatlı planlar sunulacak. Erken kayıt olanlar için özel indirimler olacak."
+      },
+      "aiFeatures": {
+        "question": "AI özellikleri nasıl çalışıyor?",
+        "answer": "AI sistemimiz, dökümanlarınızdan otomatik olarak flashcard, özet ve soru-cevap setleri oluşturur. Gemini AI kullanarak yüksek kaliteli eğitim içeriği üretir."
+      },
+      "dataSecurity": {
+        "question": "Verilerim güvende mi?",
+        "answer": "Evet! KVKK ve GDPR standartlarına uygun şekilde verilerinizi koruyoruz. SSL şifreleme, güvenli saklama ve düzenli güvenlik denetimleri yapıyoruz."
+      },
+      "fileFormats": {
+        "question": "Hangi dosya formatlarını destekliyorsunuz?",
+        "answer": "PDF, Word (DOCX), PowerPoint (PPTX), metin dosyaları ve görselleri destekliyoruz. AI sistemi bu dosyalardan otomatik içerik çıkarabilir."
+      },
+      "studyGroups": {
+        "question": "Çalışma grupları nasıl oluşturulur?",
+        "answer": "Platform aktif olduğunda, sınıf arkadaşlarınızla kolayca grup oluşturabilecek, not paylaşımı yapabilecek ve birlikte çalışabileceksiniz."
+      },
+      "mobileApp": {
+        "question": "Mobil uygulama var mı?",
+        "answer": "Şu anda web platformu üzerinde çalışıyoruz. Mobil uygulamalar gelecekte planlarımız arasında."
+      },
+      "contentSharing": {
+        "question": "İçeriklerimi nasıl paylaşabilirim?",
+        "answer": "Notlarınızı ve çalışma materyallerinizi topluluklarla veya özel gruplarla paylaşabileceksiniz. Gizlilik kontrolü tamamen sizde."
+      },
+      "support": {
+        "question": "Destek nasıl alabilirim?",
+        "answer": "mehmet.apaydin0@outlook.com adresinden bize ulaşabilirsiniz. Platform aktif olduğunda canlı destek de sunacağız."
+      }
+    },
+    "contactCard": {
+      "title": "Sorunuz burada yok mu?",
+      "button": "Bize Ulaşın"
+    }
+  },
   "ai": {
     "title": "AI ile İçerik Oluştur",
     "description": "Dökümanlarınızdan otomatik olarak eğitim içeriği oluşturun",
