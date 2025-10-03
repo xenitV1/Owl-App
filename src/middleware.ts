@@ -25,6 +25,12 @@ export async function middleware(request: NextRequest) {
   const isComingSoonPage = path.includes('/coming-soon');
   const isRootPage = path === '/' || path === '/en' || path === '/tr';
   const isHealthCheck = path === '/api/health';
+  
+  // Allow access to legal/info pages
+  const isAllowedPage = path.includes('/privacy') || 
+                        path.includes('/terms') || 
+                        path.includes('/faq') ||
+                        path.includes('/coming-soon');
 
   // Only redirect to coming-soon based on environment and variable
   const isProduction = (process.env.NODE_ENV === 'production' &&
@@ -33,9 +39,9 @@ export async function middleware(request: NextRequest) {
 
   // Redirect to coming-soon if:
   // 1. It's the root page OR
-  // 2. It's not an API route AND not a static file AND not already coming-soon
+  // 2. It's not an API route AND not a static file AND not an allowed page
   // 3. AND it's production environment
-  if (isProduction && (isRootPage || (!isApiRoute && !isStaticFile && !isComingSoonPage && !isHealthCheck)) && !path.startsWith('/_next')) {
+  if (isProduction && (isRootPage || (!isApiRoute && !isStaticFile && !isAllowedPage && !isHealthCheck)) && !path.startsWith('/_next')) {
     // Determine locale for redirect
     const locale = pathLocale || cookieLocale || (acceptLanguage?.includes('tr') ? 'tr' : 'en');
     const comingSoonUrl = `/${locale}/coming-soon`;
