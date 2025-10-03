@@ -68,6 +68,7 @@ const nextConfig: NextConfig = {
           value: [
             "default-src 'self'",
             "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com https://analytics.google.com",
+            "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.google.com https://www.google-analytics.com",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com",
             "font-src 'self' data: https://fonts.gstatic.com",
@@ -95,6 +96,7 @@ const nextConfig: NextConfig = {
         value: [
           "default-src 'self'",
           "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com https://analytics.google.com",
+          "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.google.com https://www.google-analytics.com",
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: https: blob: https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com",
           "font-src 'self' data:",
