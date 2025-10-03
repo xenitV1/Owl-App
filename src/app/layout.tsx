@@ -68,6 +68,9 @@ export const metadata: Metadata = {
   keywords: ["OWL-App", "Education", "Social", "Study Notes", "Students", "Learning"],
   authors: [{ name: "OWL-App Team" }],
   metadataBase: new URL('https://owl-app.com'),
+  verification: {
+    google: "Mj4j6hgqi3y1yRlfCmghAPCvgenSnn2jHnv81FR0ZSM",
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },

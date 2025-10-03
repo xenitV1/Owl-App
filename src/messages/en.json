@@ -879,6 +879,45 @@
     "subtitle": "Optimized work environment for students. Note sharing, collaboration and efficient learning community.",
     "notifyButton": "Join Whitelist",
     "demoButton": "Watch Demo",
+    "seo": {
+      "title": "OWL Platform - Academic Social Learning Platform | Coming Soon",
+      "description": "Next-generation academic platform designed for students. Share study notes, create AI-powered content, form effective study groups, and learn efficiently. Register for free early access!",
+      "keywords": "owl platform, academic platform, study notes sharing, work environment, student platform, education platform, AI-powered learning, flashcards, note management, study groups"
+    },
+    "about": {
+      "title": "What is OWL Platform?",
+      "subtitle": "Next-generation academic social platform designed for student success",
+      "description": "OWL Platform is a comprehensive academic social platform that enables students to share study notes, create AI-powered content, form efficient study groups, and learn together.",
+      "mission": "Our mission is to bring technology and education together to help students learn more effectively and achieve academic success."
+    },
+    "keyFeatures": {
+      "title": "Platform Features",
+      "subtitle": "Powerful tools supporting your success",
+      "aiPowered": {
+        "title": "AI-Powered Content",
+        "description": "Automatically generate flashcards, summaries, and Q&A sets from your documents"
+      },
+      "noteSharing": {
+        "title": "Note Sharing",
+        "description": "Share your study notes and benefit from others' notes"
+      },
+      "studyGroups": {
+        "title": "Study Groups",
+        "description": "Create effective study groups with your classmates"
+      },
+      "richEditor": {
+        "title": "Advanced Editor",
+        "description": "Rich notes with Markdown, code blocks, and media support"
+      },
+      "communities": {
+        "title": "Communities",
+        "description": "Communities specific to your department and courses"
+      },
+      "privacy": {
+        "title": "Privacy First",
+        "description": "Your data is safe, you have full control"
+      }
+    },
     "workEnvironment": {
       "title": "Professional Work Environment",
       "subtitle": "Efficient workspace designed for students",
@@ -957,10 +996,217 @@
     },
     "footer": {
       "tagline": "Empowering students through collaborative learning.",
-      "about": "About",
-      "contact": "Contact",
-      "privacy": "Privacy",
-      "copyright": "© 2025 Owl Platform. All rights reserved."
+      "description": "OWL Platform is a next-generation educational platform designed for students to achieve academic success.",
+      "links": {
+        "about": "About",
+        "contact": "Contact",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "faq": "FAQ"
+      },
+      "contact": {
+        "title": "Contact",
+        "email": "mehmet.apaydin0@outlook.com"
+      },
+      "social": {
+        "title": "Follow Us",
+        "followUs": "Follow us on social media",
+        "twitter": "Twitter/X",
+        "linkedin": "LinkedIn",
+        "founder": "Founder"
+      },
+      "legal": {
+        "title": "Legal",
+        "allRightsReserved": "All rights reserved"
+      },
+      "copyright": "© 2025 OWL Platform. All rights reserved.",
+      "builtBy": "This platform is currently being developed by one person using GLM 4.6 and Cursor by Mehmet Apaydın (Xenit)"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdate": "Last updated: October 3, 2025",
+    "subtitle": "OWL Platform is committed to protecting your privacy.",
+    "backButton": "Go Back",
+    "dataCollection": {
+      "title": "Data Collection",
+      "description": "Data we collect on OWL Platform:",
+      "items": {
+        "account": "Account information (name, email)",
+        "profile": "Profile information (bio, photo)",
+        "content": "Content you share (notes, posts)",
+        "usage": "Usage data (platform interactions)"
+      }
+    },
+    "dataUsage": {
+      "title": "Data Usage",
+      "description": "We use collected data for:",
+      "items": {
+        "service": "Providing and improving platform services",
+        "personalization": "Personalizing user experience",
+        "recommendations": "Providing content recommendations",
+        "security": "Security and fraud prevention",
+        "legal": "Meeting legal obligations"
+      }
+    },
+    "dataSecurity": {
+      "title": "Data Security",
+      "description": "Measures we take to protect your data:",
+      "items": {
+        "encryption": "Secure data transmission with SSL/TLS encryption",
+        "storage": "Encrypted data storage",
+        "audits": "Regular security audits",
+        "access": "Access controls and authentication",
+        "backup": "Data backup and recovery systems"
+      }
+    },
+    "userRights": {
+      "title": "User Rights",
+      "description": "Your rights regarding your data:",
+      "items": {
+        "access": "Right to access your data",
+        "correction": "Right to correct data",
+        "deletion": "Right to delete data (\"right to be forgotten\")",
+        "portability": "Data portability right",
+        "objection": "Right to object to processing"
+      },
+      "contact": "To exercise your rights:"
+    },
+    "compliance": {
+      "title": "Compliance",
+      "description": "OWL Platform operates in compliance with Turkish Personal Data Protection Law (KVKK) No. 6698 and European Union General Data Protection Regulation (GDPR).",
+      "responsibility": "As data controller, we process and protect your personal data within legal framework."
+    },
+    "footer": {
+      "note": "This privacy policy may be updated as the platform evolves. Important changes will be notified via email.",
+      "contact": "For questions:"
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdate": "Last updated: October 3, 2025",
+    "backButton": "Go Back",
+    "general": {
+      "title": "General Terms",
+      "description": "By using OWL Platform, you agree to these terms of service. Please read these terms carefully before using the platform."
+    },
+    "responsibilities": {
+      "title": "User Responsibilities",
+      "items": {
+        "accuracy": "Provide accurate and current information",
+        "security": "Protect your account security",
+        "compliance": "Comply with laws and platform rules",
+        "respect": "Be respectful to other users",
+        "copyright": "Respect copyrights"
+      }
+    },
+    "prohibited": {
+      "title": "Prohibited Behavior",
+      "description": "The following behaviors are strictly prohibited on the platform:",
+      "items": {
+        "spam": "Sharing spam or harmful content",
+        "copyright": "Copyright infringement",
+        "harassment": "Harassment or bullying",
+        "fakeAccounts": "Creating fake accounts",
+        "security": "Threatening system security",
+        "unauthorized": "Unauthorized access to others' accounts"
+      }
+    },
+    "contentRights": {
+      "title": "Content Rights",
+      "userContent": "You own the copyright to content you share on the platform. However, you grant OWL Platform the necessary license to use, display, and share this content on the platform.",
+      "platformContent": "All trademarks, logos, and content on the platform are property of OWL Platform."
+    },
+    "footer": {
+      "important": "These terms may be updated without prior notice. Important changes will be announced on the platform.",
+      "contact": "For questions:"
+    }
+  },
+  "ai": {
+    "title": "Create Content with AI",
+    "description": "Automatically generate educational content from your documents",
+    "contentTypes": {
+      "flashcards": "Flashcards",
+      "flashcardsDescription": "Card pairs for quick learning",
+      "questions": "Practice Questions",
+      "questionsDescription": "Test questions for practice",
+      "notes": "Study Notes",
+      "notesDescription": "Structured study materials"
+    },
+    "ageGroups": {
+      "elementary": "Elementary",
+      "middle": "Middle School",
+      "high": "High School",
+      "university": "University",
+      "selectAgeGroup": "Select Age Group",
+      "selectPlaceholder": "Choose target age group..."
+    },
+    "steps": {
+      "upload": "Upload Document",
+      "configure": "Configure Settings",
+      "generating": "Generating Content",
+      "preview": "Preview & Edit"
+    },
+    "step": "Step",
+    "uploadDocument": "Upload Document",
+    "supportedFormats": "Supported formats",
+    "maxSize": "Maximum size",
+    "parse": "Parse",
+    "uploading": "Uploading...",
+    "documentParsed": "Document parsed successfully",
+    "selectContentType": "Select Content Type",
+    "selectSettings": "Configure Settings",
+    "subject": "Subject",
+    "optional": "optional",
+    "subjectPlaceholder": "e.g. Math, Physics...",
+    "back": "Back",
+    "generate": "Generate",
+    "generating": "AI is generating content...",
+    "pleaseWait": "Please wait, this may take a few seconds",
+    "regenerate": "Regenerate",
+    "useContent": "Use Content",
+    "generated": "Content generated successfully!",
+    "front": "Front",
+    "backSide": "Back",
+    "difficulty": "Difficulty",
+    "questionTypes": {
+      "multiple_choice": "Multiple Choice",
+      "true_false": "True/False",
+      "fill_blank": "Fill in the Blank",
+      "open_ended": "Open Ended"
+    },
+    "options": "Options",
+    "correctAnswer": "Correct Answer",
+    "explanation": "Explanation",
+    "previewNote": "You are in preview mode. Click the button to use this content.",
+    "error": "Error",
+    "success": "Success",
+    "missingFields": "Please fill in all required fields",
+    "fileTooLarge": "File is too large. Maximum size is 10MB.",
+    "invalidFileType": "Invalid file type. Please upload PDF, DOCX, or TXT files.",
+    "addToWorkspace": "Add to Workspace",
+    "postAIContent": "Share AI Content",
+    "createWithAI": "Create with AI",
+    "aiGenerated": "AI generated",
+    "sourceDocument": "Source Document",
+    "processingLargeDocument": "Processing large document in {chunks} chunks...",
+    "chunkProgress": "Processing chunk {current}/{total}",
+    "redirectingToWorkspace": "Opening workspace...",
+    "showMore": "Show More",
+    "showLess": "Show Less",
+    "cardCount": {
+      "label": "Card Count",
+      "selectPlaceholder": "How many cards to generate?",
+      "cards": "cards",
+      "hint": "Set the number of cards to generate (maximum 20)"
+    },
+    "addedToWorkspace": "Content added to workspace!",
+    "outputLanguage": {
+      "label": "Output Language",
+      "selectPlaceholder": "In which language should the content be generated?",
+      "customLanguage": "Custom Language...",
+      "customPlaceholder": "Type language name (e.g. German, Japanese)",
+      "hint": "AI will generate content in this language"
     }
   }
 }

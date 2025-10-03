@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/ui/Logo';
 import { useTheme } from '@/contexts/ThemeContext';
-import { usePathname } from 'next/navigation';
 import {
   Clock,
   Mail,
@@ -19,7 +17,16 @@ import {
   FolderOpen,
   Target,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  Share2,
+  UserPlus,
+  FileText,
+  Network,
+  Lock,
+  Twitter,
+  Linkedin,
+  ExternalLink
 } from 'lucide-react';
 
 export default function ComingSoonPage() {
@@ -104,11 +111,38 @@ export default function ComingSoonPage() {
     }
   };
 
+  // Structured Data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "OWL Platform",
+    "url": "https://owl-app.com",
+    "description": t('seo.description'),
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://owl-app.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OWL Platform",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://owl-app.com/logo.png"
+      }
+    }
+  };
+
   return (
     <div className={`min-h-screen ${styles.background} transition-all duration-500 overflow-hidden`}>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-20 md:py-32">
           <div className="text-center">
             {/* Main Logo */}
@@ -208,6 +242,92 @@ export default function ComingSoonPage() {
         )}
       </section>
 
+      {/* About Section */}
+      <section className={`py-20 ${resolvedTheme === 'dark' ? 'bg-gray-900' : resolvedTheme?.startsWith('retro') ? 'bg-amber-50' : 'bg-white'}`}>
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge variant="outline" className="mb-4">
+              {t('about.title')}
+            </Badge>
+            <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${styles.text} transition-all duration-500`}>
+              {t('about.subtitle')}
+            </h2>
+            <p className={`text-xl mb-6 ${styles.textMuted} transition-all duration-500`}>
+              {t('about.description')}
+            </p>
+            <p className={`text-lg ${styles.textMuted} transition-all duration-500 italic`}>
+              {t('about.mission')}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Key Features Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className={`text-4xl font-bold mb-4 ${styles.text} transition-all duration-500`}>
+              {t('keyFeatures.title')}
+            </h2>
+            <p className={`text-xl max-w-2xl mx-auto ${styles.textMuted} transition-all duration-500`}>
+              {t('keyFeatures.subtitle')}
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                icon: Brain,
+                titleKey: 'keyFeatures.aiPowered.title',
+                descriptionKey: 'keyFeatures.aiPowered.description',
+                color: 'text-purple-600'
+              },
+              {
+                icon: Share2,
+                titleKey: 'keyFeatures.noteSharing.title',
+                descriptionKey: 'keyFeatures.noteSharing.description',
+                color: 'text-blue-600'
+              },
+              {
+                icon: UserPlus,
+                titleKey: 'keyFeatures.studyGroups.title',
+                descriptionKey: 'keyFeatures.studyGroups.description',
+                color: 'text-green-600'
+              },
+              {
+                icon: FileText,
+                titleKey: 'keyFeatures.richEditor.title',
+                descriptionKey: 'keyFeatures.richEditor.description',
+                color: 'text-orange-600'
+              },
+              {
+                icon: Network,
+                titleKey: 'keyFeatures.communities.title',
+                descriptionKey: 'keyFeatures.communities.description',
+                color: 'text-pink-600'
+              },
+              {
+                icon: Lock,
+                titleKey: 'keyFeatures.privacy.title',
+                descriptionKey: 'keyFeatures.privacy.description',
+                color: 'text-red-600'
+              }
+            ].map((feature, index) => (
+              <Card key={index} className={`hover:shadow-xl transition-all duration-500 ${styles.card} border-2 group hover:scale-105`}>
+                <CardContent className="p-6">
+                  <feature.icon className={`h-14 w-14 ${feature.color} mb-4 group-hover:scale-110 transition-transform`} />
+                  <h3 className={`text-xl font-bold mb-3 ${styles.text} transition-all duration-500`}>
+                    {t(feature.titleKey)}
+                  </h3>
+                  <p className={`text-sm ${styles.textMuted} transition-all duration-500`}>
+                    {t(feature.descriptionKey)}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Work Environment Section */}
       <section className="py-20">
@@ -335,21 +455,98 @@ export default function ComingSoonPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4 text-center">
-          <div className="mb-4">
-            <Logo size="md" className="text-white" />
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8 mb-12">
+            {/* Logo and Description */}
+            <div className="md:col-span-2">
+              <div className="mb-4">
+                <Logo size="lg" className="text-white" />
+              </div>
+              <p className="text-gray-400 mb-4 max-w-md">
+                {t('footer.description')}
+              </p>
+              <p className="text-gray-400 italic text-sm">
+                {t('footer.tagline')}
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="text-white font-bold mb-4 text-lg">
+                {t('footer.legal.title')}
+              </h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                    {t('footer.links.privacy')}
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                    {t('footer.links.terms')}
+                  </a>
+                </li>
+                <li>
+                  <a href="/faq" className="text-gray-400 hover:text-white transition-colors">
+                    {t('footer.links.faq')}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact & Social */}
+            <div>
+              <h3 className="text-white font-bold mb-4 text-lg">
+                {t('footer.contact.title')}
+              </h3>
+              <a 
+                href="mailto:mehmet.apaydin0@outlook.com" 
+                className="text-gray-400 hover:text-white transition-colors flex items-center mb-6"
+              >
+                <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                {t('footer.contact.email')}
+              </a>
+
+              {/* Social Media */}
+              <h4 className="text-white font-semibold mb-3 text-sm">
+                {t('footer.social.title')}
+              </h4>
+              <div className="flex flex-col space-y-2">
+                <a 
+                  href="https://x.com/owlapp_"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group text-sm"
+                >
+                  <Twitter className="h-4 w-4 mr-2" />
+                  <span>{t('footer.social.twitter')}</span>
+                  <ExternalLink className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+                <a 
+                  href="https://www.linkedin.com/in/apaydinm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group text-sm"
+                >
+                  <Linkedin className="h-4 w-4 mr-2" />
+                  <span>{t('footer.social.linkedin')} ({t('footer.social.founder')})</span>
+                  <ExternalLink className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-400 mb-4">
-            {t('footer.tagline')}
-          </p>
-          <div className="flex justify-center space-x-6 text-gray-400">
-            <a href="#" className="hover:text-white">{t('footer.about')}</a>
-            <a href="#" className="hover:text-white">{t('footer.contact')}</a>
-            <a href="#" className="hover:text-white">{t('footer.privacy')}</a>
-          </div>
-          <div className="border-t border-gray-800 pt-8 mt-8 text-center text-gray-400">
-            <p>{t('footer.copyright')}</p>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-gray-800 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-left">
+              <p className="text-gray-400 text-sm">
+                {t('footer.copyright')}
+              </p>
+              <p className="text-gray-400 text-sm max-w-md">
+                {t('footer.builtBy')}
+              </p>
+            </div>
           </div>
         </div>
       </footer>

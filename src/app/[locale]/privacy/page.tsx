@@ -2,228 +2,156 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Logo } from '@/components/ui/Logo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, FileText, Download, Calendar, MapPin, Mail, Phone } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Shield, Lock, Eye, Database, UserCheck } from 'lucide-react';
 
-export default function PrivacyPolicyPage() {
+export default function PrivacyPage() {
   const t = useTranslations('privacy');
-
-  const sections = [
-    {
-      icon: FileText,
-      title: 'Information We Collect',
-      content: [
-        'Personal identification information (name, email, profile picture)',
-        'Educational information (school, grade, subjects)',
-        'Content you create and share on the platform',
-        'Usage data and analytics information',
-        'Device and browser information',
-        'Communication data (messages, comments)'
-      ]
-    },
-    {
-      icon: Shield,
-      title: 'How We Use Your Information',
-      content: [
-        'To provide and maintain our educational platform',
-        'To personalize your learning experience',
-        'To communicate with you about your account',
-        'To improve our services and content',
-        'To ensure platform security and prevent abuse',
-        'To comply with legal obligations'
-      ]
-    },
-    {
-      icon: MapPin,
-      title: 'Data Storage and Security',
-      content: [
-        'All data is encrypted in transit and at rest',
-        'Stored securely on EU-based servers',
-        'Regular security audits and vulnerability assessments',
-        'Access limited to authorized personnel only',
-        'Data retention periods as required by law',
-        'Secure backup and disaster recovery systems'
-      ]
-    },
-    {
-      icon: Download,
-      title: 'Your Data Rights',
-      content: [
-        'Right to access your personal data',
-        'Right to correct inaccurate information',
-        'Right to delete your data (Right to be forgotten)',
-        'Right to data portability',
-        'Right to restrict or object to processing',
-        'Right to withdraw consent at any time'
-      ]
-    }
-  ];
-
-  const complianceStandards = [
-    'KVKK (Turkish Personal Data Protection Law)',
-    'GDPR (General Data Protection Regulation)',
-    'COPPA (Children\'s Online Privacy Protection Act)',
-    'ISO 27001 (Information Security Management)'
-  ];
+  const router = useRouter();
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-3">
-          <Shield className="h-10 w-10 text-primary" />
-          Privacy Policy
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          We are committed to protecting your privacy and ensuring the security of your personal information. 
-          This policy explains how we collect, use, and safeguard your data.
-        </p>
-        <div className="flex justify-center gap-2 mt-4">
-          {complianceStandards.map((standard) => (
-            <span key={standard} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-              {standard}
-            </span>
-          ))}
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => router.back()}
+              className="mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {t('backButton')}
+            </Button>
+            
+            <div className="flex items-center justify-center mb-6">
+              <Logo size="lg" />
+            </div>
+            
+            <h1 className="text-4xl font-bold text-center mb-4 text-gray-900">
+              {t('title')}
+            </h1>
+            <p className="text-center text-gray-600 mb-2">
+              {t('lastUpdate')}
+            </p>
+            <p className="text-center text-gray-600">
+              {t('subtitle')}
+            </p>
+          </div>
 
-      <div className="grid gap-8 mb-12">
-        {sections.map((section, index) => {
-          const Icon = section.icon;
-          return (
-            <Card key={index}>
+          {/* Privacy Sections */}
+          <div className="space-y-6">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Icon className="h-6 w-6 text-primary" />
-                  {section.title}
+                <CardTitle className="flex items-center">
+                  <Database className="mr-2 h-5 w-5 text-blue-600" />
+                  {t('dataCollection.title')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {section.content.map((item, itemIndex) => (
-                    <li key={itemIndex} className="flex items-start gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
+              <CardContent className="text-gray-700 space-y-2">
+                <p>{t('dataCollection.description')}</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>{t('dataCollection.items.account')}</li>
+                  <li>{t('dataCollection.items.profile')}</li>
+                  <li>{t('dataCollection.items.content')}</li>
+                  <li>{t('dataCollection.items.usage')}</li>
                 </ul>
               </CardContent>
             </Card>
-          );
-        })}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Eye className="mr-2 h-5 w-5 text-green-600" />
+                  {t('dataUsage.title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-gray-700 space-y-2">
+                <p>{t('dataUsage.description')}</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>{t('dataUsage.items.service')}</li>
+                  <li>{t('dataUsage.items.personalization')}</li>
+                  <li>{t('dataUsage.items.recommendations')}</li>
+                  <li>{t('dataUsage.items.security')}</li>
+                  <li>{t('dataUsage.items.legal')}</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Lock className="mr-2 h-5 w-5 text-red-600" />
+                  {t('dataSecurity.title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-gray-700 space-y-2">
+                <p>{t('dataSecurity.description')}</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>{t('dataSecurity.items.encryption')}</li>
+                  <li>{t('dataSecurity.items.storage')}</li>
+                  <li>{t('dataSecurity.items.audits')}</li>
+                  <li>{t('dataSecurity.items.access')}</li>
+                  <li>{t('dataSecurity.items.backup')}</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <UserCheck className="mr-2 h-5 w-5 text-purple-600" />
+                  {t('userRights.title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-gray-700 space-y-2">
+                <p>{t('userRights.description')}</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>{t('userRights.items.access')}</li>
+                  <li>{t('userRights.items.correction')}</li>
+                  <li>{t('userRights.items.deletion')}</li>
+                  <li>{t('userRights.items.portability')}</li>
+                  <li>{t('userRights.items.objection')}</li>
+                </ul>
+                <p className="mt-4 text-sm">
+                  {t('userRights.contact')} <a href="mailto:mehmet.apaydin0@outlook.com" className="text-blue-600 hover:underline">mehmet.apaydin0@outlook.com</a>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="mr-2 h-5 w-5 text-orange-600" />
+                  {t('compliance.title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-gray-700 space-y-2">
+                <p>
+                  {t('compliance.description')}
+                </p>
+                <p className="mt-2">
+                  {t('compliance.responsibility')}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="pt-6">
+                <p className="text-gray-700 text-sm">
+                  <strong>Not:</strong> {t('footer.note')}
+                </p>
+                <p className="text-gray-700 text-sm mt-4">
+                  {t('footer.contact')} <a href="mailto:mehmet.apaydin0@outlook.com" className="text-blue-600 hover:underline">mehmet.apaydin0@outlook.com</a>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-primary" />
-            Data Retention
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p>
-              We retain your personal data only for as long as necessary to fulfill the purposes 
-              for which it was collected, including legal, accounting, or reporting requirements.
-            </p>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2">Active Accounts</h4>
-                <p className="text-sm text-muted-foreground">
-                  Data retained while account is active
-                </p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2">Deleted Accounts</h4>
-                <p className="text-sm text-muted-foreground">
-                  Data anonymized or deleted within 30 days
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Mail className="h-6 w-6 text-primary" />
-            Contact Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p>
-              If you have any questions about this Privacy Policy or how we handle your personal data, 
-              please contact our Data Protection Officer:
-            </p>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <span>privacy@owl-platform.com</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-muted-foreground" />
-                <span>+90 216 123 4567</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Policy Updates</CardTitle>
-          <CardDescription>
-            We may update this Privacy Policy from time to time. We will notify you of any changes 
-            by posting the new policy on this page and updating the "Last Updated" date.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Last Updated: {new Date().toLocaleDateString()}
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-              <Button variant="outline" size="sm">
-                Print
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Cookie Policy</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p>
-              We use cookies and similar tracking technologies to enhance your experience on our platform. 
-              You can manage your cookie preferences through your browser settings.
-            </p>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="p-3 border rounded">
-                <h5 className="font-semibold text-sm mb-1">Essential Cookies</h5>
-                <p className="text-xs text-muted-foreground">Required for basic functionality</p>
-              </div>
-              <div className="p-3 border rounded">
-                <h5 className="font-semibold text-sm mb-1">Analytics Cookies</h5>
-                <p className="text-xs text-muted-foreground">Help us improve our platform</p>
-              </div>
-              <div className="p-3 border rounded">
-                <h5 className="font-semibold text-sm mb-1">Marketing Cookies</h5>
-                <p className="text-xs text-muted-foreground">Personalized content and ads</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

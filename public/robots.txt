@@ -1,10 +1,27 @@
 User-agent: *
-# Coming Soon sayfasına izin ver
+# Coming Soon sayfasına izin ver (tüm dil versiyonları)
 Allow: /coming-soon
 Allow: /coming-soon/
+Allow: /tr/coming-soon
+Allow: /tr/coming-soon/
+Allow: /en/coming-soon
+Allow: /en/coming-soon/
 
-# Diğer tüm sayfaları engelle
-Disallow: /
+# Yasal sayfalar
+Allow: /privacy
+Allow: /tr/privacy
+Allow: /en/privacy
+Allow: /terms
+Allow: /tr/terms
+Allow: /en/terms
+Allow: /faq
+Allow: /tr/faq
+Allow: /en/faq
+
+# Ana sayfa (redirect to coming soon)
+Allow: /$
+
+# Diğer tüm uygulama sayfalarını engelle
 Disallow: /admin
 Disallow: /api/
 Disallow: /posts
@@ -17,13 +34,39 @@ Disallow: /discover
 Disallow: /following
 Disallow: /saved
 Disallow: /privacy
+Disallow: /tr/admin
+Disallow: /tr/posts
+Disallow: /tr/communities
+Disallow: /tr/profile
+Disallow: /tr/settings
+Disallow: /tr/moderation
+Disallow: /tr/work-environment
+Disallow: /tr/discover
+Disallow: /tr/following
+Disallow: /tr/saved
+Disallow: /tr/privacy
+Disallow: /en/admin
+Disallow: /en/posts
+Disallow: /en/communities
+Disallow: /en/profile
+Disallow: /en/settings
+Disallow: /en/moderation
+Disallow: /en/work-environment
+Disallow: /en/discover
+Disallow: /en/following
+Disallow: /en/saved
+Disallow: /en/privacy
 
 # Statik dosyalara izin ver
 Allow: /logo.png
+Allow: /logo.svg
 Allow: /favicon.ico
+Allow: /favicon.png
+Allow: /favicon.svg
 Allow: /manifest.json
-Allow: /notification.mp3
 Allow: /robots.txt
+Allow: /*.css
+Allow: /*.js
 
 # Sitemap
 Sitemap: https://owl-app.com/sitemap.xml

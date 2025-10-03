@@ -1,149 +1,75 @@
-import type { Metadata } from "next";
-import "../../globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { FontSizeProvider } from "@/contexts/FontSizeContext";
-import { ThemeLoader } from "@/components/ui/theme-loader";
-import { NextIntlClientProvider } from 'next-intl';
-import { notFound } from 'next/navigation';
-import { SkipLinks } from '@/lib/accessibility';
-import { ResizeObserverErrorHandler } from '@/components/ResizeObserverErrorHandler';
+import { Metadata } from 'next';
 
-// Conditionally load Google Fonts only when not in Docker build
-let geistSans: any;
-let geistMono: any;
-
-if (process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES !== '1') {
-  try {
-    // Dynamic import to load fonts conditionally
-    const loadFonts = async () => {
-      const { Geist, Geist_Mono } = await import("next/font/google");
-
-      geistSans = Geist({
-        variable: "--font-geist-sans",
-        subsets: ["latin"],
-        preload: false,
-        display: 'swap',
-        fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-      });
-
-      geistMono = Geist_Mono({
-        variable: "--font-geist-mono",
-        subsets: ["latin"],
-        preload: false,
-        display: 'swap',
-        fallback: ['monospace'],
-      });
-    };
-
-    // Execute the font loading
-    loadFonts().catch((error) => {
-      console.warn('Failed to load Google Fonts, using fallbacks:', error);
-      geistSans = { variable: "--font-geist-sans", className: "" };
-      geistMono = { variable: "--font-geist-mono", className: "" };
-    });
-  } catch (error) {
-    console.warn('Failed to load Google Fonts, using fallbacks:', error);
-    // Create fallback font objects
-    geistSans = {
-      variable: "--font-geist-sans",
-      className: ""
-    };
-    geistMono = {
-      variable: "--font-geist-mono",
-      className: ""
-    };
-  }
-} else {
-  // Docker build environment - use fallbacks
-  geistSans = {
-    variable: "--font-geist-sans",
-    className: ""
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const locale = params.locale || 'tr';
+  
+  const metadata = {
+    tr: {
+      title: 'OWL Platform - Akademik Sosyal Öğrenme Platformu | Yakında',
+      description: 'Öğrenciler için tasarlanmış yeni nesil akademik çalışma platformu. Ders notları paylaşın, AI destekli içerik oluşturun, etkili çalışma grupları kurun ve verimli öğrenin. Ücretsiz erken erişim için kayıt olun!',
+      keywords: 'owl platform, akademik platform, ders notu paylaşımı, çalışma ortamı, öğrenci platformu, eğitim platformu, AI destekli öğrenme, flashcard, not yönetimi, çalışma grupları',
+    },
+    en: {
+      title: 'OWL Platform - Academic Social Learning Platform | Coming Soon',
+      description: 'Next-generation academic platform designed for students. Share study notes, create AI-powered content, form effective study groups, and learn efficiently. Register for free early access!',
+      keywords: 'owl platform, academic platform, study notes sharing, work environment, student platform, education platform, AI-powered learning, flashcards, note management, study groups',
+    },
   };
-  geistMono = {
-    variable: "--font-geist-mono",
-    className: ""
-  };
-}
 
-const locales = ['en', 'tr'];
+  const currentMetadata = metadata[locale as keyof typeof metadata] || metadata.tr;
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params;
   return {
-    title: "OWL-App - Coming Soon",
-    description: "OWL-App is coming soon! Join our waitlist to be notified when we launch.",
-    keywords: ["OWL-App", "Coming Soon", "Waitlist", "Education", "Social Learning"],
-    authors: [{ name: "OWL-App Team" }],
+    title: currentMetadata.title,
+    description: currentMetadata.description,
+    keywords: currentMetadata.keywords,
     metadataBase: new URL('https://owl-app.com'),
-    icons: {
-      icon: '/logo.png',
-      shortcut: '/logo.png',
-      apple: '/logo.png',
+    alternates: {
+      canonical: `/coming-soon`,
+      languages: {
+        'tr': '/tr/coming-soon',
+        'en': '/en/coming-soon',
+      },
     },
     openGraph: {
-      title: "OWL-App - Coming Soon",
-      description: "Join our waitlist to be notified when we launch",
-      url: "https://owl-app.com/coming-soon",
-      siteName: "OWL-App",
-      type: "website",
+      title: currentMetadata.title,
+      description: currentMetadata.description,
+      url: `https://owl-app.com/${locale}/coming-soon`,
+      siteName: 'OWL Platform',
       images: [
         {
           url: '/logo.png',
           width: 1200,
           height: 630,
-          alt: 'Owl Logo',
+          alt: 'OWL Platform Logo',
         },
       ],
+      locale: locale,
+      type: 'website',
     },
     twitter: {
-      card: "summary_large_image",
-      title: "OWL-App - Coming Soon",
-      description: "Join our waitlist to be notified when we launch",
+      card: 'summary_large_image',
+      title: currentMetadata.title,
+      description: currentMetadata.description,
       images: ['/logo.png'],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   };
 }
 
-export default async function ComingSoonLayout({
+export default function ComingSoonLayout({
   children,
-  params
-}: Readonly<{
+}: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}>) {
-  const { locale } = await params;
-
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
-
-  // Load messages explicitly based on the route param to avoid undefined locale issues
-  const messages = (await import(`../../../messages/${locale}.json`)).default;
-
-  return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider>
-        <FontSizeProvider>
-          <ThemeLoader />
-          <div className="min-h-screen flex flex-col">
-            <SkipLinks
-              links={[
-                { href: '#main-content', label: 'Skip to main content' }
-              ]}
-            />
-            <main
-              id="main-content"
-              role="main"
-              tabIndex={-1}
-              className="flex-1 focus:outline-none"
-            >
-              {children}
-            </main>
-          </div>
-          <Toaster />
-          <ResizeObserverErrorHandler />
-        </FontSizeProvider>
-      </ThemeProvider>
-    </NextIntlClientProvider>
-  );
+}) {
+  return children;
 }

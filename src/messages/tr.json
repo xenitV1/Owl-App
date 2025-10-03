@@ -884,6 +884,45 @@
     "subtitle": "Öğrenciler için optimize edilmiş çalışma ortamı. Not paylaşımı, işbirliği ve verimli öğrenme topluluğu.",
     "notifyButton": "Beyaz Listeye Katıl",
     "demoButton": "Demo İzle",
+    "seo": {
+      "title": "OWL Platform - Akademik Sosyal Öğrenme Platformu | Yakında",
+      "description": "Öğrenciler için tasarlanmış yeni nesil akademik çalışma platformu. Ders notları paylaşın, AI destekli içerik oluşturun, etkili çalışma grupları kurun ve verimli öğrenin. Ücretsiz erken erişim için kayıt olun!",
+      "keywords": "owl platform, akademik platform, ders notu paylaşımı, çalışma ortamı, öğrenci platformu, eğitim platformu, AI destekli öğrenme, flashcard, not yönetimi, çalışma grupları"
+    },
+    "about": {
+      "title": "OWL Platform Nedir?",
+      "subtitle": "Öğrencilerin başarısı için tasarlanmış yeni nesil akademik sosyal platform",
+      "description": "OWL Platform, öğrencilerin ders notlarını paylaşmasını, AI destekli içerik oluşturmasını, verimli çalışma grupları kurmasını ve birlikte öğrenmesini sağlayan kapsamlı bir akademik sosyal platformdur.",
+      "mission": "Misyonumuz, teknoloji ve eğitimi bir araya getirerek öğrencilerin daha etkili öğrenmesini ve akademik başarıya ulaşmasını sağlamaktır."
+    },
+    "keyFeatures": {
+      "title": "Platform Özellikleri",
+      "subtitle": "Başarınızı destekleyen güçlü araçlar",
+      "aiPowered": {
+        "title": "AI Destekli İçerik",
+        "description": "Dökümanlarınızdan otomatik flashcard, özet ve soru-cevap setleri oluşturun"
+      },
+      "noteSharing": {
+        "title": "Not Paylaşımı",
+        "description": "Ders notlarınızı paylaşın, başkalarının notlarından faydalanın"
+      },
+      "studyGroups": {
+        "title": "Çalışma Grupları",
+        "description": "Sınıf arkadaşlarınızla etkili çalışma grupları oluşturun"
+      },
+      "richEditor": {
+        "title": "Gelişmiş Editör",
+        "description": "Markdown, kod blokları ve medya desteğiyle zengin notlar"
+      },
+      "communities": {
+        "title": "Topluluklar",
+        "description": "Bölümünüze ve derslerinize özel topluluklar"
+      },
+      "privacy": {
+        "title": "Gizlilik Öncelikli",
+        "description": "Verileriniz güvende, tam kontrol sizde"
+      }
+    },
     "workEnvironment": {
       "title": "Profesyonel Çalışma Ortamı",
       "subtitle": "Öğrenciler için tasarlanmış verimli çalışma alanı",
@@ -962,10 +1001,217 @@
     },
     "footer": {
       "tagline": "Öğrencileri işbirlikçi öğrenme ile güçlendiriyoruz.",
-      "about": "Hakkımızda",
-      "contact": "İletişim",
-      "privacy": "Gizlilik",
-      "copyright": "© 2025 Owl Platform. Tüm hakları saklıdır."
+      "description": "OWL Platform, öğrencilerin akademik başarıya ulaşması için tasarlanmış yeni nesil bir eğitim platformudur.",
+      "links": {
+        "about": "Hakkımızda",
+        "contact": "İletişim",
+        "privacy": "Gizlilik Politikası",
+        "terms": "Kullanım Koşulları",
+        "faq": "Sık Sorulan Sorular"
+      },
+      "contact": {
+        "title": "İletişim",
+        "email": "mehmet.apaydin0@outlook.com"
+      },
+      "social": {
+        "title": "Bizi Takip Edin",
+        "followUs": "Sosyal medyada bizi takip edin",
+        "twitter": "Twitter/X",
+        "linkedin": "LinkedIn",
+        "founder": "Kurucu"
+      },
+      "legal": {
+        "title": "Yasal",
+        "allRightsReserved": "Tüm hakları saklıdır"
+      },
+      "copyright": "© 2025 OWL Platform. Tüm hakları saklıdır.",
+      "builtBy": "Bu platform şuan tek bir kişi tarafından GLM 4.6 ve Cursor kullanarak Mehmet Apaydın (Xenit) tarafından geliştriliyor"
+    }
+  },
+  "privacy": {
+    "title": "Gizlilik Politikası",
+    "lastUpdate": "Son güncelleme: 3 Ekim 2025",
+    "subtitle": "OWL Platform, kullanıcılarının gizliliğini korumaya kararlıdır.",
+    "backButton": "Geri Dön",
+    "dataCollection": {
+      "title": "Toplanan Veriler",
+      "description": "OWL Platform'da topladığımız veriler:",
+      "items": {
+        "account": "Hesap bilgileri (isim, e-posta)",
+        "profile": "Profil bilgileri (biyografi, fotoğraf)",
+        "content": "Paylaştığınız içerikler (notlar, gönderiler)",
+        "usage": "Kullanım verileri (platform etkileşimleri)"
+      }
+    },
+    "dataUsage": {
+      "title": "Verilerin Kullanımı",
+      "description": "Topladığımız verileri şu amaçlarla kullanırız:",
+      "items": {
+        "service": "Platform hizmetlerini sağlamak ve geliştirmek",
+        "personalization": "Kullanıcı deneyimini kişiselleştirmek",
+        "recommendations": "İçerik önerileri sunmak",
+        "security": "Güvenlik ve dolandırıcılığı önlemek",
+        "legal": "Yasal yükümlülükleri yerine getirmek"
+      }
+    },
+    "dataSecurity": {
+      "title": "Veri Güvenliği",
+      "description": "Verilerinizi korumak için aldığımız önlemler:",
+      "items": {
+        "encryption": "SSL/TLS şifreleme ile güvenli veri aktarımı",
+        "storage": "Şifrelenmiş veri saklama",
+        "audits": "Düzenli güvenlik denetimleri",
+        "access": "Erişim kontrolleri ve kimlik doğrulama",
+        "backup": "Veri yedekleme ve kurtarma sistemleri"
+      }
+    },
+    "userRights": {
+      "title": "Kullanıcı Hakları",
+      "description": "Verileriniz üzerindeki haklarınız:",
+      "items": {
+        "access": "Verilerinize erişim hakkı",
+        "correction": "Verilerin düzeltilmesi hakkı",
+        "deletion": "Verilerin silinmesi hakkı (\"unutulma hakkı\")",
+        "portability": "Veri taşınabilirliği hakkı",
+        "objection": "İşlemeye itiraz etme hakkı"
+      },
+      "contact": "Haklarınızı kullanmak için:"
+    },
+    "compliance": {
+      "title": "KVKK Uyumu",
+      "description": "OWL Platform, Türkiye Cumhuriyeti 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve Avrupa Birliği Genel Veri Koruma Yönetmeliği (GDPR) hükümlerine uygun olarak faaliyet göstermektedir.",
+      "responsibility": "Veri sorumlusu olarak kişisel verilerinizi yasal çerçevede işler ve koruruz."
+    },
+    "footer": {
+      "note": "Bu gizlilik politikası, platform geliştikçe güncellenebilir. Önemli değişiklikler e-posta yoluyla bildirilecektir.",
+      "contact": "Sorularınız için:"
+    }
+  },
+  "terms": {
+    "title": "Kullanım Koşulları",
+    "lastUpdate": "Son güncelleme: 3 Ekim 2025",
+    "backButton": "Geri Dön",
+    "general": {
+      "title": "Genel Koşullar",
+      "description": "OWL Platform'u kullanarak bu kullanım koşullarını kabul etmiş sayılırsınız. Lütfen platformu kullanmadan önce bu koşulları dikkatlice okuyun."
+    },
+    "responsibilities": {
+      "title": "Kullanıcı Sorumlulukları",
+      "items": {
+        "accuracy": "Doğru ve güncel bilgiler sağlamak",
+        "security": "Hesap güvenliğinizi korumak",
+        "compliance": "Yasalara ve platform kurallarına uymak",
+        "respect": "Diğer kullanıcılara saygılı davranmak",
+        "copyright": "Telif haklarına saygı göstermek"
+      }
+    },
+    "prohibited": {
+      "title": "Yasak Davranışlar",
+      "description": "Platformda şu davranışlar kesinlikle yasaktır:",
+      "items": {
+        "spam": "Spam veya zararlı içerik paylaşmak",
+        "copyright": "Telif hakkı ihlali yapmak",
+        "harassment": "Taciz veya zorbalık",
+        "fakeAccounts": "Sahte hesap oluşturmak",
+        "security": "Sistemin güvenliğini tehdit etmek",
+        "unauthorized": "Başkalarının hesaplarına yetkisiz erişim"
+      }
+    },
+    "contentRights": {
+      "title": "İçerik Hakları",
+      "userContent": "Platformda paylaştığınız içeriklerin telif hakkı size aittir. Ancak, OWL Platform'a bu içerikleri platformda kullanma, görüntüleme ve paylaşma konusunda gerekli lisansı vermiş olursunuz.",
+      "platformContent": "Platform üzerindeki tüm markalar, logolar ve içerikler OWL Platform'un mülkiyetindedir."
+    },
+    "footer": {
+      "important": "Bu koşullar önceden haber verilmeksizin güncellenebilir. Önemli değişiklikler platform üzerinden duyurulacaktır.",
+      "contact": "Sorularınız için:"
+    }
+  },
+  "ai": {
+    "title": "AI ile İçerik Oluştur",
+    "description": "Dökümanlarınızdan otomatik olarak eğitim içeriği oluşturun",
+    "contentTypes": {
+      "flashcards": "Bilgi Kartları",
+      "flashcardsDescription": "Hızlı öğrenme için kart çiftleri",
+      "questions": "Soru Kartları",
+      "questionsDescription": "Pratik için test soruları",
+      "notes": "Ders Notları",
+      "notesDescription": "Yapılandırılmış çalışma notları"
+    },
+    "ageGroups": {
+      "elementary": "İlkokul",
+      "middle": "Ortaokul",
+      "high": "Lise",
+      "university": "Üniversite",
+      "selectAgeGroup": "Yaş Grubu Seçin",
+      "selectPlaceholder": "Hedef yaş grubunu seçin..."
+    },
+    "steps": {
+      "upload": "Döküman Yükle",
+      "configure": "Ayarları Yapılandır",
+      "generating": "İçerik Oluşturuluyor",
+      "preview": "Önizle ve Düzenle"
+    },
+    "step": "Adım",
+    "uploadDocument": "Döküman Yükle",
+    "supportedFormats": "Desteklenen formatlar",
+    "maxSize": "Maksimum boyut",
+    "parse": "Ayrıştır",
+    "uploading": "Yükleniyor...",
+    "documentParsed": "Döküman başarıyla ayrıştırıldı",
+    "selectContentType": "İçerik Türü Seçin",
+    "selectSettings": "Ayarları Yapılandırın",
+    "subject": "Ders",
+    "optional": "opsiyonel",
+    "subjectPlaceholder": "Örn: Matematik, Fizik...",
+    "back": "Geri",
+    "generate": "Oluştur",
+    "generating": "AI içerik oluşturuyor...",
+    "pleaseWait": "Lütfen bekleyin, bu birkaç saniye sürebilir",
+    "regenerate": "Yeniden Oluştur",
+    "useContent": "İçeriği Kullan",
+    "generated": "İçerik başarıyla oluşturuldu!",
+    "front": "Ön Yüz",
+    "backSide": "Arka Yüz",
+    "difficulty": "Zorluk",
+    "questionTypes": {
+      "multiple_choice": "Çoktan Seçmeli",
+      "true_false": "Doğru/Yanlış",
+      "fill_blank": "Boşluk Doldurma",
+      "open_ended": "Açık Uçlu"
+    },
+    "options": "Seçenekler",
+    "correctAnswer": "Doğru Cevap",
+    "explanation": "Açıklama",
+    "previewNote": "Önizleme modundasınız. İçeriği kullanmak için butona tıklayın.",
+    "error": "Hata",
+    "success": "Başarılı",
+    "missingFields": "Lütfen tüm gerekli alanları doldurun",
+    "fileTooLarge": "Dosya çok büyük. Maksimum 10MB yükleyebilirsiniz.",
+    "invalidFileType": "Geçersiz dosya türü. Lütfen PDF, DOCX veya TXT dosyası yükleyin.",
+    "addToWorkspace": "Çalışma Ortamına Ekle",
+    "postAIContent": "AI İçeriğini Paylaş",
+    "createWithAI": "AI ile Oluştur",
+    "aiGenerated": "AI ile oluşturuldu",
+    "sourceDocument": "Kaynak Döküman",
+    "processingLargeDocument": "Büyük döküman {chunks} parçada işleniyor...",
+    "chunkProgress": "Parça {current}/{total} işleniyor",
+    "redirectingToWorkspace": "Çalışma ortamı açılıyor...",
+    "showMore": "Devamını Göster",
+    "showLess": "Daha Az Göster",
+    "cardCount": {
+      "label": "Kart Sayısı",
+      "selectPlaceholder": "Kaç kart oluşturulsun?",
+      "cards": "kart",
+      "hint": "Oluşturulacak kart sayısını belirleyin (maksimum 20)"
+    },
+    "addedToWorkspace": "İçerik çalışma ortamına eklendi!",
+    "outputLanguage": {
+      "label": "Çıktı Dili",
+      "selectPlaceholder": "İçerik hangi dilde oluşturulsun?",
+      "customLanguage": "Özel Dil...",
+      "customPlaceholder": "Dil adını yazın (örn: Almanca, Japonca)",
+      "hint": "AI içeriği bu dilde oluşturacak"
     }
   }
 }
