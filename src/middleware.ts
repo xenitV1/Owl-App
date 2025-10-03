@@ -82,18 +82,20 @@ export async function middleware(request: NextRequest) {
       "frame-ancestors 'self' https: http:"
     ].join('; ') : [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com https://analytics.google.com",
+      "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.google.com https://www.google-analytics.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https: blob:",
+      "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.googleapis.com https://www.googleapis.com wss:",
+      "connect-src 'self' https://*.googleapis.com https://www.googleapis.com https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com https://stats.g.doubleclick.net wss: https:",
       "media-src 'self' https: blob:",
       "worker-src 'self' blob:",
-      "frame-src 'self' https://*.google.com https://*.gstatic.com",
+      "frame-src 'self' https://*.google.com https://*.gstatic.com https://open.spotify.com https://www.youtube.com https://player.vimeo.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'none'"
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
     ].join('; '),
     // Permissions policy
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
