@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Monitor, Palette, Sparkles, GlassWater } from 'lucide-react';
+import { Moon, Sun, Monitor, Palette, Sparkles, Wine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,13 +19,13 @@ export const ThemeToggle: React.FC = () => {
     setMounted(true);
   }, []);
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass-light' | 'glass-dark') => {
     setTheme(newTheme);
     // Save theme preference to user profile
     saveThemePreference(newTheme);
   };
 
-  const saveThemePreference = async (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass') => {
+  const saveThemePreference = async (theme: 'light' | 'dark' | 'system' | 'retro-light' | 'retro-dark' | 'glass-light' | 'glass-dark') => {
     try {
       const response = await fetch('/api/user/preferences', {
         method: 'PUT',
@@ -49,8 +49,8 @@ export const ThemeToggle: React.FC = () => {
     if (theme === 'retro-light' || theme === 'retro-dark') {
       return <Sparkles className="h-4 w-4" />;
     }
-    if (theme === 'glass') {
-      return <GlassWater className="h-4 w-4" />;
+    if (theme === 'glass-light' || theme === 'glass-dark') {
+      return <Wine className="h-4 w-4" />;
     }
     return theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
   };
@@ -65,8 +65,11 @@ export const ThemeToggle: React.FC = () => {
     if (theme === 'retro-dark') {
       return 'Retro Dark';
     }
-    if (theme === 'glass') {
-      return 'Glass';
+    if (theme === 'glass-light') {
+      return 'Glass Light';
+    }
+    if (theme === 'glass-dark') {
+      return 'Glass Dark';
     }
     return theme.charAt(0).toUpperCase() + theme.slice(1);
   };
@@ -100,9 +103,13 @@ export const ThemeToggle: React.FC = () => {
           <Palette className="mr-2 h-4 w-4" />
           <span>Retro Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange('glass')}>
-          <GlassWater className="mr-2 h-4 w-4" />
-          <span>Glass</span>
+        <DropdownMenuItem onClick={() => handleThemeChange('glass-light')}>
+          <Wine className="mr-2 h-4 w-4" />
+          <span>Glass Light</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('glass-dark')}>
+          <Wine className="mr-2 h-4 w-4 opacity-70" />
+          <span>Glass Dark</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
