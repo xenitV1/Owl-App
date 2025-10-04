@@ -11,31 +11,34 @@ const PROJECT_NAME = "Owl-App";
 const YOUR_USERNAME = "xenitV1";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Optional: Better rate limits
 
-// Unique identifiers from your codebase
+// HIGHLY SPECIFIC identifiers - unique to your project
 const UNIQUE_STRINGS = [
-  "Owl Educational Social Platform",
-  "RssFeedCard",
-  "useWorkspaceStore",
-  "AnalyticsListener",
-  "PomodoroTimer",
-  "ResizeObserverErrorHandler",
-  "RetroThemeDemo",
-  "work-environment",
-  "useBlockCheck",
-  "useDragDrop",
-  "richNoteManager",
-  "rssThumbnails",
-  "contentCleaner",
+  // Project-specific unique names
+  '"Owl Educational Social Platform"',
+  "xenitV1/Owl-App", // Your specific repo reference
+
+  // Your specific component combinations (unlikely to exist elsewhere)
+  "RssFeedCard work-environment",
+  "useWorkspaceStore addCard removeCard",
+  "RetroThemeDemo FontSizeContext",
+
+  // Your specific utility combinations
+  "richNoteManager contentCleaner rssThumbnails",
+  "pickThumbnail extractFirstImageFromHtml",
+  "cleanRssContent sanitize-html DOMPurify",
+
+  // Your specific file structure patterns
+  "src/components/work-environment/RssFeedCard",
+  "src/hooks/useWorkspaceStore",
+  "src/lib/rssThumbnails",
+
+  // Your specific function signatures with implementation
+  'extractYouTubeVideoId "youtu.be" "youtube.com/watch"',
+  'extractSpotifyEmbedUrl "open.spotify.com/embed"',
 ];
 
-// Function signatures to search for
-const FUNCTION_SIGNATURES = [
-  "extractYouTubeVideoId",
-  "extractSpotifyEmbedUrl",
-  "pickThumbnail",
-  "cleanRssContent",
-  "fetchFeed",
-];
+// Minimum stars for HIGH confidence (reduced false positives)
+const HIGH_CONFIDENCE_STARS = 50;
 
 async function searchGitHub(query) {
   return new Promise((resolve, reject) => {
@@ -105,7 +108,7 @@ async function checkCopyright() {
   console.log(`👤 Checking for: ${YOUR_USERNAME}/${PROJECT_NAME}\n`);
 
   const violations = [];
-  const allSearchTerms = [...UNIQUE_STRINGS, ...FUNCTION_SIGNATURES];
+  const allSearchTerms = UNIQUE_STRINGS;
 
   for (let i = 0; i < allSearchTerms.length; i++) {
     const searchTerm = allSearchTerms[i];
@@ -122,15 +125,30 @@ async function checkCopyright() {
         console.log(`⚠️  Found ${results.total_count} potential matches:`);
 
         results.items?.slice(0, 10).forEach((item) => {
+          const stars = item.repository.stargazers_count || 0;
+
+          // Determine confidence level
+          let confidence = "LOW";
+          if (stars >= HIGH_CONFIDENCE_STARS) {
+            confidence = "HIGH";
+          } else if (stars >= 10) {
+            confidence = "MEDIUM";
+          }
+
+          // Skip LOW confidence to reduce false positives
+          if (confidence === "LOW") {
+            return;
+          }
+
           const violation = {
             searchTerm,
             repository: item.repository.full_name,
             url: item.html_url,
             path: item.path,
-            stars: item.repository.stargazers_count,
+            stars,
             lastUpdate: item.repository.updated_at,
-            confidence:
-              item.repository.stargazers_count > 10 ? "HIGH" : "MEDIUM",
+            confidence,
+            language: item.repository.language,
           };
 
           violations.push(violation);
