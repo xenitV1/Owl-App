@@ -21,7 +21,9 @@
     "security:check": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
     "security:report": "node scripts/security-report.js",
-    "copyright:check": "node scripts/check-copyright.js"
+    "copyright:check": "node scripts/check-copyright.js",
+    "favicon:generate": "node scripts/generate-favicons.js",
+    "favicon:test": "node scripts/test-favicon.js"
   },
   "dependencies": {
     "@blocknote/core": "^0.40.0",

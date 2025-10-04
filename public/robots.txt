@@ -60,7 +60,17 @@ Allow: /logo.svg
 Allow: /favicon.ico
 Allow: /favicon.png
 Allow: /favicon.svg
+Allow: /favicon-16x16.png
+Allow: /favicon-32x32.png
+Allow: /favicon-48x48.png
+Allow: /favicon-64x64.png
+Allow: /favicon-128x128.png
+Allow: /favicon-180x180.png
+Allow: /favicon-192x192.png
+Allow: /favicon-512x512.png
+Allow: /apple-touch-icon.png
 Allow: /manifest.json
+Allow: /browserconfig.xml
 Allow: /robots.txt
 Allow: /*.css
 Allow: /*.js
