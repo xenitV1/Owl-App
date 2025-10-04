@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom';
 import { extractArticleFromHtml } from '@/lib/ai/contentExtractor';
+import sanitizeHtml from 'sanitize-html';
 
 /**
  * Reading Mode benzeri içerik temizleme sistemi
@@ -356,9 +357,16 @@ export function cleanRssContent(
 
   const result = cleanHtmlContent(htmlToClean, linkUrl);
   
+  // Safely extract text content without HTML tags using sanitize-html
+  // This prevents XSS attacks from nested or malformed tags
+  const safeTextContent = result.textContent || sanitizeHtml(result.content, {
+    allowedTags: [], // Remove all HTML tags
+    allowedAttributes: {}, // Remove all attributes
+  }).trim();
+  
   return {
     cleanedHtml: result.content,
-    cleanedText: result.textContent || result.content.replace(/<[^>]*>/g, '').trim(),
+    cleanedText: safeTextContent,
     success: result.success,
   };
 }

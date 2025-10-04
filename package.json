@@ -146,6 +146,7 @@
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
+    "@types/sanitize-html": "^2.16.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.4",
