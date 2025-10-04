@@ -32,6 +32,7 @@ export const MobileNavigation: React.FC = () => {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={false}
               className={cn(
                 "flex flex-col items-center justify-center space-y-1 px-3 py-2 text-xs font-medium transition-colors",
                 isActive
