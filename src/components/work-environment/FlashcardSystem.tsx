@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useWorkspaceStore } from '@/hooks/useWorkspaceStore';
-import { checkIndexedDBFlashcards } from '@/lib/indexedDB';
 import {
   Plus,
   Play,
@@ -22,7 +21,7 @@ import {
   Clock,
   Target,
   FileText,
-  Image,
+  Image as ImageIcon,
   Volume2,
   ChevronLeft,
   ChevronRight,
@@ -198,6 +197,48 @@ export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
 
     loadData();
   }, [isIndexedDBReady, getAllFlashcards, getFlashcardStats, cardId]);
+
+  // Listen for AI-generated flashcard imports
+  useEffect(() => {
+    const handleImport = async (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.cardId !== cardId) return;
+
+      try {
+        const importedFlashcards = detail.flashcards || [];
+        
+        // Save each flashcard to IndexedDB
+        for (const fc of importedFlashcards) {
+          const flashcard: Flashcard = {
+            id: `flashcard-${Date.now()}-${Math.random()}`,
+            cardId: cardId,
+            front: fc.front || '',
+            back: fc.back || '',
+            type: 'text',
+            difficulty: fc.difficulty || 3,
+            nextReview: new Date(),
+            interval: 1,
+            easeFactor: 2.5,
+            repetitions: 0,
+            createdAt: new Date(),
+            tags: fc.tags || [],
+            category: fc.category || '',
+          };
+          
+          await saveFlashcard(flashcard);
+        }
+        
+        // Reload flashcards
+        const cards = await getAllFlashcards(cardId);
+        setFlashcards(cards);
+      } catch (error) {
+        console.error('❌ Failed to import AI flashcards:', error);
+      }
+    };
+
+    window.addEventListener('workspace:importFlashcards', handleImport as EventListener);
+    return () => window.removeEventListener('workspace:importFlashcards', handleImport as EventListener);
+  }, [cardId, saveFlashcard, getAllFlashcards]);
 
   const updateStats = useCallback(async (cards: Flashcard[]) => {
     const now = new Date();
@@ -643,7 +684,7 @@ export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {createCardForm.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
+                            {createCardForm.mediaFile.type.startsWith('image/') && <ImageIcon className="w-4 h-4" aria-hidden="true" />}
                             {createCardForm.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
                             {createCardForm.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
                             <span className="text-sm">{createCardForm.mediaFile.name}</span>
@@ -768,7 +809,7 @@ export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {editCardForm.mediaFile.type.startsWith('image/') && <Image className="w-4 h-4" aria-hidden="true" />}
+                            {editCardForm.mediaFile.type.startsWith('image/') && <ImageIcon className="w-4 h-4" aria-hidden="true" />}
                             {editCardForm.mediaFile.type.startsWith('audio/') && <Volume2 className="w-4 h-4" />}
                             {editCardForm.mediaFile.type.startsWith('video/') && <Video className="w-4 h-4" />}
                             <span className="text-sm">{editCardForm.mediaFile.name}</span>
@@ -1002,7 +1043,7 @@ export default function FlashcardSystem({ cardId }: FlashcardSystemProps) {
                   {currentCard.type === 'image' && currentCard.mediaUrl && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-center gap-2 mb-4">
-                        <Image className="w-6 h-6" aria-hidden="true" />
+                        <ImageIcon className="w-6 h-6" aria-hidden="true" />
                       </div>
                       <div className="text-2xl font-medium mb-4">
                         {isFlipped ? currentCard.back : currentCard.front}
