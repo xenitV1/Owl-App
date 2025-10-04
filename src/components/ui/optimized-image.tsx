@@ -24,6 +24,7 @@ interface OptimizedImageProps {
   fallback?: string;
   onClick?: () => void;
   onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 }
 
 export function OptimizedImage({
@@ -36,7 +37,8 @@ export function OptimizedImage({
   imageMetadata,
   fallback,
   onClick,
-  onLoad
+  onLoad,
+  onError
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -71,11 +73,15 @@ export function OptimizedImage({
   };
 
   // Handle image error
-  const handleError = () => {
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
     setHasError(true);
     if (fallback) {
       setCurrentSrc(fallback);
+    }
+    // Call the custom onError handler if provided
+    if (onError) {
+      onError(e);
     }
   };
 
