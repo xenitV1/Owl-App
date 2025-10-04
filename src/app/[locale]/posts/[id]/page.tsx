@@ -24,6 +24,10 @@ import {
 import { ReportDialog } from '@/components/moderation/ReportDialog';
 import { SimpleImageLightbox } from '@/components/ui/image-lightbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AIQuestionViewer } from '@/components/ai/AIQuestionViewer';
+import { AIFlashcardViewer } from '@/components/ai/AIFlashcardViewer';
+import { AINotesViewer } from '@/components/ai/AINotesViewer';
+import type { Question, Flashcard } from '@/types/ai';
 
 interface Post {
   id: string;
@@ -55,6 +59,10 @@ interface Post {
     comments: number;
     pools: number;
   };
+  // AI-generated content fields
+  aiGenerated?: boolean;
+  aiContentType?: string;
+  aiGeneratedContent?: string;
 }
 
 export default function PostDetailPage() {
@@ -71,6 +79,7 @@ export default function PostDetailPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   const [saveCount, setSaveCount] = useState(0);
 
   useEffect(() => {
@@ -86,6 +95,7 @@ export default function PostDetailPage() {
         const postData = await response.json();
         setPost(postData);
         setLikeCount(postData._count.likes);
+        setCommentCount(postData._count.comments);
         setSaveCount(postData._count.pools);
         
         // Track the post view
@@ -148,6 +158,11 @@ export default function PostDetailPage() {
 
   const handleComment = () => {
     setShowComments(true);
+  };
+
+  const handleCommentAdded = () => {
+    // Increment comment count when a new comment is added
+    setCommentCount(prev => prev + 1);
   };
 
   const handleImageClick = () => {
@@ -317,19 +332,68 @@ export default function PostDetailPage() {
                 {post.title}
               </CardTitle>
               
-              {post.content && (
+              {post.content && !post.aiGenerated && (
                 <div className="text-base text-muted-foreground leading-relaxed break-words break-all whitespace-pre-wrap">
                   {post.content}
                 </div>
               )}
+
+              {/* AI Generated Content */}
+              {post.aiGenerated && post.aiGeneratedContent && (() => {
+                try {
+                  const aiContent = JSON.parse(post.aiGeneratedContent);
+                  
+                  if (post.aiContentType === 'questions' && Array.isArray(aiContent)) {
+                    return (
+                      <div className="space-y-4">
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          🤖 AI Generated Practice Questions
+                        </Badge>
+                        <AIQuestionViewer questions={aiContent as Question[]} />
+                      </div>
+                    );
+                  }
+                  
+                  if (post.aiContentType === 'flashcards' && Array.isArray(aiContent)) {
+                    return (
+                      <div className="space-y-4">
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          🤖 AI Generated Flashcards
+                        </Badge>
+                        <AIFlashcardViewer flashcards={aiContent as Flashcard[]} />
+                      </div>
+                    );
+                  }
+                  
+                  if (post.aiContentType === 'notes' && typeof aiContent === 'object') {
+                    return (
+                      <div className="space-y-4">
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          🤖 AI Generated Study Notes
+                        </Badge>
+                        <AINotesViewer content={aiContent.content} title={post.title} defaultExpanded={true} />
+                      </div>
+                    );
+                  }
+                } catch (error) {
+                  console.error('Failed to parse AI content:', error);
+                  return null;
+                }
+                return null;
+              })()}
               
-              {post.image && (
+              {post.image && post.image.trim() !== '' && (
                 <div className="relative cursor-pointer group" onClick={handleImageClick}>
                   <LazyOptimizedImage
                     src={`/api/images/${post.image}`}
                     alt={post.title}
                     className="w-full max-h-[600px] rounded-lg transition-all duration-200 group-hover:brightness-95"
                     imageMetadata={post.imageMetadata}
+                    onError={(e) => {
+                      console.warn('Failed to load image:', post.image);
+                      // Hide image on error
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 rounded-lg">
                     <div className="bg-white/90 rounded-full p-3 shadow-lg">
@@ -347,7 +411,7 @@ export default function PostDetailPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <MessageCircle className="h-4 w-4" />
-                    <span>{post._count.comments} comments</span>
+                    <span>{commentCount} comments</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Bookmark className="h-4 w-4" />
@@ -358,8 +422,8 @@ export default function PostDetailPage() {
               
               <ContentInteraction
                 likes={likeCount}
-                comments={post._count.comments}
-                pools={post._count.pools}
+                comments={commentCount}
+                pools={saveCount}
                 isLiked={isLiked}
                 isSaved={isSaved}
                 onLike={handleLike}
@@ -385,6 +449,7 @@ export default function PostDetailPage() {
         open={showComments}
         onOpenChange={setShowComments}
         postId={post.id}
+        onCommentAdded={handleCommentAdded}
       />
 
       {/* Image Lightbox */}
