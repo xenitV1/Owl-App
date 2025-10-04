@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +18,12 @@ import { SimpleImageLightbox } from '@/components/ui/image-lightbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBlockCheck } from '@/hooks/useBlockCheck';
-import { Clock, Eye, MoreVertical, Flag, Trash2 } from 'lucide-react';
+import { Clock, Eye, MoreVertical, Flag, Trash2, Sparkles } from 'lucide-react';
 import { getLocalizedSubjectLabel, getLocalizedGradeLabel } from '@/lib/utils';
+import { WorkspaceAddButton } from '@/components/ai/WorkspaceAddButton';
+import { AIFlashcardViewer } from '@/components/ai/AIFlashcardViewer';
+import { AIQuestionViewer } from '@/components/ai/AIQuestionViewer';
+import { AINotesViewer } from '@/components/ai/AINotesViewer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +67,12 @@ interface Post {
     comments: number;
     pools: number;
   };
+  // AI-generated content fields
+  aiGenerated?: boolean;
+  aiContentType?: string | null;
+  aiGeneratedContent?: string | null;
+  aiSourceDocument?: string | null;
+  aiAgeGroup?: string | null;
 }
 
 interface PostCardProps {
@@ -73,6 +83,7 @@ interface PostCardProps {
   onLike?: (postId: string) => void;
   onSave?: (postId: string) => void;
   onComment?: (postId: string) => void;
+  onCommentAdded?: (postId: string) => void;
   onDelete?: (postId: string) => void;
   showCategory?: boolean;
 }
@@ -85,6 +96,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onLike,
   onSave,
   onComment,
+  onCommentAdded,
   onDelete,
   showCategory = false,
 }) => {
@@ -93,6 +105,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
   const tr = useTranslations('roles');
   const t = useTranslations('posts');
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -101,6 +114,61 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const { isBlocked, isLoading: blockLoading } = useBlockCheck(post.author.id);
+  
+  // Activity tracking
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewStartTimeRef = useRef<number | null>(null);
+  const hasTrackedViewRef = useRef(false);
+
+  // Track view when card is visible
+  useEffect(() => {
+    if (!cardRef.current || hasTrackedViewRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Start tracking view time
+            viewStartTimeRef.current = Date.now();
+            
+            // Track view after 3 seconds of visibility
+            const viewTimer = setTimeout(async () => {
+              if (!hasTrackedViewRef.current) {
+                hasTrackedViewRef.current = true;
+                
+                try {
+                  await fetch('/api/user/activity-tracking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      postId: post.id,
+                      interactionType: 'view',
+                      duration: 3
+                    })
+                  });
+                } catch (error) {
+                  // Silent fail for tracking
+                  console.debug('View tracking failed:', error);
+                }
+              }
+            }, 3000);
+
+            return () => clearTimeout(viewTimer);
+          } else {
+            // Card is no longer visible
+            viewStartTimeRef.current = null;
+          }
+        });
+      },
+      { threshold: 0.5 } // Track when 50% of card is visible
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [post.id]);
 
   const handleLike = async () => {
     if (!onLike || isLikeLoading) return;
@@ -108,6 +176,16 @@ export const PostCard: React.FC<PostCardProps> = ({
     setIsLikeLoading(true);
     try {
       await onLike(post.id);
+      
+      // Track like interaction
+      fetch('/api/user/activity-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          interactionType: 'like'
+        })
+      }).catch(e => console.debug('Like tracking failed:', e));
     } finally {
       setIsLikeLoading(false);
     }
@@ -119,6 +197,16 @@ export const PostCard: React.FC<PostCardProps> = ({
     setIsSaveLoading(true);
     try {
       await onSave(post.id);
+      
+      // Track save interaction
+      fetch('/api/user/activity-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          interactionType: 'save'
+        })
+      }).catch(e => console.debug('Save tracking failed:', e));
     } finally {
       setIsSaveLoading(false);
     }
@@ -129,6 +217,16 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (onComment) {
       onComment(post.id);
     }
+    
+    // Track comment interaction
+    fetch('/api/user/activity-tracking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        postId: post.id,
+        interactionType: 'comment'
+      })
+    }).catch(e => console.debug('Comment tracking failed:', e));
   };
 
   const handleDelete = async () => {
@@ -224,6 +322,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <>
       <Card 
+        ref={cardRef}
         className="w-full overflow-hidden"
       >
         <CardHeader className="pb-3 overflow-hidden">
@@ -334,30 +433,110 @@ export const PostCard: React.FC<PostCardProps> = ({
             {post.title}
           </CardTitle>
           
-          {/* Content */}
-          {post.content && (
-            <div 
-              className="text-sm text-muted-foreground leading-relaxed break-words break-all whitespace-pre-wrap cursor-pointer hover:text-foreground transition-colors"
-              onClick={handleCardClick}
-            >
-              <ContentPreview content={post.content} />
+          {/* AI-Generated Content or Regular Content */}
+          {post.aiGenerated && post.aiGeneratedContent ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <div className={`overflow-hidden transition-all duration-300 ${!isContentExpanded ? 'max-h-48' : ''}`}>
+                {post.aiContentType === 'flashcards' && (() => {
+                  try {
+                    const parsed = JSON.parse(post.aiGeneratedContent!);
+                    const flashcards = Array.isArray(parsed) ? parsed : (parsed.flashcards || []);
+                    return <AIFlashcardViewer flashcards={flashcards} />;
+                  } catch (error) {
+                    console.error('Failed to parse flashcards:', error);
+                    return <p className="text-sm text-red-500">Error loading flashcards</p>;
+                  }
+                })()}
+                {post.aiContentType === 'questions' && (() => {
+                  try {
+                    const parsed = JSON.parse(post.aiGeneratedContent!);
+                    const questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
+                    return <AIQuestionViewer questions={questions} />;
+                  } catch (error) {
+                    console.error('Failed to parse questions:', error);
+                    return <p className="text-sm text-red-500">Error loading questions</p>;
+                  }
+                })()}
+                {post.aiContentType === 'notes' && (() => {
+                  try {
+                    const parsed = JSON.parse(post.aiGeneratedContent!);
+                    const content = typeof parsed === 'string' ? parsed : (parsed.content || '');
+                    return <AINotesViewer content={content} />;
+                  } catch (error) {
+                    console.error('Failed to parse notes:', error);
+                    return <p className="text-sm text-red-500">Error loading notes</p>;
+                  }
+                })()}
+              </div>
+              <div className="flex justify-center mt-2">
+                <button
+                  className="text-xs font-medium text-primary hover:text-primary/80 transition-colors px-3 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsContentExpanded(!isContentExpanded);
+                  }}
+                >
+                  {isContentExpanded ? t('showLess') : t('showMore')}
+                </button>
+              </div>
             </div>
-          )}
+          ) : post.content ? (
+            <div>
+              <div 
+                className={`text-sm text-muted-foreground leading-relaxed break-words break-all whitespace-pre-wrap cursor-pointer hover:text-foreground transition-colors overflow-hidden transition-all duration-300 ${!isContentExpanded ? 'max-h-32' : ''}`}
+                onClick={handleCardClick}
+              >
+                <ContentPreview content={post.content} />
+              </div>
+              {post.content.length > 200 && (
+                <div className="flex justify-center mt-2">
+                  <button
+                    className="text-xs font-medium text-primary hover:text-primary/80 transition-colors px-3 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-md"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsContentExpanded(!isContentExpanded);
+                    }}
+                  >
+                    {isContentExpanded ? t('showLess') : t('showMore')}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : null}
           
           {/* Image */}
-          {post.image && (
+          {post.image && post.image.trim() !== '' && (
             <div className="relative cursor-pointer group" onClick={handleImageClick}>
               <LazyOptimizedImage
                 src={`/api/images/${post.image}`}
                 alt={post.title}
                 className="w-full max-h-96 rounded-lg transition-all duration-200 group-hover:brightness-95"
                 imageMetadata={post.imageMetadata}
+                onError={(e) => {
+                  console.warn('Failed to load image:', post.image);
+                  e.currentTarget.style.display = 'none';
+                }}
               />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 rounded-lg">
                 <div className="bg-white/90 rounded-full p-2 shadow-lg">
                   <Eye className="h-5 w-5 text-gray-700" />
                 </div>
               </div>
+            </div>
+          )}
+          
+          {/* AI Generated Badge */}
+          {post.aiGenerated && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                AI Generated
+              </Badge>
+              {post.aiSourceDocument && (
+                <span className="text-xs text-muted-foreground">
+                  {post.aiSourceDocument}
+                </span>
+              )}
             </div>
           )}
           
@@ -374,6 +553,13 @@ export const PostCard: React.FC<PostCardProps> = ({
               onSave={handleSave}
             />
           </div>
+          
+          {/* Add to Workspace Button (for AI-generated content) */}
+          {post.aiGenerated && (
+            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+              <WorkspaceAddButton post={post} variant="outline" size="sm" />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -383,6 +569,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         onOpenChange={setShowComments}
         postId={post.id}
         currentUserId={currentUserId}
+        onCommentAdded={() => onCommentAdded?.(post.id)}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -394,7 +581,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       />
 
       {/* Image Lightbox */}
-      {post.image && (
+      {post.image && post.image.trim() !== '' && (
         <SimpleImageLightbox
           isOpen={showImageLightbox}
           onClose={() => setShowImageLightbox(false)}
