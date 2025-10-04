@@ -23,7 +23,7 @@
     "security:report": "node scripts/security-report.js"
   },
   "dependencies": {
-    "@blocknote/core": "^0.39.1",
+    "@blocknote/core": "^0.40.0",
     "@blocknote/mantine": "^0.39.1",
     "@blocknote/react": "^0.39.1",
     "@dnd-kit/core": "^6.3.1",
