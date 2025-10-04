@@ -21,10 +21,10 @@ const ALLOWED_SOUNDS = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const { filename } = params;
+    const { filename } = await params;
 
     // Validate filename
     if (!filename || !ALLOWED_SOUNDS.includes(filename)) {
