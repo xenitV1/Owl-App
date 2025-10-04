@@ -171,8 +171,8 @@ export const WorkspaceCard = memo(function WorkspaceCard({
 
   // Synchronized audio-visual feedback for lock/unlock
   const playSyncedLockFeedback = (isCurrentlyLocked: boolean, element: HTMLElement) => {
-    const lockSound = '/sounds/lock.mp3';
-    const unlockSound = '/sounds/unlock.mp3';
+    const lockSound = '/api/sounds/lock.mp3';
+    const unlockSound = '/api/sounds/unlock.mp3';
     
     try {
       // Create audio element
