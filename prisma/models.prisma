@@ -9,8 +9,6 @@ model User {
   favoriteSubject    String?
   bio                String?
   isVerified         Boolean            @default(false)
-  theme              String             @default("light") // light, dark, system, retro-light, retro-dark
-  fontSize           String             @default("normal")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   adminActivityLogs  AdminActivityLog[]
@@ -39,26 +37,35 @@ model User {
 }
 
 model Post {
-  id            String         @id @default(cuid())
-  title         String
-  content       String?
-  image         String?
-  subject       String?
-  isPublic      Boolean        @default(true)
-  authorId      String
-  communityId   String?
-  groupId       String?
-  viewCount     Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  comments      Comment[]
-  likes         Like[]
-  notifications Notification[]
-  pools         Pool[]
-  group         PrivateGroup?   @relation(fields: [groupId], references: [id])
-  community     Community?     @relation(fields: [communityId], references: [id])
-  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  reports       Report[]
+  id                  String         @id @default(cuid())
+  title               String
+  content             String?
+  image               String?
+  subject             String?
+  isPublic            Boolean        @default(true)
+  authorId            String
+  communityId         String?
+  groupId             String?
+  viewCount           Int            @default(0)
+  
+  // AI-generated content fields
+  aiGenerated         Boolean        @default(false)
+  aiContentType       String?        // 'flashcards', 'questions', 'notes'
+  aiGeneratedContent  String?        // JSON string
+  aiSourceDocument    String?        // Original document name
+  aiAgeGroup          String?        // Target age group
+  aiPromptUsed        String?        // For tracking/debugging
+  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  comments            Comment[]
+  likes               Like[]
+  notifications       Notification[]
+  pools               Pool[]
+  group               PrivateGroup?  @relation(fields: [groupId], references: [id])
+  community           Community?     @relation(fields: [communityId], references: [id])
+  author              User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reports             Report[]
 
   @@map("posts")
 }
