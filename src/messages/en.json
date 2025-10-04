@@ -149,6 +149,8 @@
     "success": "Success",
     "like": "Like",
     "unlike": "Unlike",
+    "showMore": "Show More",
+    "showLess": "Show Less",
     "save": "Save",
     "unsave": "Unsave",
     "comment": "Comment",
@@ -277,12 +279,17 @@
   },
   "discover": {
     "title": "Discover",
+    "subtitle": "Explore trending content and discover new communities",
+    "search": "Search",
+    "searchDescription": "Search for posts, users, and communities",
+    "searchPlaceholder": "Search content...",
     "trending": "Trending",
     "recommended": "Recommended",
     "recent": "Recent",
     "popular": "Popular",
     "subjects": "Subjects",
     "schools": "Schools",
+    "communities": "Communities",
     "noContent": "No content found",
     "exploreMore": "Explore more content"
   },
@@ -998,8 +1005,8 @@
       "tagline": "Empowering students through collaborative learning.",
       "description": "OWL Platform is a next-generation educational platform designed for students to achieve academic success.",
       "links": {
-        "about": "About",
-        "contact": "Contact",
+      "about": "About",
+      "contact": "Contact",
         "privacy": "Privacy Policy",
         "terms": "Terms of Service",
         "faq": "FAQ"
