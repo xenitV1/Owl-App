@@ -77,8 +77,6 @@ export const authOptions: NextAuthOptions = {
               favoriteSubject: true,
               bio: true,
               isVerified: true,
-              theme: true,
-              fontSize: true,
               createdAt: true,
             },
           });
