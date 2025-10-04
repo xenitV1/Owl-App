@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,11 @@ interface ContentInteractionProps {
 }
 
 export const ContentInteraction: React.FC<ContentInteractionProps> = ({
-  likes,
-  comments,
-  pools,
-  isLiked = false,
-  isSaved = false,
+  likes: initialLikes,
+  comments: initialComments,
+  pools: initialPools,
+  isLiked: initialIsLiked = false,
+  isSaved: initialIsSaved = false,
   onLike,
   onComment,
   onSave,
@@ -33,18 +33,36 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
   const likeSoundRef = React.useRef<HTMLAudioElement | null>(null);
   const commentSoundRef = React.useRef<HTMLAudioElement | null>(null);
   const poolSoundRef = React.useRef<HTMLAudioElement | null>(null);
+  
+  // Local state for optimistic updates
+  const [likes, setLikes] = useState(initialLikes);
+  const [comments, setComments] = useState(initialComments);
+  const [pools, setPools] = useState(initialPools);
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [isSaved, setIsSaved] = useState(initialIsSaved);
+  const [isAnimatingLike, setIsAnimatingLike] = useState(false);
+  const [isAnimatingSave, setIsAnimatingSave] = useState(false);
+
+  // Update local state when props change
+  useEffect(() => {
+    setLikes(initialLikes);
+    setComments(initialComments);
+    setPools(initialPools);
+    setIsLiked(initialIsLiked);
+    setIsSaved(initialIsSaved);
+  }, [initialLikes, initialComments, initialPools, initialIsLiked, initialIsSaved]);
 
   // Initialize interaction sounds
   React.useEffect(() => {
-    likeSoundRef.current = new Audio('/sounds/like-button.mp3');
+    likeSoundRef.current = new Audio('/api/sounds/like-button.mp3');
     likeSoundRef.current.volume = 0.4;
     likeSoundRef.current.preload = 'auto';
     
-    commentSoundRef.current = new Audio('/sounds/comment-button.mp3');
+    commentSoundRef.current = new Audio('/api/sounds/comment-button.mp3');
     commentSoundRef.current.volume = 0.4;
     commentSoundRef.current.preload = 'auto';
     
-    poolSoundRef.current = new Audio('/sounds/pool-vote.mp3');
+    poolSoundRef.current = new Audio('/api/sounds/pool-vote.mp3');
     poolSoundRef.current.volume = 0.5;
     poolSoundRef.current.preload = 'auto';
     
@@ -118,18 +136,55 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
     );
   }
 
+  const handleLikeClick = () => {
+    // Optimistic update
+    setIsLiked(!isLiked);
+    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+    setIsAnimatingLike(true);
+    
+    // Play sound
+    playLikeSound();
+    
+    // Call parent handler
+    onLike?.();
+    
+    // Remove animation after duration
+    setTimeout(() => setIsAnimatingLike(false), 300);
+  };
+
+  const handleSaveClick = () => {
+    // Optimistic update
+    setIsSaved(!isSaved);
+    setPools(prev => isSaved ? prev - 1 : prev + 1);
+    setIsAnimatingSave(true);
+    
+    // Play sound
+    playPoolSound();
+    
+    // Call parent handler
+    onSave?.();
+    
+    // Remove animation after duration
+    setTimeout(() => setIsAnimatingSave(false), 300);
+  };
+
+  const handleCommentClick = () => {
+    playCommentSound();
+    onComment?.();
+    // Note: Comment count update is handled by onCommentAdded callback in parent
+  };
+
   return (
     <div className="flex items-center justify-between">
       <Button
         variant={isLiked ? "default" : "ghost"}
         size="sm"
-        onClick={() => {
-          playLikeSound();
-          onLike?.();
-        }}
+        onClick={handleLikeClick}
         className="flex items-center gap-1 px-2 py-1 h-auto group"
       >
-        <div className={`relative w-4 h-4 transition-all duration-200 ${isLiked ? 'scale-110' : 'scale-100 opacity-70 group-hover:opacity-100'}`}>
+        <div className={`relative w-4 h-4 transition-all duration-200 ${
+          isAnimatingLike ? 'scale-125 rotate-12' : isLiked ? 'scale-110' : 'scale-100 opacity-70 group-hover:opacity-100'
+        }`}>
           <Image
             src="/owl-like-icon.png"
             alt="Like"
@@ -138,16 +193,15 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
             className={`object-contain ${isLiked ? 'brightness-110' : 'brightness-90'}`}
           />
         </div>
-        <span className="text-xs">{likes}</span>
+        <span className={`text-xs transition-all duration-200 ${
+          isAnimatingLike ? 'scale-110 font-bold' : ''
+        }`}>{likes}</span>
       </Button>
       
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => {
-          playCommentSound();
-          onComment?.();
-        }}
+        onClick={handleCommentClick}
         className="flex items-center gap-1 px-2 py-1 h-auto"
       >
         <MessageCircle className="h-4 w-4" />
@@ -157,14 +211,15 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
       <Button
         variant={isSaved ? "default" : "ghost"}
         size="sm"
-        onClick={() => {
-          playPoolSound();
-          onSave?.();
-        }}
+        onClick={handleSaveClick}
         className="flex items-center gap-1 px-2 py-1 h-auto"
       >
-        <Droplets className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
-        <span className="text-xs">{pools}</span>
+        <Droplets className={`h-4 w-4 transition-all duration-200 ${
+          isAnimatingSave ? 'scale-125 -rotate-12' : ''
+        } ${isSaved ? 'fill-current' : ''}`} />
+        <span className={`text-xs transition-all duration-200 ${
+          isAnimatingSave ? 'scale-110 font-bold' : ''
+        }`}>{pools}</span>
       </Button>
     </div>
   );
