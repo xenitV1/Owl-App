@@ -378,6 +378,25 @@ export default function DiscoverPage() {
     }
   };
 
+  const handleCommentAdded = (postId: string) => {
+    // Increment comment count when a new comment is added
+    const updatePostComments = (posts: Post[]) => 
+      posts.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              _count: { 
+                ...post._count, 
+                comments: post._count.comments + 1 
+              } 
+            }
+          : post
+      );
+    
+    setTrendingPosts(updatePostComments);
+    setRecentPosts(updatePostComments);
+  };
+
   const handleDeletePost = (postId: string) => {
     // Remove the deleted post from both trending and recent posts
     setTrendingPosts(prev => prev.filter(post => post.id !== postId));
@@ -575,6 +594,7 @@ export default function DiscoverPage() {
                         isSaved={savedPosts.has(post.id)}
                         onLike={handleLike}
                         onSave={handleSave}
+                        onCommentAdded={handleCommentAdded}
                         onDelete={handleDeletePost}
                       />
                     )}
@@ -609,6 +629,7 @@ export default function DiscoverPage() {
                         isSaved={savedPosts.has(post.id)}
                         onLike={handleLike}
                         onSave={handleSave}
+                        onCommentAdded={handleCommentAdded}
                         onDelete={handleDeletePost}
                       />
                     )}
