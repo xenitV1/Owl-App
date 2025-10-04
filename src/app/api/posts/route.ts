@@ -235,13 +235,21 @@ export async function POST(request: NextRequest) {
         const content = formData.get('content') as string;
         const subject = formData.get('subject') as string;
         const image = formData.get('image') as File;
+        
+        // AI-generated content fields
+        const aiGenerated = formData.get('aiGenerated') === 'true';
+        const aiContentType = formData.get('aiContentType') as string | null;
+        const aiGeneratedContent = formData.get('aiGeneratedContent') as string | null;
+        const aiAgeGroup = formData.get('aiAgeGroup') as string | null;
 
         console.log('Post creation data:', {
           title: title?.substring(0, 50),
           hasContent: !!content,
           subject,
           hasImage: !!image,
-          imageSize: image?.size
+          imageSize: image?.size,
+          aiGenerated,
+          aiContentType
         });
 
         if (!title || !title.trim()) {
@@ -351,6 +359,11 @@ export async function POST(request: NextRequest) {
         image: null, // Will be updated after PostImage creation
         authorId: user.id,
         isPublic: true,
+        // AI-generated content metadata
+        aiGenerated: aiGenerated,
+        aiContentType: aiContentType,
+        aiGeneratedContent: aiGeneratedContent,
+        aiAgeGroup: aiAgeGroup,
       },
       include: {
         author: {
