@@ -146,21 +146,21 @@ export default function Home() {
       setIsLoading(true);
       const subjectParam = selectedSubject === t('subjects.all') ? '' : selectedSubject;
       
-      debugLogger.logNetworkRequest('GET', `/api/posts?page=${pageNum}&limit=10&subject=${subjectParam}`, {
+      // Use posts API
+      const apiUrl = `/api/posts?page=${pageNum}&limit=10${subjectParam ? `&subject=${subjectParam}` : ''}`;
+      
+      debugLogger.logNetworkRequest('GET', apiUrl, {
         page: pageNum,
         subject: subjectParam,
         append
       });
       
       // Use NextAuth session (cookie-based, no token needed)
-      const response = await fetch(
-        `/api/posts?page=${pageNum}&limit=10&subject=${subjectParam}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Content-Type': 'application/json',
         }
-      );
+      });
       
       if (!response.ok) {
         const error = new Error(`Failed to fetch posts: ${response.status} ${response.statusText}`);
@@ -346,6 +346,22 @@ export default function Home() {
     } finally {
       debugLogger.endPerformanceMark('handleSave');
     }
+  };
+
+  const handleCommentAdded = (postId: string) => {
+    // Increment comment count when a new comment is added
+    setPosts(prev => prev.map(post => 
+      post.id === postId 
+        ? { 
+            ...post, 
+            _count: { 
+              ...post._count, 
+              comments: post._count.comments + 1 
+            } 
+          }
+        : post
+    ));
+    debugLogger.debug('ui', 'Comment count incremented', { postId });
   };
 
   const handleDelete = (postId: string) => {
@@ -559,6 +575,7 @@ export default function Home() {
                         isSaved={savedPosts.has(post.id)}
                         onLike={handleLike}
                         onSave={handleSave}
+                        onCommentAdded={handleCommentAdded}
                         onDelete={handleDelete}
                       />
                     )}
