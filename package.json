@@ -20,7 +20,8 @@
     "prepare": "husky",
     "security:check": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
-    "security:report": "node scripts/security-report.js"
+    "security:report": "node scripts/security-report.js",
+    "copyright:check": "node scripts/check-copyright.js"
   },
   "dependencies": {
     "@blocknote/core": "^0.40.0",
