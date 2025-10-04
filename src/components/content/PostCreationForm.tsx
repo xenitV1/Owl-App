@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Image as ImageIcon, X, Plus } from 'lucide-react';
+import { Image as ImageIcon, X, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLoadingMessages } from '@/hooks/useLoadingMessages';
+import { AIContentModal } from '@/components/ai/AIContentModal';
+import type { GeneratedContent, Flashcard, Question, StudyNote } from '@/types/ai';
 
 // Helper function to encode Unicode strings to base64
 const encodeToBase64 = (str: string): string => {
@@ -46,6 +48,7 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, dbUser } = useAuth();
@@ -199,8 +202,88 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
     }
   };
 
+  const handleAIGenerated = async (generatedContent: GeneratedContent) => {
+    // Set title and subject from AI
+    setTitle(generatedContent.title);
+    
+    if (generatedContent.metadata.subject) {
+      setSubject(generatedContent.metadata.subject);
+    }
+
+    // Set content as description/summary only
+    let description = '';
+    if (generatedContent.type === 'flashcards') {
+      const flashcards = generatedContent.content as Flashcard[];
+      description = `📚 ${flashcards.length} AI-Generated Flashcards`;
+    } else if (generatedContent.type === 'questions') {
+      const questions = generatedContent.content as Question[];
+      description = `❓ ${questions.length} AI-Generated Practice Questions`;
+    } else if (generatedContent.type === 'notes') {
+      const note = generatedContent.content as StudyNote;
+      description = `📝 AI-Generated Study Notes: ${note.title}`;
+    }
+    
+    setContent(description);
+
+    // Auto-submit with AI content metadata
+    try {
+      const formData = new FormData();
+      formData.append('title', generatedContent.title);
+      formData.append('content', description);
+      formData.append('subject', generatedContent.metadata.subject || '');
+      
+      // Add AI metadata
+      formData.append('aiGenerated', 'true');
+      formData.append('aiContentType', generatedContent.type);
+      formData.append('aiGeneratedContent', JSON.stringify(generatedContent.content));
+      formData.append('aiAgeGroup', generatedContent.metadata.ageGroup);
+
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          ...(user?.email ? { 'x-user-email': encodeToBase64(user.email) } : {}),
+          ...(dbUser?.name ? { 'x-user-name': encodeToBase64(dbUser.name) } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create post');
+      }
+
+      // Reset form
+      setTitle('');
+      setContent('');
+      setSubject('');
+
+      toast({
+        title: t('posts.postCreatedSuccess'),
+        description: t('ai.aiGenerated'),
+      });
+
+      if (onPostCreated) {
+        onPostCreated();
+      }
+    } catch (error) {
+      console.error('Error creating AI post:', error);
+      toast({
+        title: t('posts.errorCreatingPost'),
+        description: error instanceof Error ? error.message : t('posts.errorCreatingPost'),
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <Card className="w-full">
+    <>
+      <AIContentModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onGenerated={handleAIGenerated}
+      />
+      
+      <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Plus className="h-5 w-5" />
@@ -211,6 +294,18 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* AI Content Generation Button */}
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-primary/50 hover:border-primary hover:bg-primary/5"
+            onClick={() => setShowAIModal(true)}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {t('ai.createWithAI')}
+          </Button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title Input */}
           <div>
@@ -329,5 +424,6 @@ export const PostCreationForm: React.FC<PostCreationFormProps> = ({
         </form>
       </CardContent>
     </Card>
+    </>
   );
 };
