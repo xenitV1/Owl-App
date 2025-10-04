@@ -45,7 +45,7 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
 
   // Initialize notification sound
   useEffect(() => {
-    notificationSoundRef.current = new Audio('/sounds/notification-received.mp3');
+    notificationSoundRef.current = new Audio('/api/sounds/notification-received.mp3');
     notificationSoundRef.current.volume = 0.5;
     notificationSoundRef.current.preload = 'auto';
     notificationSoundRef.current.load();
