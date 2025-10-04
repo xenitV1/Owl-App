@@ -21,7 +21,7 @@ export const LoginButton: React.FC = () => {
 
   // Initialize button click sound
   React.useEffect(() => {
-    buttonClickSoundRef.current = new Audio('/sounds/button-click.mp3');
+    buttonClickSoundRef.current = new Audio('/api/sounds/button-click.mp3');
     buttonClickSoundRef.current.volume = 0.4;
     buttonClickSoundRef.current.preload = 'auto';
     buttonClickSoundRef.current.load();
