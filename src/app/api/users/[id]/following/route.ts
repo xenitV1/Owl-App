@@ -76,7 +76,14 @@ export async function GET(
             favoriteSubject: true,
             bio: true,
             isVerified: true,
-            createdAt: true
+            createdAt: true,
+            _count: {
+              select: {
+                posts: true,
+                followers: true,
+                following: true
+              }
+            }
           }
         }
       },
