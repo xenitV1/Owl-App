@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+
+/**
+ * NOTE: Theme and fontSize preferences are now managed client-side using IndexedDB
+ * for better performance and offline support. These endpoints return empty responses
+ * to maintain backward compatibility but no longer interact with the database.
+ * 
+ * See: ThemeContext.tsx and indexedDB.ts for the new implementation
+ */
 
 export async function PUT(request: NextRequest) {
   try {
@@ -12,34 +19,15 @@ export async function PUT(request: NextRequest) {
       return new NextResponse(null, { status: 204 });
     }
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const { theme, fontSize } = await request.json();
-
-    const updateData: any = {};
-    if (theme) updateData.theme = theme;
-    if (fontSize) updateData.fontSize = fontSize;
-
-    const updatedUser = await db.user.update({
-      where: { id: user.id },
-      data: updateData,
-    });
-
+    // Theme and fontSize are now managed client-side via IndexedDB
+    // Return success without database operation
+    await request.json(); // Consume the body to avoid warnings
+    
     return NextResponse.json({
-      theme: updatedUser.theme,
-      fontSize: updatedUser.fontSize,
+      message: 'Preferences are now managed client-side via IndexedDB'
     });
   } catch (error) {
-    console.error('Error updating user preferences:', error);
+    console.error('Error in preferences endpoint:', error);
     return NextResponse.json(
       { error: 'Failed to update preferences' },
       { status: 500 }
@@ -52,31 +40,15 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      // For unauthenticated users, return empty object to avoid overriding client theme
+      // For unauthenticated users, return empty object
       return NextResponse.json({});
     }
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        theme: true,
-        fontSize: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      theme: user.theme,
-      fontSize: user.fontSize,
-    });
+    // Theme and fontSize are now managed client-side via IndexedDB
+    // Return empty object to let client handle defaults
+    return NextResponse.json({});
   } catch (error) {
-    console.error('Error fetching user preferences:', error);
+    console.error('Error in preferences endpoint:', error);
     return NextResponse.json(
       { error: 'Failed to fetch preferences' },
       { status: 500 }
