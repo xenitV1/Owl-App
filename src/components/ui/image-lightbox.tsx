@@ -543,19 +543,11 @@ export function ImageLightbox({
       <DialogContent 
         className={cn(
           "p-0 border-none w-[95vw] h-[90vh] sm:w-[90vw] sm:h-[85vh] max-w-[95vw] max-h-[90vh] sm:max-w-[90vw] sm:max-h-[85vh]",
-          // Glassmorphism efekti
-          "bg-black/20 backdrop-blur-xl",
-          // Subtle glass styling
-          "shadow-2xl shadow-black/50",
+          "bg-background/95 backdrop-blur-sm",
+          "shadow-2xl",
           className
         )}
         showCloseButton={false}
-        style={{
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          background: 'rgba(0, 0, 0, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}
       >
         <VisuallyHidden>
           <DialogTitle>
