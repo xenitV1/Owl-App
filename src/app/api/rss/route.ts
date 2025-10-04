@@ -1,9 +1,9 @@
-import { NextRequest } from 'next/server';
-import { JSDOM } from 'jsdom';
-import { pickThumbnail, extractFirstImageFromHtml } from '@/lib/rssThumbnails';
-import { cleanRssContent } from '@/lib/contentCleaner';
+import { NextRequest } from "next/server";
+import { JSDOM } from "jsdom";
+import { pickThumbnail, extractFirstImageFromHtml } from "@/lib/rssThumbnails";
+import { cleanRssContent } from "@/lib/contentCleaner";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface DiscoveredFeed {
   url: string;
@@ -22,13 +22,15 @@ function absolutize(url: string, href: string): string {
 function isXmlContentType(ct: string | null): boolean {
   if (!ct) return false;
   const low = ct.toLowerCase();
-  return low.includes('xml') || low.includes('rss') || low.includes('atom');
+  return low.includes("xml") || low.includes("rss") || low.includes("atom");
 }
 
 function isJsonFeedContentType(ct: string | null): boolean {
   if (!ct) return false;
   const low = ct.toLowerCase();
-  return low.includes('application/feed+json') || low.includes('application/json');
+  return (
+    low.includes("application/feed+json") || low.includes("application/json")
+  );
 }
 
 function youtubeHeuristics(pageUrl: string): DiscoveredFeed[] {
@@ -38,12 +40,24 @@ function youtubeHeuristics(pageUrl: string): DiscoveredFeed[] {
     // /channel/CHANNEL_ID
     const channelMatch = url.pathname.match(/\/channel\/([a-zA-Z0-9_-]+)/);
     if (channelMatch) {
-      return [{ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelMatch[1]}`, type: 'application/atom+xml', title: 'YouTube Channel Feed' }];
+      return [
+        {
+          url: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelMatch[1]}`,
+          type: "application/atom+xml",
+          title: "YouTube Channel Feed",
+        },
+      ];
     }
     // /playlist?list=PLAYLIST_ID
-    const playlist = url.searchParams.get('list');
-    if (url.pathname.includes('/playlist') && playlist) {
-      return [{ url: `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlist}`, type: 'application/atom+xml', title: 'YouTube Playlist Feed' }];
+    const playlist = url.searchParams.get("list");
+    if (url.pathname.includes("/playlist") && playlist) {
+      return [
+        {
+          url: `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlist}`,
+          type: "application/atom+xml",
+          title: "YouTube Playlist Feed",
+        },
+      ];
     }
     // /@handle and others would require scraping; skip for now
     return [];
@@ -53,70 +67,113 @@ function youtubeHeuristics(pageUrl: string): DiscoveredFeed[] {
 }
 
 async function discoverFeeds(pageUrl: string): Promise<DiscoveredFeed[]> {
-  console.info('[RSS][discover] start', { pageUrl });
+  console.info("[RSS][discover] start", { pageUrl });
   const yt = youtubeHeuristics(pageUrl);
   const feeds: DiscoveredFeed[] = [...yt];
 
-  const res = await fetch(pageUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'tr-TR,tr;q=0.9' } });
-  console.info('[RSS][discover] fetch page response', { status: res.status, ok: res.ok });
+  const res = await fetch(pageUrl, {
+    headers: {
+      "User-Agent": "OwlRSS/1.0",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "tr-TR,tr;q=0.9",
+    },
+  });
+  console.info("[RSS][discover] fetch page response", {
+    status: res.status,
+    ok: res.ok,
+  });
   if (res.ok) {
     const html = await res.text();
     const dom = new JSDOM(html);
     const doc = dom.window.document;
-    const links = Array.from(doc.querySelectorAll('link[rel="alternate"]')) as HTMLLinkElement[];
-    console.debug('[RSS][discover] found rel=alternate links', { count: links.length });
+    const links = Array.from(
+      doc.querySelectorAll('link[rel="alternate"]'),
+    ) as HTMLLinkElement[];
+    console.debug("[RSS][discover] found rel=alternate links", {
+      count: links.length,
+    });
     for (const link of links) {
-      const type = (link.getAttribute('type') || '').toLowerCase();
-      const href = link.getAttribute('href') || '';
-      const title = link.getAttribute('title') || undefined;
-      console.debug('[RSS][discover] candidate', { type, href, title });
-      if (type && (type.includes('rss') || type.includes('atom') || type.includes('xml') || type.includes('feed+json') || type.includes('json'))) {
+      const type = (link.getAttribute("type") || "").toLowerCase();
+      const href = link.getAttribute("href") || "";
+      const title = link.getAttribute("title") || undefined;
+      console.debug("[RSS][discover] candidate", { type, href, title });
+      if (
+        type &&
+        (type.includes("rss") ||
+          type.includes("atom") ||
+          type.includes("xml") ||
+          type.includes("feed+json") ||
+          type.includes("json"))
+      ) {
         const abs = absolutize(pageUrl, href);
-        feeds.push({ url: abs, type: type || 'application/xml', title });
+        feeds.push({ url: abs, type: type || "application/xml", title });
       }
     }
 
     // Anchor-based discovery (text contains RSS/Feed/Abone Ol)
-    const anchors = Array.from(doc.querySelectorAll('a[href]')) as HTMLAnchorElement[];
+    const anchors = Array.from(
+      doc.querySelectorAll("a[href]"),
+    ) as HTMLAnchorElement[];
     for (const a of anchors) {
-      const text = (a.textContent || '').toLowerCase();
-      const href = a.getAttribute('href') || '';
-      if (/rss|feed|abone|atom|xml/.test(text) || /\/(?:feed|rss|atom)(?:\/|$|\.)/i.test(href)) {
+      const text = (a.textContent || "").toLowerCase();
+      const href = a.getAttribute("href") || "";
+      if (
+        /rss|feed|abone|atom|xml/.test(text) ||
+        /\/(?:feed|rss|atom)(?:\/|$|\.)/i.test(href)
+      ) {
         const abs = absolutize(pageUrl, href);
-        if (!feeds.find(f => f.url === abs)) feeds.push({ url: abs, type: 'text/html' });
+        if (!feeds.find((f) => f.url === abs))
+          feeds.push({ url: abs, type: "text/html" });
       }
     }
 
     // WordPress heuristics
-    const wpCandidates = ['feed', 'feed/rss', 'feed/atom', '?feed=rss2'];
+    const wpCandidates = ["feed", "feed/rss", "feed/atom", "?feed=rss2"];
     for (const c of wpCandidates) {
       const abs = absolutize(pageUrl, c);
-      if (!feeds.find(f => f.url === abs)) feeds.push({ url: abs, type: 'application/xml' });
+      if (!feeds.find((f) => f.url === abs))
+        feeds.push({ url: abs, type: "application/xml" });
     }
   }
 
   // Fallback: probe common paths with HEAD, but only accept XML content types
-  const candidates = ['/rss', '/feed', '/feeds', '/rss.xml', '/atom.xml', '/feed.xml'];
+  const candidates = [
+    "/rss",
+    "/feed",
+    "/feeds",
+    "/rss.xml",
+    "/atom.xml",
+    "/feed.xml",
+  ];
   for (const c of candidates) {
     const u = absolutize(pageUrl, c);
-    if (!feeds.find(f => f.url === u)) {
+    if (!feeds.find((f) => f.url === u)) {
       try {
-        const head = await fetch(u, { method: 'HEAD' });
-        const ct = head.headers.get('content-type');
-        console.debug('[RSS][discover] HEAD check', { url: u, status: head.status, ok: head.ok, contentType: ct });
-        if (head.ok && isXmlContentType(ct)) feeds.push({ url: u, type: ct || 'application/xml' });
+        const head = await fetch(u, { method: "HEAD" });
+        const ct = head.headers.get("content-type");
+        console.debug("[RSS][discover] HEAD check", {
+          url: u,
+          status: head.status,
+          ok: head.ok,
+          contentType: ct,
+        });
+        if (head.ok && isXmlContentType(ct))
+          feeds.push({ url: u, type: ct || "application/xml" });
       } catch (e) {
-        console.debug('[RSS][discover] HEAD failed', { url: u, error: (e as any)?.message });
+        console.debug("[RSS][discover] HEAD failed", {
+          url: u,
+          error: (e as any)?.message,
+        });
       }
     }
   }
-  console.info('[RSS][discover] done', { feedsCount: feeds.length });
+  console.info("[RSS][discover] done", { feedsCount: feeds.length });
   return feeds;
 }
 
 function parseText(el: Element | null): string | undefined {
   if (!el) return undefined;
-  const text = (el.textContent || '').trim();
+  const text = (el.textContent || "").trim();
   return text || undefined;
 }
 
@@ -127,7 +184,9 @@ function parseNumericParam(url: string, key: string): number | null {
     if (!v) return null;
     const n = parseInt(v, 10);
     return isNaN(n) ? null : n;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function urlSuggestsSmallSize(url: string): boolean {
@@ -137,20 +196,29 @@ function urlSuggestsSmallSize(url: string): boolean {
     const h = parseInt(m[2], 10);
     if (!isNaN(w) && !isNaN(h) && (w < 854 || h < 480)) return true;
   }
-  const wq = parseNumericParam(url, 'w') ?? parseNumericParam(url, 'width');
-  const hq = parseNumericParam(url, 'h') ?? parseNumericParam(url, 'height');
+  const wq = parseNumericParam(url, "w") ?? parseNumericParam(url, "width");
+  const hq = parseNumericParam(url, "h") ?? parseNumericParam(url, "height");
   if (wq !== null && wq < 854) return true;
   if (hq !== null && hq < 480) return true;
   if (/\/avatar|\/icon|\/thumb|favicon|sprite/i.test(url)) return true;
   return false;
 }
 
-
 async function fetchFeed(feedUrl: string, limit: number, page: number) {
-  console.info('[RSS][fetch] start', { feedUrl });
-  let res = await fetch(feedUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8' } });
-  let ct = res.headers.get('content-type');
-  console.info('[RSS][fetch] response', { status: res.status, ok: res.ok, contentType: ct });
+  console.info("[RSS][fetch] start", { feedUrl });
+  let res = await fetch(feedUrl, {
+    headers: {
+      "User-Agent": "OwlRSS/1.0",
+      Accept:
+        "application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8",
+    },
+  });
+  let ct = res.headers.get("content-type");
+  console.info("[RSS][fetch] response", {
+    status: res.status,
+    ok: res.ok,
+    contentType: ct,
+  });
   if (!res.ok) throw new Error(`Failed to fetch feed: ${res.status}`);
   // Fallback: Some providers (e.g., VOA Türkçe) link to a landing page instead of a raw RSS.
   // If content-type is not XML, try to discover a feed on the same URL and refetch.
@@ -159,28 +227,42 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
       const discovered = await discoverFeeds(feedUrl);
       const first = discovered[0]?.url;
       if (first) {
-        console.info('[RSS][fetch] non-xml, discovered feed. Refetching', { first });
-        res = await fetch(first, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8' } });
-        ct = res.headers.get('content-type');
+        console.info("[RSS][fetch] non-xml, discovered feed. Refetching", {
+          first,
+        });
+        res = await fetch(first, {
+          headers: {
+            "User-Agent": "OwlRSS/1.0",
+            Accept:
+              "application/rss+xml, application/atom+xml, application/xml, application/feed+json, text/html;q=0.8",
+          },
+        });
+        ct = res.headers.get("content-type");
       }
     } catch {}
   }
   // Meta refresh fallback
   if (!isXmlContentType(ct)) {
     const html = await res.text();
-    const m = html.match(/<meta[^>]+http-equiv=["']refresh["'][^>]*content=["']\d+;\s*url=([^"'>]+)["']/i);
+    const m = html.match(
+      /<meta[^>]+http-equiv=["']refresh["'][^>]*content=["']\d+;\s*url=([^"'>]+)["']/i,
+    );
     if (m && m[1]) {
       const abs = absolutize(feedUrl, m[1]);
-      res = await fetch(abs, { headers: { 'User-Agent': 'OwlRSS/1.0' } });
-      ct = res.headers.get('content-type');
+      res = await fetch(abs, { headers: { "User-Agent": "OwlRSS/1.0" } });
+      ct = res.headers.get("content-type");
     } else {
       // If JSON Feed
-      if (isJsonFeedContentType(ct) || /"version"\s*:\s*"https?:\/\/jsonfeed\.org\//i.test(html)) {
-        const j = typeof html === 'string' ? JSON.parse(html) : await res.json();
+      if (
+        isJsonFeedContentType(ct) ||
+        /"version"\s*:\s*"https?:\/\/jsonfeed\.org\//i.test(html)
+      ) {
+        const j =
+          typeof html === "string" ? JSON.parse(html) : await res.json();
         const jfItems = (j.items || []).map((it: any) => ({
-          id: it.id || it.url || '',
-          title: it.title || '',
-          link: it.url || it.external_url || '',
+          id: it.id || it.url || "",
+          title: it.title || "",
+          link: it.url || it.external_url || "",
           published: it.date_published,
           summary: it.summary || it.content_text,
           thumbnail: it.image || it.banner_image,
@@ -189,7 +271,7 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
         const start = Math.max(0, (page || 0) * lim);
         const sliced = jfItems.slice(start, start + lim);
         const hasMore = start + lim < jfItems.length;
-        const title = j.title || '';
+        const title = j.title || "";
         return { title, items: sliced, limit: lim, page, hasMore };
       }
       throw new Error(`Not an RSS/Atom/JSON feed (content-type: ${ct})`);
@@ -197,19 +279,19 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
   }
 
   const xml = await res.text();
-  console.debug('[RSS][fetch] xml length', { length: xml.length });
-  const dom = new JSDOM(xml, { contentType: 'text/xml' });
+  console.debug("[RSS][fetch] xml length", { length: xml.length });
+  const dom = new JSDOM(xml, { contentType: "text/xml" });
   const doc = dom.window.document;
 
   // Detect RSS vs Atom
-  const isAtom = !!doc.querySelector('feed');
+  const isAtom = !!doc.querySelector("feed");
   const items: any[] = [];
-  console.debug('[RSS][fetch] detected type', { isAtom });
+  console.debug("[RSS][fetch] detected type", { isAtom });
 
   // Helper to read common image-carrying attributes from a media element
   const readMediaUrl = (el: Element | null | undefined): string | undefined => {
     if (!el) return undefined;
-    const candidates = ['url', 'src', 'href'];
+    const candidates = ["url", "src", "href"];
     for (const k of candidates) {
       const v = el.getAttribute(k);
       if (v) return v;
@@ -218,54 +300,125 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
   };
 
   if (isAtom) {
-    doc.querySelectorAll('entry').forEach(entry => {
-      const id = parseText(entry.querySelector('id')) || parseText(entry.querySelector('guid')) || '';
-      const title = parseText(entry.querySelector('title')) || '';
-      const linkEl = (entry.querySelector('link[rel="alternate"]') || entry.querySelector('link')) as HTMLAnchorElement | null;
-      const link = linkEl?.getAttribute('href') || '';
-      const published = parseText(entry.querySelector('published')) || parseText(entry.querySelector('updated'));
-      const summary = parseText(entry.querySelector('summary')) || parseText(entry.querySelector('content'));
-      const contentHtml = (entry.querySelector('content') as Element | null)?.textContent || undefined;
-      const summaryHtml = (entry.querySelector('summary') as Element | null)?.textContent || undefined;
-      const thumbEl = (entry.querySelector('media\\:thumbnail') || entry.querySelector('media\\:content') || entry.querySelector('thumbnail')) as Element | null;
-      const enclosureImg = (entry.querySelector('link[rel="enclosure"][type^="image/"]') as Element | null)?.getAttribute('href') || undefined;
+    doc.querySelectorAll("entry").forEach((entry) => {
+      const id =
+        parseText(entry.querySelector("id")) ||
+        parseText(entry.querySelector("guid")) ||
+        "";
+      const title = parseText(entry.querySelector("title")) || "";
+      const linkEl = (entry.querySelector('link[rel="alternate"]') ||
+        entry.querySelector("link")) as HTMLAnchorElement | null;
+      const link = linkEl?.getAttribute("href") || "";
+      const published =
+        parseText(entry.querySelector("published")) ||
+        parseText(entry.querySelector("updated"));
+      const summary =
+        parseText(entry.querySelector("summary")) ||
+        parseText(entry.querySelector("content"));
+      const contentHtml =
+        (entry.querySelector("content") as Element | null)?.textContent ||
+        undefined;
+      const summaryHtml =
+        (entry.querySelector("summary") as Element | null)?.textContent ||
+        undefined;
+      const thumbEl = (entry.querySelector("media\\:thumbnail") ||
+        entry.querySelector("media\\:content") ||
+        entry.querySelector("thumbnail")) as Element | null;
+      const enclosureImg =
+        (
+          entry.querySelector(
+            'link[rel="enclosure"][type^="image/"]',
+          ) as Element | null
+        )?.getAttribute("href") || undefined;
       const mediaUrl = readMediaUrl(thumbEl);
-      const { cleanedHtml: cleanedHtmlA, cleanedText: cleanedTextA } = cleanRssContent(contentHtml || summaryHtml, summaryHtml, link);
-      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: cleanedHtmlA || summaryHtml, descriptionHtml: summary || undefined, linkUrl: link });
-      const isShort = /youtube\.com\/shorts\//i.test(link) || /#shorts/i.test(title || '') || /#shorts/i.test(summary || '');
-      items.push({ id, title, link, published, summary: cleanedTextA || summary, thumbnail, isShort });
+      const { cleanedHtml: cleanedHtmlA, cleanedText: cleanedTextA } =
+        cleanRssContent(contentHtml || summaryHtml, summaryHtml, link);
+      const thumbnail = pickThumbnail({
+        mediaUrl,
+        enclosureUrl: enclosureImg,
+        contentHtml: cleanedHtmlA || summaryHtml,
+        descriptionHtml: summary || undefined,
+        linkUrl: link,
+      });
+      const isShort =
+        /^https?:\/\/.*youtube\.com\/shorts\//i.test(link) ||
+        /#shorts/i.test(title || "") ||
+        /#shorts/i.test(summary || "");
+      items.push({
+        id,
+        title,
+        link,
+        published,
+        summary: cleanedTextA || summary,
+        thumbnail,
+        isShort,
+      });
     });
   } else {
-    doc.querySelectorAll('item').forEach(item => {
-      const id = parseText(item.querySelector('guid')) || parseText(item.querySelector('link')) || '';
-      const title = parseText(item.querySelector('title')) || '';
-      const link = parseText(item.querySelector('link')) || '';
-      const published = parseText(item.querySelector('pubDate'));
-      const description = parseText(item.querySelector('description')) || parseText(item.querySelector('content\\:encoded'));
-      const contentHtml = (item.querySelector('content\\:encoded') as Element | null)?.textContent || undefined;
-      const descriptionHtml = (item.querySelector('description') as Element | null)?.textContent || undefined;
-      const thumbEl = (item.querySelector('media\\:thumbnail') || item.querySelector('media\\:content') || item.querySelector('thumbnail')) as Element | null;
-      const enclosureImg = (item.querySelector('enclosure[type^="image/"]') as Element | null)?.getAttribute('url') || undefined;
+    doc.querySelectorAll("item").forEach((item) => {
+      const id =
+        parseText(item.querySelector("guid")) ||
+        parseText(item.querySelector("link")) ||
+        "";
+      const title = parseText(item.querySelector("title")) || "";
+      const link = parseText(item.querySelector("link")) || "";
+      const published = parseText(item.querySelector("pubDate"));
+      const description =
+        parseText(item.querySelector("description")) ||
+        parseText(item.querySelector("content\\:encoded"));
+      const contentHtml =
+        (item.querySelector("content\\:encoded") as Element | null)
+          ?.textContent || undefined;
+      const descriptionHtml =
+        (item.querySelector("description") as Element | null)?.textContent ||
+        undefined;
+      const thumbEl = (item.querySelector("media\\:thumbnail") ||
+        item.querySelector("media\\:content") ||
+        item.querySelector("thumbnail")) as Element | null;
+      const enclosureImg =
+        (
+          item.querySelector('enclosure[type^="image/"]') as Element | null
+        )?.getAttribute("url") || undefined;
       const mediaUrl = readMediaUrl(thumbEl);
-      const { cleanedHtml: cleanedHtmlR, cleanedText: cleanedTextR } = cleanRssContent(contentHtml || descriptionHtml, descriptionHtml, link);
-      const thumbnail = pickThumbnail({ mediaUrl, enclosureUrl: enclosureImg, contentHtml: cleanedHtmlR || descriptionHtml, descriptionHtml: description || undefined, linkUrl: link });
-      const isShort = /youtube\.com\/shorts\//i.test(link) || /#shorts/i.test(title || '') || /#shorts/i.test(description || '');
-      items.push({ id, title, link, published, summary: cleanedTextR || description, thumbnail, isShort });
+      const { cleanedHtml: cleanedHtmlR, cleanedText: cleanedTextR } =
+        cleanRssContent(contentHtml || descriptionHtml, descriptionHtml, link);
+      const thumbnail = pickThumbnail({
+        mediaUrl,
+        enclosureUrl: enclosureImg,
+        contentHtml: cleanedHtmlR || descriptionHtml,
+        descriptionHtml: description || undefined,
+        linkUrl: link,
+      });
+      const isShort =
+        /^https?:\/\/.*youtube\.com\/shorts\//i.test(link) ||
+        /#shorts/i.test(title || "") ||
+        /#shorts/i.test(description || "");
+      items.push({
+        id,
+        title,
+        link,
+        published,
+        summary: cleanedTextR || description,
+        thumbnail,
+        isShort,
+      });
     });
   }
 
-  const channelTitle = parseText(doc.querySelector('channel > title')) || parseText(doc.querySelector('feed > title'));
+  const channelTitle =
+    parseText(doc.querySelector("channel > title")) ||
+    parseText(doc.querySelector("feed > title"));
   // Fallback: derive YouTube thumbnails if missing
   const addYouTubeThumb = (url: string | undefined) => {
     if (!url) return undefined;
     try {
       const u = new URL(url);
-      const host = u.hostname.replace(/^www\./, '');
+      const host = u.hostname.replace(/^www\./, "");
       let vid: string | null = null;
-      if (host === 'youtube.com' || host === 'm.youtube.com') {
-        vid = u.searchParams.get('v');
-      } else if (host === 'youtu.be') {
-        vid = u.pathname.split('/')[1] || null;
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        vid = u.searchParams.get("v");
+      } else if (host === "youtu.be") {
+        vid = u.pathname.split("/")[1] || null;
       }
       if (vid && /^[A-Za-z0-9_-]{11}$/.test(vid)) {
         return `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
@@ -275,10 +428,17 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
   };
 
   // Generic article-page fallback: fetch the page and extract a prominent image
-  const extractFromArticlePage = async (linkUrl: string | undefined): Promise<string | undefined> => {
+  const extractFromArticlePage = async (
+    linkUrl: string | undefined,
+  ): Promise<string | undefined> => {
     if (!linkUrl) return undefined;
     try {
-      const r = await fetch(linkUrl, { headers: { 'User-Agent': 'OwlRSS/1.0', 'Accept-Language': 'tr-TR,tr;q=0.9' } });
+      const r = await fetch(linkUrl, {
+        headers: {
+          "User-Agent": "OwlRSS/1.0",
+          "Accept-Language": "tr-TR,tr;q=0.9",
+        },
+      });
       if (!r.ok) return undefined;
       const html = await r.text();
       const img = extractFirstImageFromHtml(html, linkUrl);
@@ -288,24 +448,33 @@ async function fetchFeed(feedUrl: string, limit: number, page: number) {
   };
 
   // Enrich items with thumbnails
-  const enriched = await Promise.all(items.map(async (it: any) => {
-    if (!it.thumbnail) {
-      const yt = addYouTubeThumb(it.link);
-      if (yt) return { ...it, thumbnail: yt };
-      const pageImg = await extractFromArticlePage(it.link);
-      if (pageImg && !urlSuggestsSmallSize(pageImg)) return { ...it, thumbnail: pageImg };
-    }
-    if (it.thumbnail && urlSuggestsSmallSize(it.thumbnail)) {
-      return { ...it, thumbnail: undefined };
-    }
-    return it;
-  }));
+  const enriched = await Promise.all(
+    items.map(async (it: any) => {
+      if (!it.thumbnail) {
+        const yt = addYouTubeThumb(it.link);
+        if (yt) return { ...it, thumbnail: yt };
+        const pageImg = await extractFromArticlePage(it.link);
+        if (pageImg && !urlSuggestsSmallSize(pageImg))
+          return { ...it, thumbnail: pageImg };
+      }
+      if (it.thumbnail && urlSuggestsSmallSize(it.thumbnail)) {
+        return { ...it, thumbnail: undefined };
+      }
+      return it;
+    }),
+  );
 
   const lim = Math.max(1, Math.min(50, limit || 20));
   const start = Math.max(0, (page || 0) * lim);
   const sliced = enriched.slice(start, start + lim);
   const hasMore = start + lim < enriched.length;
-  console.info('[RSS][fetch] parsed items', { title: channelTitle, count: items.length, returned: sliced.length, page, hasMore });
+  console.info("[RSS][fetch] parsed items", {
+    title: channelTitle,
+    count: items.length,
+    returned: sliced.length,
+    page,
+    hasMore,
+  });
   return { title: channelTitle, items: sliced, limit: lim, page, hasMore };
 }
 
@@ -317,16 +486,21 @@ function isYouTubeChannelId(value: string): boolean {
 function normalizeYouTubeInput(input: string): string {
   const trimmed = input.trim();
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (trimmed.startsWith('@')) return `https://www.youtube.com/${trimmed}`;
+  if (trimmed.startsWith("@")) return `https://www.youtube.com/${trimmed}`;
   // heuristic: treat plain string as handle
   return `https://www.youtube.com/@${encodeURIComponent(trimmed)}`;
 }
 
-async function resolveYouTubeChannelId(input: string): Promise<{ channelId: string | null; feedUrl: string | null }> {
+async function resolveYouTubeChannelId(
+  input: string,
+): Promise<{ channelId: string | null; feedUrl: string | null }> {
   try {
     const raw = input.trim();
     if (isYouTubeChannelId(raw)) {
-      return { channelId: raw, feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${raw}` };
+      return {
+        channelId: raw,
+        feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${raw}`,
+      };
     }
 
     // Try YouTube Data API v3 search first if available
@@ -341,7 +515,10 @@ async function resolveYouTubeChannelId(input: string): Promise<{ channelId: stri
           const first = j?.items?.[0]?.snippet;
           const chId = j?.items?.[0]?.id?.channelId;
           if (chId) {
-            return { channelId: chId, feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${chId}` };
+            return {
+              channelId: chId,
+              feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${chId}`,
+            };
           }
           // fallthrough to HTML if no match
         }
@@ -349,7 +526,7 @@ async function resolveYouTubeChannelId(input: string): Promise<{ channelId: stri
     }
 
     const url = normalizeYouTubeInput(raw);
-    const res = await fetch(url, { headers: { 'User-Agent': 'OwlRSS/1.0' } });
+    const res = await fetch(url, { headers: { "User-Agent": "OwlRSS/1.0" } });
     const html = await res.text();
 
     // Try to find channelId in JSON
@@ -363,7 +540,9 @@ async function resolveYouTubeChannelId(input: string): Promise<{ channelId: stri
       m = html.match(/\/["']?channel\/(UC[0-9A-Za-z_-]{22})/i);
     }
     const channelId = m ? m[1] : null;
-    const feedUrl = channelId ? `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}` : null;
+    const feedUrl = channelId
+      ? `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+      : null;
     return { channelId, feedUrl };
   } catch {
     return { channelId: null, feedUrl: null };
@@ -375,34 +554,46 @@ function isoDurationToSeconds(iso: string | undefined): number | null {
   // e.g., PT45S, PT1M5S
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return null;
-  const h = parseInt(m[1] || '0', 10);
-  const mi = parseInt(m[2] || '0', 10);
-  const s = parseInt(m[3] || '0', 10);
+  const h = parseInt(m[1] || "0", 10);
+  const mi = parseInt(m[2] || "0", 10);
+  const s = parseInt(m[3] || "0", 10);
   return h * 3600 + mi * 60 + s;
 }
 
-async function fetchSpotifyData(type: string, id: string, limit: number, page: number): Promise<any | null> {
+async function fetchSpotifyData(
+  type: string,
+  id: string,
+  limit: number,
+  page: number,
+): Promise<any | null> {
   try {
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      console.info('[RSS] Spotify API credentials not configured, using fallback');
+      console.info(
+        "[RSS] Spotify API credentials not configured, using fallback",
+      );
       return null;
     }
 
     // Get access token using Client Credentials flow
-    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+    const tokenResponse = await fetch(
+      "https://accounts.spotify.com/api/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization:
+            "Basic " +
+            Buffer.from(clientId + ":" + clientSecret).toString("base64"),
+        },
+        body: "grant_type=client_credentials",
       },
-      body: 'grant_type=client_credentials'
-    });
+    );
 
     if (!tokenResponse.ok) {
-      console.error('[RSS] Failed to get Spotify access token');
+      console.error("[RSS] Failed to get Spotify access token");
       return null;
     }
 
@@ -412,36 +603,45 @@ async function fetchSpotifyData(type: string, id: string, limit: number, page: n
     let apiUrl: string;
     let title: string;
 
-    if (type === 'playlists') {
+    if (type === "playlists") {
       apiUrl = `https://api.spotify.com/v1/playlists/${id}/tracks?limit=${limit}&offset=${page * limit}`;
       // Also get playlist info
-      const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${id}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const playlistResponse = await fetch(
+        `https://api.spotify.com/v1/playlists/${id}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
       if (playlistResponse.ok) {
         const playlistData = await playlistResponse.json();
         title = playlistData.name || `Spotify Playlist`;
       } else {
         title = `Spotify Playlist`;
       }
-    } else if (type === 'albums') {
+    } else if (type === "albums") {
       apiUrl = `https://api.spotify.com/v1/albums/${id}/tracks?limit=${limit}&offset=${page * limit}`;
       // Get album info
-      const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${id}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const albumResponse = await fetch(
+        `https://api.spotify.com/v1/albums/${id}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
       if (albumResponse.ok) {
         const albumData = await albumResponse.json();
         title = albumData.name || `Spotify Album`;
       } else {
         title = `Spotify Album`;
       }
-    } else if (type === 'artists') {
+    } else if (type === "artists") {
       apiUrl = `https://api.spotify.com/v1/artists/${id}/top-tracks?market=TR`;
       // Get artist info
-      const artistResponse = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const artistResponse = await fetch(
+        `https://api.spotify.com/v1/artists/${id}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
       if (artistResponse.ok) {
         const artistData = await artistResponse.json();
         title = artistData.name || `Spotify Artist`;
@@ -453,7 +653,7 @@ async function fetchSpotifyData(type: string, id: string, limit: number, page: n
     }
 
     const response = await fetch(apiUrl, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     if (!response.ok) {
@@ -462,20 +662,20 @@ async function fetchSpotifyData(type: string, id: string, limit: number, page: n
     }
 
     const data = await response.json();
-    const tracks = type === 'artists' ? data.tracks : data.items;
+    const tracks = type === "artists" ? data.tracks : data.items;
 
     const items = tracks.map((track: any, index: number) => {
-      const trackInfo = type === 'artists' ? track : track.track;
+      const trackInfo = type === "artists" ? track : track.track;
       return {
         id: trackInfo.id,
         title: trackInfo.name,
         link: trackInfo.external_urls.spotify,
         published: trackInfo.album?.release_date,
-        summary: `${trackInfo.artists.map((a: any) => a.name).join(', ')} - ${trackInfo.album?.name || ''}`,
+        summary: `${trackInfo.artists.map((a: any) => a.name).join(", ")} - ${trackInfo.album?.name || ""}`,
         thumbnail: trackInfo.album?.images?.[0]?.url,
         embedUrl: `https://open.spotify.com/embed/track/${trackInfo.id}`,
         isSpotify: true,
-        trackNumber: type === 'artists' ? index + 1 : track.track_number
+        trackNumber: type === "artists" ? index + 1 : track.track_number,
       };
     });
 
@@ -484,21 +684,37 @@ async function fetchSpotifyData(type: string, id: string, limit: number, page: n
       items: items,
       limit: limit,
       page: page,
-      hasMore: type === 'artists' ? false : data.next !== null
+      hasMore: type === "artists" ? false : data.next !== null,
     };
-
   } catch (error) {
-    console.error('[RSS] Spotify API error:', error);
+    console.error("[RSS] Spotify API error:", error);
     return null;
   }
 }
 
-async function fetchYouTubePopular(regionCode: string, limit: number, page: number): Promise<{ items: Array<{ id: string; title: string; link: string; published?: string; summary?: string; thumbnail?: string; isShort?: boolean }>, limit: number, page: number, hasMore: boolean }> {
+async function fetchYouTubePopular(
+  regionCode: string,
+  limit: number,
+  page: number,
+): Promise<{
+  items: Array<{
+    id: string;
+    title: string;
+    link: string;
+    published?: string;
+    summary?: string;
+    thumbnail?: string;
+    isShort?: boolean;
+  }>;
+  limit: number;
+  page: number;
+  hasMore: boolean;
+}> {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
-    throw new Error('YouTube API key not configured');
+    throw new Error("YouTube API key not configured");
   }
-  const rc = regionCode || 'US';
+  const rc = regionCode || "US";
   const max = Math.max(1, Math.min(50, limit || 20));
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&maxResults=${max}&regionCode=${encodeURIComponent(rc)}&key=${apiKey}`;
   const r = await fetch(url);
@@ -508,16 +724,20 @@ async function fetchYouTubePopular(regionCode: string, limit: number, page: numb
     const vid = it.id;
     const sn = it.snippet || {};
     const tn = sn.thumbnails || {};
-    const thumb = (tn.medium?.url || tn.high?.url || tn.standard?.url || tn.default?.url);
+    const thumb =
+      tn.medium?.url || tn.high?.url || tn.standard?.url || tn.default?.url;
     const durSec = isoDurationToSeconds(it?.contentDetails?.duration);
     return {
       id: vid,
-      title: sn.title || '',
+      title: sn.title || "",
       link: `https://www.youtube.com/watch?v=${vid}`,
       published: sn.publishedAt,
-      summary: sn.description || '',
+      summary: sn.description || "",
       thumbnail: thumb,
-      isShort: typeof durSec === 'number' ? durSec <= 60 : /#shorts/i.test(sn.title || '')
+      isShort:
+        typeof durSec === "number"
+          ? durSec <= 60
+          : /#shorts/i.test(sn.title || ""),
     };
   });
   // Placeholder: nextPageToken not used; treat as single page for now
@@ -528,31 +748,41 @@ async function fetchYouTubePopular(regionCode: string, limit: number, page: numb
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const url = searchParams.get('url');
-    const feed = searchParams.get('feed');
-    const ytResolve = searchParams.get('youtubeResolve');
-    const ytPopular = searchParams.get('youtubePopular');
-    const spotifyPlaylist = searchParams.get('spotifyplaylist');
-    const spotifyAlbum = searchParams.get('spotifyalbum');
-    const spotifyArtist = searchParams.get('spotifyartist');
-    const limitParam = parseInt(searchParams.get('limit') || '15', 10);
+    const url = searchParams.get("url");
+    const feed = searchParams.get("feed");
+    const ytResolve = searchParams.get("youtubeResolve");
+    const ytPopular = searchParams.get("youtubePopular");
+    const spotifyPlaylist = searchParams.get("spotifyplaylist");
+    const spotifyAlbum = searchParams.get("spotifyalbum");
+    const spotifyArtist = searchParams.get("spotifyartist");
+    const limitParam = parseInt(searchParams.get("limit") || "15", 10);
     const limit = isNaN(limitParam) ? 15 : limitParam;
-    const pageParam = parseInt(searchParams.get('page') || '0', 10);
+    const pageParam = parseInt(searchParams.get("page") || "0", 10);
     const page = isNaN(pageParam) ? 0 : pageParam;
-    console.info('[RSS][GET]', { url, feed });
+    console.info("[RSS][GET]", { url, feed });
     if (ytResolve) {
       const result = await resolveYouTubeChannelId(ytResolve);
       if (!result.channelId) {
-        return new Response(JSON.stringify({ error: 'Could not resolve channel id' }), { status: 404 });
+        return new Response(
+          JSON.stringify({ error: "Could not resolve channel id" }),
+          { status: 404 },
+        );
       }
-      return new Response(JSON.stringify(result), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify(result), {
+        headers: { "content-type": "application/json" },
+      });
     }
     if (ytPopular) {
       try {
         const data = await fetchYouTubePopular(ytPopular, limit, page);
-        return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify(data), {
+          headers: { "content-type": "application/json" },
+        });
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e?.message || 'YouTube popular failed' }), { status: 500 });
+        return new Response(
+          JSON.stringify({ error: e?.message || "YouTube popular failed" }),
+          { status: 500 },
+        );
       }
     }
 
@@ -561,66 +791,86 @@ export async function GET(req: NextRequest) {
       try {
         let type: string, id: string;
         if (spotifyPlaylist) {
-          type = 'playlists';
+          type = "playlists";
           id = spotifyPlaylist;
         } else if (spotifyAlbum) {
-          type = 'albums';
+          type = "albums";
           id = spotifyAlbum;
         } else {
-          type = 'artists';
+          type = "artists";
           id = spotifyArtist!;
         }
 
         // Try to fetch from Spotify Web API first
         const spotifyData = await fetchSpotifyData(type, id, limit, page);
         if (spotifyData) {
-          return new Response(JSON.stringify(spotifyData), { headers: { 'content-type': 'application/json' } });
+          return new Response(JSON.stringify(spotifyData), {
+            headers: { "content-type": "application/json" },
+          });
         }
 
         // Fallback: Create a mock RSS-like response with Spotify embed
-        const embedUrl = `https://open.spotify.com/embed/${type.replace('s', '')}/${id}`;
+        const embedUrl = `https://open.spotify.com/embed/${type.replace("s", "")}/${id}`;
         const title = `Spotify ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        const items = [{
-          id: `${type}_${id}`,
-          title: `Spotify ${type}: ${id}`,
-          link: `https://open.spotify.com/${type.replace('s', '')}/${id}`,
-          published: new Date().toISOString(),
-          summary: `Embedded Spotify ${type}`,
-          thumbnail: undefined,
-          embedUrl: embedUrl,
-          isSpotify: true
-        }];
+        const items = [
+          {
+            id: `${type}_${id}`,
+            title: `Spotify ${type}: ${id}`,
+            link: `https://open.spotify.com/${type.replace("s", "")}/${id}`,
+            published: new Date().toISOString(),
+            summary: `Embedded Spotify ${type}`,
+            thumbnail: undefined,
+            embedUrl: embedUrl,
+            isSpotify: true,
+          },
+        ];
 
         const data = {
           title: title,
           items: items,
           limit: 1,
           page: 0,
-          hasMore: false
+          hasMore: false,
         };
 
-        return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify(data), {
+          headers: { "content-type": "application/json" },
+        });
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e?.message || 'Spotify request failed' }), { status: 500 });
+        return new Response(
+          JSON.stringify({ error: e?.message || "Spotify request failed" }),
+          { status: 500 },
+        );
       }
     }
     if (!url && !feed) {
-      return new Response(JSON.stringify({ error: 'Missing url or feed param' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Missing url or feed param" }),
+        { status: 400 },
+      );
     }
 
     if (url && !feed) {
       const feeds = await discoverFeeds(url);
-      return new Response(JSON.stringify({ feeds }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ feeds }), {
+        headers: { "content-type": "application/json" },
+      });
     }
 
     if (feed) {
       const data = await fetchFeed(feed, limit, page);
-      return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify(data), {
+        headers: { "content-type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid request" }), {
+      status: 400,
+    });
   } catch (e: any) {
-    console.error('[RSS][GET] error', { error: e?.message });
-    return new Response(JSON.stringify({ error: e?.message || 'RSS error' }), { status: 500 });
+    console.error("[RSS][GET] error", { error: e?.message });
+    return new Response(JSON.stringify({ error: e?.message || "RSS error" }), {
+      status: 500,
+    });
   }
 }
