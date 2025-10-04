@@ -9,6 +9,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { FontSizeToggle } from '@/components/ui/font-size-toggle';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { GlassSettingsPanel } from '@/components/ui/glass-settings-panel';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { UserProfile } from '@/components/auth/UserProfile';
 import { Logo } from '@/components/ui/Logo';
@@ -46,6 +47,7 @@ export const Navigation: React.FC = () => {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     "flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary",
                     isActive
@@ -64,6 +66,7 @@ export const Navigation: React.FC = () => {
         <div className="flex items-center space-x-4">
           <NotificationDropdown />
           <LanguageSwitcher />
+          <GlassSettingsPanel />
           <ThemeToggle />
           <FontSizeToggle />
           <AuthGuard>
