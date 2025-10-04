@@ -60,8 +60,6 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         avatar: true,
         bio: true,
-        theme: true,
-        fontSize: true,
         updatedAt: true,
         _count: {
           select: {
@@ -112,8 +110,6 @@ export async function GET(request: NextRequest) {
         isVerified: user.isVerified,
         avatar: user.avatar,
         bio: user.bio,
-        theme: user.theme,
-        fontSize: user.fontSize,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         postCount: user._count.posts,
