@@ -2,6 +2,8 @@
 
 A comprehensive academic social platform that connects students, teachers, and academics worldwide. OWL-App is built with modern technologies and designed for seamless knowledge sharing, collaborative learning, and educational content management.
 
+> 🚀 **Latest Updates:** AI-powered content generation with Google Gemini, enhanced security measures, improved theme system, and optimized user experience. [See changelog →](release/)
+
 ## 🌟 Overview
 
 OWL-App is a full-stack educational social platform that enables students and educators to share study materials, collaborate in communities, and engage in meaningful academic discussions. The platform features advanced content moderation, real-time notifications, and sophisticated user management systems.
@@ -10,9 +12,11 @@ OWL-App is a full-stack educational social platform that enables students and ed
 
 ### 📚 **Academic Content Sharing**
 - **Study Materials** - Share notes, exam materials, and educational resources
+- **AI Content Generation** - Auto-generate flashcards, questions, and study notes with Google Gemini
 - **Post Creation** - Rich text editor with image support and syntax highlighting
 - **Subject Categorization** - Organized content by academic subjects
 - **Content Discovery** - AI-powered recommendations and trending content
+- **Document Processing** - Upload PDFs, DOCX files for AI content generation
 
 ### 📱 **Advanced Media Support**
 - **Multi-format Video Player** - YouTube, Vimeo, custom videos
@@ -46,7 +50,8 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **User Management** - Comprehensive admin tools for user moderation
 
 ### 🔐 **Authentication & Security**
-- **Multi-provider Auth** - Google OAuth integration
+- **NextAuth.js** - Modern authentication with Google OAuth (replaced Firebase Auth)
+- **Session Management** - JWT-based secure sessions with Prisma adapter
 - **Two-Factor Authentication** - Enhanced account security
 - **Parental Consent** - COPPA compliance for younger users
 - **Age Verification** - Built-in age verification system
@@ -59,6 +64,8 @@ OWL-App is a full-stack educational social platform that enables students and ed
 
 ## 🏗️ Technology Stack
 
+> 📝 **Note:** Firebase was completely removed in v0.2.0. The platform now uses NextAuth.js for authentication, Prisma for database management, and local file system for storage - resulting in ~200KB bundle size reduction and better performance.
+
 ### 🎯 **Core Framework**
 - **Next.js 15** - React framework with App Router
 - **TypeScript 5** - Type-safe development
@@ -66,10 +73,12 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **npm** - Node.js package manager
 
 ### 🗄️ **Database & Backend**
-- **Prisma** - Type-safe database ORM
-- **SQLite** - Lightweight database for development
-- **NextAuth.js** - Authentication and session management
+- **Prisma ORM** - Type-safe database toolkit (replaced Firebase Firestore)
+- **SQLite** - Development database
+- **PostgreSQL** - Production-ready database (recommended)
+- **NextAuth.js** - Authentication and session management (replaced Firebase Auth)
 - **Socket.io** - Real-time communication
+- **Local File System** - Image storage with Sharp optimization
 
 ### 🧩 **UI & Components**
 - **shadcn/ui** - High-quality UI components built on Radix UI
@@ -81,13 +90,30 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **React Query** - Server state management
 - **Zustand** - Client state management
 - **Sharp** - Image optimization
-- **Firebase** - File storage and real-time features
+- **Google Gemini AI** - AI content generation
+- **Sanitize HTML** - XSS protection and content sanitization
+- **IndexedDB** - Client-side storage for offline-first features
 - **React Markdown** - Markdown rendering
 - **Recharts** - Data visualization
 
 ### 🌍 **Internationalization**
 - **Next Intl** - Multi-language support (English & Turkish)
 - **Localized UI** - Complete i18n implementation
+
+---
+
+### 🔄 Firebase Migration (v0.2.0)
+
+| Firebase Service | Replaced With | Benefits |
+|-----------------|---------------|----------|
+| **Firebase Auth** | NextAuth.js + Google OAuth | Better CSRF protection, JWT sessions |
+| **Firestore** | Prisma ORM + SQLite/PostgreSQL | Type safety, better migrations, SQL power |
+| **Firebase Storage** | Local File System + Sharp | No external dependencies, faster processing |
+| **Firebase SDK** | Removed | ~200KB bundle size reduction |
+
+All user data was automatically migrated with zero data loss. The new architecture provides better performance, type safety, and developer experience.
+
+---
 
 ## 🚀 Quick Start
 
@@ -133,10 +159,8 @@ NEXTAUTH_SECRET="your-secret-key"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# Firebase (Optional)
-FIREBASE_PROJECT_ID="your-project-id"
-FIREBASE_PRIVATE_KEY="your-private-key"
-FIREBASE_CLIENT_EMAIL="your-client-email"
+# Google Gemini AI (for AI content generation)
+GEMINI_API_KEY="your-gemini-api-key"
 
 # YouTube API (Optional - for enhanced YouTube features)
 YOUTUBE_API_KEY="your-youtube-api-key"
@@ -146,6 +170,31 @@ SPOTIFY_CLIENT_ID="your-spotify-client-id"
 SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
 
 ## 🔧 API Setup Instructions
+
+### Google Gemini AI Setup
+
+To enable AI content generation features:
+
+1. **Get Gemini API Key**:
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Click "Create API Key"
+   - Select or create a Google Cloud project
+   - Copy your API key
+
+2. **Configure Environment Variables**:
+   - Add to your `.env.local` file:
+     ```
+     GEMINI_API_KEY=your_actual_gemini_api_key_here
+     ```
+
+3. **Features Enabled**:
+   - AI-generated flashcards from documents
+   - Practice questions with multiple choice
+   - Structured study notes
+   - Multi-language content generation
+   - Age-appropriate content filtering
+
+**Note**: Gemini API offers a generous free tier for testing and development.
 
 ### Spotify Web API Setup
 
@@ -190,19 +239,25 @@ src/
 │   └── api/               # API routes
 │       ├── auth/          # Authentication endpoints
 │       ├── admin/         # Admin APIs
+│       ├── ai/            # AI content generation
 │       ├── communities/   # Community management
 │       ├── posts/         # Content management
+│       ├── sounds/        # Secure sound file serving
 │       └── ...           # Other APIs
 ├── components/            # React components
 │   ├── admin/            # Admin components
+│   ├── ai/               # AI content generation components
 │   ├── auth/             # Authentication components
 │   ├── communities/      # Community components
 │   ├── content/          # Content components
 │   ├── moderation/       # Moderation components
+│   ├── work-environment/ # Workspace cards and tools
 │   └── ui/               # shadcn/ui components
 ├── contexts/             # React contexts
 ├── hooks/                # Custom hooks
 ├── lib/                  # Utility functions
+│   ├── ai/              # AI integration and document processing
+│   └── ...              # Other utilities
 ├── messages/             # Internationalization files
 └── types/                # TypeScript definitions
 
@@ -331,10 +386,12 @@ Easy to extend with additional languages through Next Intl configuration.
 ### Data Protection
 - **Input Validation** - Comprehensive Zod schema validation
 - **SQL Injection Prevention** - Prisma ORM protection
-- **XSS Protection** - React built-in protections
+- **XSS Protection** - Industry-standard sanitize-html library (OWASP compliance)
 - **CSRF Protection** - NextAuth.js security features
 - **Environment Variables** - Secure credential management
 - **Secret Rotation** - Regular security updates
+- **Content Sanitization** - Multi-layer HTML sanitization preventing nested tag attacks
+- **API Route Security** - Protected endpoints with user-agent validation
 
 ### User Safety
 - **Content Filtering** - Multi-layer content moderation
@@ -430,9 +487,11 @@ Feel free to reach out for questions, feedback, or collaboration opportunities! 
 
 Special thanks to the open-source community and the following technologies that made this platform possible:
 - Next.js team for the amazing framework
+- Google for Gemini AI and authentication services
 - Radix UI for accessible component primitives
 - Prisma for the excellent database toolkit
 - shadcn for the beautiful component library
+- All open-source contributors who made this project possible
 
 ---
 
