@@ -43,11 +43,11 @@ export function PomodoroTimer({ cardId, onClose }: PomodoroTimerProps) {
 
   // Initialize audio for notifications (preload for instant playback)
   useEffect(() => {
-    startAudioRef.current = new Audio('/sounds/pomodoro-start.mp3');
+    startAudioRef.current = new Audio('/api/sounds/pomodoro-start.mp3');
     startAudioRef.current.volume = 0.6;
     startAudioRef.current.preload = 'auto';
     
-    completeAudioRef.current = new Audio('/sounds/pomodoro-complete.mp3');
+    completeAudioRef.current = new Audio('/api/sounds/pomodoro-complete.mp3');
     completeAudioRef.current.volume = 0.7;
     completeAudioRef.current.preload = 'auto';
     
