@@ -34,6 +34,7 @@ interface CommentDialogProps {
   onOpenChange: (open: boolean) => void;
   postId: string;
   currentUserId?: string;
+  onCommentAdded?: () => void;
 }
 
 export const CommentDialog: React.FC<CommentDialogProps> = ({
@@ -41,6 +42,7 @@ export const CommentDialog: React.FC<CommentDialogProps> = ({
   onOpenChange,
   postId,
   currentUserId,
+  onCommentAdded,
 }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -120,6 +122,11 @@ export const CommentDialog: React.FC<CommentDialogProps> = ({
       // Add new comment to the top of the list
       setComments(prev => [comment, ...prev]);
       setNewComment('');
+      
+      // Notify parent component that a comment was added
+      if (onCommentAdded) {
+        onCommentAdded();
+      }
       
       toast({
         title: "Comment posted",
