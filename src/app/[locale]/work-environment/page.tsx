@@ -32,11 +32,11 @@ function WorkEnvironmentContent() {
 
   // Initialize workspace audio
   useEffect(() => {
-    addSoundRef.current = new Audio('/sounds/card-add.mp3');
+    addSoundRef.current = new Audio('/api/sounds/card-add.mp3');
     addSoundRef.current.volume = 0.5;
     addSoundRef.current.preload = 'auto';
     
-    deleteSoundRef.current = new Audio('/sounds/card-delete.mp3');
+    deleteSoundRef.current = new Audio('/api/sounds/card-delete.mp3');
     deleteSoundRef.current.volume = 0.5;
     deleteSoundRef.current.preload = 'auto';
     
@@ -76,6 +76,97 @@ function WorkEnvironmentContent() {
     playDeleteSound();
     await deleteCard(cardId);
   }, [deleteCard, playDeleteSound]);
+
+  // Handle pending AI content addition from PostCard
+  useEffect(() => {
+    const checkPendingAdd = async () => {
+      const pending = localStorage.getItem('pendingWorkspaceAdd');
+      if (pending && isIndexedDBReady) {
+        try {
+          const data = JSON.parse(pending);
+          const content = JSON.parse(data.content);
+          
+          const cardId = `card-${Date.now()}`;
+          
+          // Add card based on content type
+          if (data.contentType === 'flashcards' || data.contentType === 'questions') {
+            // Get flashcards array - content is already the array!
+            const flashcardsArray = data.contentType === 'flashcards' 
+              ? (Array.isArray(content) ? content : (content.flashcards || []))
+              : (Array.isArray(content) ? content : (content.questions || [])).map((q: any) => ({
+                  front: q.question,
+                  back: `${q.correctAnswer}\n\n${q.explanation}`,
+                  difficulty: q.difficulty || 3,
+                  tags: [q.type, q.bloomLevel].filter(Boolean),
+                  category: data.title,
+                }));
+
+            // Add flashcard container
+            await addCardWithSound({
+              id: cardId,
+              type: 'flashcards',
+              title: data.title,
+              content: '',
+              position: { x: 100, y: 100 },
+              size: { width: 400, height: 500 },
+              zIndex: Date.now(),
+            });
+
+            // Import flashcards to IndexedDB
+            // Trigger import event after card is created
+            setTimeout(() => {
+              const importData = {
+                cardId,
+                flashcards: flashcardsArray,
+              };
+              window.dispatchEvent(new CustomEvent('workspace:importFlashcards', { detail: importData }));
+            }, 500);
+
+          } else if (data.contentType === 'notes') {
+            // Extract markdown content - remove code fences if present
+            let markdownContent = typeof content === 'string' ? content : (content.content || '');
+            
+            // Remove markdown code fences if AI added them
+            if (markdownContent.startsWith('```markdown\n')) {
+              markdownContent = markdownContent
+                .replace(/^```markdown\n/, '')
+                .replace(/\n```$/, '');
+            } else if (markdownContent.startsWith('```\n')) {
+              markdownContent = markdownContent
+                .replace(/^```\n/, '')
+                .replace(/\n```$/, '');
+            }
+            
+            await addCardWithSound({
+              id: cardId,
+              type: 'richNote',
+              title: data.title,
+              content: markdownContent,
+              position: { x: 100, y: 100 },
+              size: { width: 600, height: 600 },
+              zIndex: Date.now(),
+              richContent: {
+                markdown: markdownContent, // Plain markdown text
+                html: '',
+                versionHistory: [],
+                lastSaved: Date.now(),
+              },
+            });
+          }
+          
+          // Clear pending add
+          localStorage.removeItem('pendingWorkspaceAdd');
+        } catch (error) {
+          console.error('Failed to add pending workspace content:', error);
+          localStorage.removeItem('pendingWorkspaceAdd');
+        }
+      }
+    };
+    
+    // Check after a short delay to ensure IndexedDB is ready
+    const timeout = setTimeout(checkPendingAdd, 1000);
+    return () => clearTimeout(timeout);
+  }, [isIndexedDBReady, addCardWithSound]);
 
   // Track cursor globally while linking for smooth temporary line following the mouse
   useEffect(() => {
