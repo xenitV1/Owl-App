@@ -50,8 +50,7 @@ async function handleUserDataExport(request: NextRequest, userId: string) {
         },
       ],
       settings: {
-        theme: 'light',
-        fontSize: 'normal',
+        // Note: theme and fontSize are now managed client-side via IndexedDB
         language: 'en',
         emailNotifications: true,
         pushNotifications: true,
