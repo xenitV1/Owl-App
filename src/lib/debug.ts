@@ -78,7 +78,11 @@ class DebugLogger {
     };
 
     if (this.config.includeStackTraces && level === 'error') {
-      entry.stack = new Error().stack;
+      try {
+        entry.stack = new Error().stack;
+      } catch (stackError) {
+        entry.stack = 'Stack trace unavailable';
+      }
     }
 
     return entry;
