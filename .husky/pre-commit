@@ -1,0 +1,6 @@
+# Run lint-staged
+npx lint-staged
+
+# Quick security check
+echo "🔍 Running security checks..."
+npm audit --audit-level=high || echo "⚠️  Security vulnerabilities found! Review before commit."

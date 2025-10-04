@@ -1,0 +1,8 @@
+# ZAP Scanning Rules
+# Format: rule_id	threshold	[WARN|FAIL|IGNORE]
+
+# Ignore common false positives
+10015	IGNORE	Re: Incomplete or No Cache-control and Pragma HTTP Header Set
+10049	IGNORE	Re: Storable and Cacheable Content
+10096	IGNORE	Re: Timestamp Disclosure
+

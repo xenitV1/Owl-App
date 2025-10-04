@@ -1,91 +1,92 @@
-# Dependencies
-node_modules/
-.pnp/
-.pnp.cjs
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Bun
-bun.lockb
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# Testing
-coverage/
+# testing
+/coverage
 
-# Next.js
-.next/
-out/
-.next-static/
-.next-cache/
+# next.js
+/.next/
+/out/
 
-# Production
-build/
-dist/
+# production
+/build
 
-# Misc
+# misc
 .DS_Store
-*.log
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-bun-debug.log*
 
-# Local env files
-.env*
-!.env.example
+# local env files
+.env*.local
+.env
 
-# Editor directories and files
+# Google credentials (CRITICAL - NEVER COMMIT!)
+owlplatform-*.json
+client_secret_*.json
+*service_account*.json
+*.googleusercontent.com*.json
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+prisma/.env
+
+# database
+*.db
+*.db-journal
+custom.db
+
+# security reports
+security-reports/*.json
+
+# test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Cursor IDE configuration (optional)
+.cursor/
+
+# Documentation and releases (private)
+docs/
+release/
+
+# IDE - VSCode, WebStorm, etc.
 .vscode/
 .idea/
-.cursor/
 *.swp
+*.swo
+*~
 
-# TypeScript
-*.tsbuildinfo
-
-# Turbo/Cache
-.turbo/
-.cache/
-
-# Vercel/Netlify
-.vercel/
-.netlify/
-
-# Firebase/Emulators
-.firebase/
-owll-514ef-firebase-adminsdk-fbsvc-151ccc7716.json
-owlplatform-dc3e1a136ed2.json
-
-# Google OAuth Secrets (CRITICAL - Never commit!)
-client_secret_*.json
-
-# Playwright reports
-playwright-report/
-blob-report/
-test-results/
-
-# Prisma artifacts
-prisma/*.db
-prisma/*.db-journal
-prisma/db/*.db
-prisma/prisma/*.db
-prisma/schema-dev.prisma
-
-# OS
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Documentation files
-RICH_NOTE_FEATURES.md
-COMMIT_GUIDE.md
-competitor-analysis.md
+# Temporary files
+*.tmp
+*.temp
+.cache/
 
-# CodeQL local files
-codeql-db/
-codeql-temp/
-codeql.zip
-*.sarif
-
-# Release notes (auto-generated)
-RELEASE_NOTES.md
-releases/
-release/
-.vercel
-.env*.local
+# PM2 ecosystem (if using PM2 in production)
+# ecosystem.config.js - Keep this commented if you want to commit it
+# ecosystem.config.local.js
