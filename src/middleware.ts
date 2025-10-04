@@ -17,7 +17,6 @@ export async function middleware(request: NextRequest) {
   const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
   const pathLocaleMatch = path.match(/^\/([a-z]{2})(?:\/|$)/);
   const pathLocale = pathLocaleMatch ? pathLocaleMatch[1] : undefined;
-  console.log('[middleware] incoming', { path, acceptLanguage, cookieLocale, pathLocale });
 
   // Check if this is a coming-soon redirect scenario
   const isApiRoute = path.startsWith('/api/');
@@ -26,11 +25,24 @@ export async function middleware(request: NextRequest) {
   const isRootPage = path === '/' || path === '/en' || path === '/tr';
   const isHealthCheck = path === '/api/health';
   
+  // Block direct access to sound files
+  const isSoundFile = path.startsWith('/sounds/') && (path.endsWith('.mp3') || path.endsWith('.wav') || path.endsWith('.ogg'));
+  
   // Allow access to legal/info pages
   const isAllowedPage = path.includes('/privacy') || 
                         path.includes('/terms') || 
                         path.includes('/faq') ||
                         path.includes('/coming-soon');
+
+  // Block direct access to sound files - return 403 Forbidden
+  if (isSoundFile) {
+    return new NextResponse('Forbidden: Direct access to sound files is not allowed', { 
+      status: 403,
+      headers: {
+        'Content-Type': 'text/plain',
+      }
+    });
+  }
 
   // Only redirect to coming-soon based on environment and variable
   const isProduction = (process.env.NODE_ENV === 'production' &&
@@ -45,17 +57,10 @@ export async function middleware(request: NextRequest) {
     // Determine locale for redirect
     const locale = pathLocale || cookieLocale || (acceptLanguage?.includes('tr') ? 'tr' : 'en');
     const comingSoonUrl = `/${locale}/coming-soon`;
-    console.log('[middleware] redirecting to coming-soon', { from: path, to: comingSoonUrl, env: process.env.NODE_ENV });
     return NextResponse.redirect(new URL(comingSoonUrl, request.url));
   }
 
   const response = intlMiddleware(request);
-
-  const resolvedLocaleHeader = response.headers.get('x-middleware-next-intl-locale');
-  console.log('[middleware] intl resolved', {
-    resolvedLocaleHeader,
-    finalPath: response.headers.get('Location') || path
-  });
   
   // Check if this is the work-environment page
   const isWorkEnvironment = path.includes('/work-environment');
@@ -123,12 +128,14 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Expires', '0');
     
     // Log admin access attempts (in production, this would go to a security log)
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               request.headers.get('cf-connecting-ip') || // Cloudflare
-               request.headers.get('x-client-ip') || // General proxy
-               'unknown';
-    console.log(`Admin access attempt: ${request.method} ${request.nextUrl.pathname} - IP: ${ip}`);
+    if (process.env.NODE_ENV === 'development') {
+      const ip = request.headers.get('x-forwarded-for') || 
+                 request.headers.get('x-real-ip') || 
+                 request.headers.get('cf-connecting-ip') || // Cloudflare
+                 request.headers.get('x-client-ip') || // General proxy
+                 'unknown';
+      console.log(`Admin access attempt: ${request.method} ${request.nextUrl.pathname} - IP: ${ip}`);
+    }
   }
   
   return response;
