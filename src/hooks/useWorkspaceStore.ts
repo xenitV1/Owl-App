@@ -225,11 +225,11 @@ export function WorkspaceStoreProvider({ children }: { children: React.ReactNode
   // Initialize connection audio
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      connectionAddSoundRef.current = new Audio('/sounds/connection-add.mp3');
+      connectionAddSoundRef.current = new Audio('/api/sounds/connection-add.mp3');
       connectionAddSoundRef.current.volume = 0.4;
       connectionAddSoundRef.current.preload = 'auto';
       
-      connectionRemoveSoundRef.current = new Audio('/sounds/connection-remove.mp3');
+      connectionRemoveSoundRef.current = new Audio('/api/sounds/connection-remove.mp3');
       connectionRemoveSoundRef.current.volume = 0.4;
       connectionRemoveSoundRef.current.preload = 'auto';
       
