@@ -149,6 +149,8 @@
     "success": "Başarılı",
     "like": "Beğen",
     "unlike": "Beğeniyi Geri Al",
+    "showMore": "Daha Fazla Göster",
+    "showLess": "Daha Az Göster",
     "save": "Kaydet",
     "unsave": "Kaydı Kaldır",
     "comment": "Yorum Yap",
@@ -277,12 +279,17 @@
   },
   "discover": {
     "title": "Keşfet",
+    "subtitle": "Trend içerikleri keşfedin ve yeni topluluklar bulun",
+    "search": "Ara",
+    "searchDescription": "Gönderileri, kullanıcıları ve toplulukları arayın",
+    "searchPlaceholder": "İçerik ara...",
     "trending": "Trendler",
     "recommended": "Önerilenler",
     "recent": "En Yeniler",
     "popular": "Popüler",
     "subjects": "Dersler",
     "schools": "Okullar",
+    "communities": "Topluluklar",
     "noContent": "İçerik bulunamadı",
     "exploreMore": "Daha fazla içerik keşfedin"
   },
@@ -1003,8 +1010,8 @@
       "tagline": "Öğrencileri işbirlikçi öğrenme ile güçlendiriyoruz.",
       "description": "OWL Platform, öğrencilerin akademik başarıya ulaşması için tasarlanmış yeni nesil bir eğitim platformudur.",
       "links": {
-        "about": "Hakkımızda",
-        "contact": "İletişim",
+      "about": "Hakkımızda",
+      "contact": "İletişim",
         "privacy": "Gizlilik Politikası",
         "terms": "Kullanım Koşulları",
         "faq": "Sık Sorulan Sorular"
