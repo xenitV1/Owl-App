@@ -130,16 +130,23 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
 
   const { saveRichNoteVersion, cards, addCard } = useWorkspaceStore();
 
-
   const card = cards.find(c => c.id === cardId);
   const richContent = card?.richContent;
 
-  // Initialize BlockNote editor
+  // Initialize BlockNote editor with linkify disabled to prevent console warnings
   const editor = useCreateBlockNote({
     initialContent: undefined, // We'll set this in useEffect
+    _tiptapOptions: {
+      enableInputRules: true,
+      enablePasteRules: true,
+    },
   });
   const editorRight = useCreateBlockNote({
     initialContent: undefined,
+    _tiptapOptions: {
+      enableInputRules: true,
+      enablePasteRules: true,
+    },
   });
 
   // Load existing content when card data is available
@@ -173,10 +180,177 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
             setContent(richContent.markdown);
           }
         } catch (parseError) {
-          // If parsing fails, treat as legacy content
-          const parsedContent = JSON.parse(richContent.markdown);
-          editor.replaceBlocks(editor.document, parsedContent);
-          setContent(richContent.markdown);
+          // If parsing fails, treat as plain markdown text from AI
+          try {
+            const parsedContent = JSON.parse(richContent.markdown);
+            editor.replaceBlocks(editor.document, parsedContent);
+            setContent(richContent.markdown);
+          } catch {
+            // Not JSON, treat as plain markdown - convert manually to BlockNote blocks
+            const markdownText = richContent.markdown;
+            
+            const blocks: any[] = [];
+            const lines = markdownText.split('\n');
+            let inCodeBlock = false;
+            let codeContent: string[] = [];
+            let codeLanguage = '';
+            
+            // Helper to parse inline styles (bold, italic, code, links)
+            const parseInlineStyles = (text: string): any[] => {
+              const parts: any[] = [];
+              let currentIndex = 0;
+              
+              // Regex for: **bold**, *italic*, `code`, [link](url)
+              const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[([^\]]+)\]\(([^)]+)\))/g;
+              let match;
+              
+              while ((match = regex.exec(text)) !== null) {
+                // Add text before match
+                if (match.index > currentIndex) {
+                  parts.push({ 
+                    type: 'text', 
+                    text: text.slice(currentIndex, match.index), 
+                    styles: {} 
+                  });
+                }
+                
+                const matched = match[0];
+                
+                // Bold **text**
+                if (matched.startsWith('**') && matched.endsWith('**')) {
+                  parts.push({ 
+                    type: 'text', 
+                    text: matched.slice(2, -2), 
+                    styles: { bold: true } 
+                  });
+                }
+                // Italic *text*
+                else if (matched.startsWith('*') && matched.endsWith('*') && !matched.startsWith('**')) {
+                  parts.push({ 
+                    type: 'text', 
+                    text: matched.slice(1, -1), 
+                    styles: { italic: true } 
+                  });
+                }
+                // Inline code `code`
+                else if (matched.startsWith('`') && matched.endsWith('`')) {
+                  parts.push({ 
+                    type: 'text', 
+                    text: matched.slice(1, -1), 
+                    styles: { code: true } 
+                  });
+                }
+                // Link [text](url)
+                else if (match[2] && match[3]) {
+                  parts.push({ 
+                    type: 'link', 
+                    content: [{ type: 'text', text: match[2], styles: {} }],
+                    href: match[3]
+                  });
+                }
+                
+                currentIndex = match.index + matched.length;
+              }
+              
+              // Add remaining text
+              if (currentIndex < text.length) {
+                parts.push({ 
+                  type: 'text', 
+                  text: text.slice(currentIndex), 
+                  styles: {} 
+                });
+              }
+              
+              return parts.length > 0 ? parts : [{ type: 'text', text, styles: {} }];
+            };
+            
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const trimmed = line.trim();
+              
+              // Handle code blocks
+              if (trimmed.startsWith('```')) {
+                if (inCodeBlock) {
+                  // End code block
+                  blocks.push({
+                    type: 'codeBlock',
+                    props: { language: codeLanguage || 'plaintext' },
+                    content: [{ type: 'text', text: codeContent.join('\n'), styles: {} }],
+                  });
+                  inCodeBlock = false;
+                  codeContent = [];
+                  codeLanguage = '';
+                } else {
+                  // Start code block
+                  inCodeBlock = true;
+                  codeLanguage = trimmed.slice(3).trim();
+                }
+                continue;
+              }
+              
+              if (inCodeBlock) {
+                codeContent.push(line);
+                continue;
+              }
+              
+              // Skip empty lines
+              if (!trimmed) {
+                continue;
+              }
+              
+              // Headings (# ## ###)
+              if (trimmed.startsWith('#')) {
+                const level = trimmed.match(/^#+/)?.[0].length || 1;
+                const text = trimmed.replace(/^#+\s*/, '');
+                blocks.push({
+                  type: 'heading',
+                  props: { level: Math.min(level, 3) },
+                  content: parseInlineStyles(text),
+                });
+              }
+              // Bullet list (- or *)
+              else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                const text = trimmed.slice(2);
+                blocks.push({
+                  type: 'bulletListItem',
+                  content: parseInlineStyles(text),
+                });
+              }
+              // Numbered list (1. 2. 3.)
+              else if (/^\d+\.\s/.test(trimmed)) {
+                const text = trimmed.replace(/^\d+\.\s/, '');
+                blocks.push({
+                  type: 'numberedListItem',
+                  content: parseInlineStyles(text),
+                });
+              }
+              // Blockquote (>)
+              else if (trimmed.startsWith('> ')) {
+                const text = trimmed.slice(2);
+                blocks.push({
+                  type: 'paragraph',
+                  content: parseInlineStyles(text),
+                });
+              }
+              // Horizontal rule (---)
+              else if (trimmed === '---' || trimmed === '***') {
+                // BlockNote doesn't have hr, skip or use paragraph
+                continue;
+              }
+              // Regular paragraph
+              else {
+                blocks.push({
+                  type: 'paragraph',
+                  content: parseInlineStyles(trimmed),
+                });
+              }
+            }
+            
+            if (blocks.length > 0) {
+              editor.replaceBlocks(editor.document, blocks);
+              setContent(JSON.stringify(blocks));
+            }
+          }
         }
       } catch (error) {
         console.error('Error parsing rich content:', error);
@@ -219,8 +393,20 @@ export function RichNoteEditor({ cardId, initialContent = '', onClose }: RichNot
   // Convert blob URLs to data URLs in content for persistence
   const processContentForSaving = useCallback(async (leftContent: string, rightContent: string = ''): Promise<string> => {
     try {
+      // Try to parse as JSON first
+      let leftBlocks;
+      try {
+        leftBlocks = JSON.parse(leftContent);
+      } catch (parseError) {
+        // Not JSON, likely plain markdown from AI - don't save yet, wait for proper blocks
+        return JSON.stringify({
+          leftContent: JSON.stringify([]),
+          rightContent: JSON.stringify([]),
+          splitView: false
+        });
+      }
+      
       // Process left content
-      const leftBlocks = JSON.parse(leftContent);
       const processedLeftBlocks = await Promise.all(
         leftBlocks.map(async (block: any) => {
           if (block.type === 'image' && block.props?.url) {
