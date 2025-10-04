@@ -28,8 +28,6 @@ export async function GET(request: NextRequest) {
         favoriteSubject: true,
         bio: true,
         isVerified: true,
-        theme: true,
-        fontSize: true,
         createdAt: true,
       },
     });
@@ -111,8 +109,6 @@ export async function PUT(request: NextRequest) {
         favoriteSubject: true,
         bio: true,
         isVerified: true,
-        theme: true,
-        fontSize: true,
         createdAt: true,
       },
     });
