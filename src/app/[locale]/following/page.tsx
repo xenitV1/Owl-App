@@ -30,6 +30,8 @@ interface Post {
     comments: number;
     pools: number;
   };
+  isLiked?: boolean;
+  isSaved?: boolean;
 }
 
 interface FollowingUser {
@@ -43,7 +45,7 @@ interface FollowingUser {
   bio?: string;
   isVerified: boolean;
   createdAt: string;
-  _count: {
+  _count?: {
     posts: number;
     followers: number;
     following: number;
@@ -133,6 +135,120 @@ export default function FollowingPage() {
   const handleDelete = (postId: string) => {
     // Remove the post from the posts array
     setPosts(prev => prev.filter(post => post.id !== postId));
+  };
+
+  const handleLike = async (postId: string) => {
+    if (isGuest) {
+      toast({
+        title: t('error'),
+        description: tAuth('guestDescription'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to like post');
+      }
+
+      const data = await response.json();
+      
+      // Update post likes count
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              _count: { 
+                ...post._count, 
+                likes: data.liked ? post._count.likes + 1 : post._count.likes - 1 
+              } 
+            }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error liking post:', error);
+      toast({
+        title: t('error'),
+        description: t('likeError'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSave = async (postId: string) => {
+    if (isGuest) {
+      toast({
+        title: t('error'),
+        description: tAuth('guestDescription'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/pools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save post');
+      }
+
+      const data = await response.json();
+      
+      // Update post pools count
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              _count: { 
+                ...post._count, 
+                pools: data.saved ? post._count.pools + 1 : post._count.pools - 1 
+              } 
+            }
+          : post
+      ));
+
+      toast({
+        title: data.saved ? t('saved') : t('unsaved'),
+        description: data.saved ? t('savedSuccess') : t('unsavedSuccess'),
+      });
+    } catch (error) {
+      console.error('Error saving post:', error);
+      toast({
+        title: t('error'),
+        description: t('saveError'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCommentAdded = (postId: string) => {
+    // Increment comment count when a new comment is added
+    setPosts(prev => prev.map(post => 
+      post.id === postId 
+        ? { 
+            ...post, 
+            _count: { 
+              ...post._count, 
+              comments: post._count.comments + 1 
+            } 
+          }
+        : post
+    ));
   };
 
   const handleUnfollowUser = async (userId: string, userName: string) => {
@@ -335,6 +451,11 @@ export default function FollowingPage() {
                       key={post.id}
                       post={post}
                       currentUserId={dbUser?.id}
+                      isLiked={post.isLiked}
+                      isSaved={post.isSaved}
+                      onLike={handleLike}
+                      onSave={handleSave}
+                      onCommentAdded={handleCommentAdded}
                       onDelete={handleDelete}
                     />
                   ))}
@@ -393,7 +514,7 @@ export default function FollowingPage() {
                               {followingUser.name || t('anonymousUser')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {followingUser._count.posts} {t('posts').toLowerCase()}
+                              {followingUser._count?.posts || 0} {t('posts').toLowerCase()}
                             </p>
                           </div>
                         </div>
