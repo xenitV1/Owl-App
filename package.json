@@ -149,7 +149,7 @@
     "@playwright/test": "^1.55.1",
     "@prisma/client": "^6.16.3",
     "@tailwindcss/postcss": "^4.1.13",
-    "@types/node": "^24.6.0",
+    "@types/node": "^24.7.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@types/sanitize-html": "^2.16.0",
