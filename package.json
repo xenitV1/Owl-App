@@ -104,7 +104,7 @@
     "next-auth": "^4.24.11",
     "next-intl": "^4.3.8",
     "next-themes": "^0.4.6",
-    "pdfjs-dist": "^5.4.149",
+    "pdfjs-dist": "^5.4.296",
     "qrcode.react": "^4.2.0",
     "quill": "^2.0.3",
     "react": "^19.1.1",
