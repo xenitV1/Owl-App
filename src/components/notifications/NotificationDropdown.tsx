@@ -1,139 +1,103 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuTrigger, 
-  DropdownMenuItem 
-} from '@/components/ui/dropdown-menu';
-import { Bell, Check, Heart, MessageCircle, UserPlus, Settings } from 'lucide-react';
-
-interface Notification {
-  id: string;
-  type: 'LIKE' | 'COMMENT' | 'FOLLOW' | 'POST' | 'SYSTEM';
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  actor?: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  post?: {
-    id: string;
-    title: string;
-  };
-}
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Bell,
+  Check,
+  Heart,
+  MessageCircle,
+  UserPlus,
+  Settings,
+  Trash2,
+} from "lucide-react";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import { useSession } from "next-auth/react";
 
 interface NotificationDropdownProps {
   onOpenSettings?: () => void;
 }
 
-export default function NotificationDropdown({ onOpenSettings }: NotificationDropdownProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+export default function NotificationDropdown({
+  onOpenSettings,
+}: NotificationDropdownProps) {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [previousUnreadCount, setPreviousUnreadCount] = useState(0);
-  const notificationSoundRef = React.useRef<HTMLAudioElement | null>(null);
+  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play notification sound
+  const playNotificationSound = useCallback(() => {
+    if (notificationSoundRef.current) {
+      notificationSoundRef.current.currentTime = 0;
+      notificationSoundRef.current.play().catch((err) => {
+        console.warn("[Notifications] Failed to play notification sound:", err);
+      });
+    }
+  }, []);
+
+  // Use realtime notifications hook with polling
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    clearAllRead,
+  } = useRealtimeNotifications({
+    enabled: !!session?.user, // Only poll when user is logged in
+    pollingInterval: 15000, // Poll every 15 seconds
+    onNewNotification: (notification) => {
+      // Play sound when new notification arrives
+      playNotificationSound();
+
+      // Optional: Show browser notification if permitted
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(notification.title, {
+          body: notification.message,
+          icon: "/favicon.png",
+          badge: "/favicon.png",
+          tag: notification.id,
+        });
+      }
+    },
+  });
 
   // Initialize notification sound
   useEffect(() => {
-    notificationSoundRef.current = new Audio('/api/sounds/notification-received.mp3');
+    notificationSoundRef.current = new Audio(
+      "/sounds/notification-received.mp3",
+    );
     notificationSoundRef.current.volume = 0.5;
-    notificationSoundRef.current.preload = 'auto';
+    notificationSoundRef.current.preload = "auto";
     notificationSoundRef.current.load();
   }, []);
 
-  // Play sound when new notification arrives
+  // Request browser notification permission on mount
   useEffect(() => {
-    if (unreadCount > previousUnreadCount && previousUnreadCount > 0) {
-      // New notification arrived (don't play on initial load)
-      if (notificationSoundRef.current) {
-        notificationSoundRef.current.currentTime = 0;
-        notificationSoundRef.current.play().catch(err => {
-          console.warn('[Notifications] Failed to play notification sound:', err);
-        });
-      }
+    if ("Notification" in window && Notification.permission === "default") {
+      // Don't auto-request, user should opt-in from settings
+      // Notification.requestPermission();
     }
-    setPreviousUnreadCount(unreadCount);
-  }, [unreadCount, previousUnreadCount]);
-
-  const fetchNotifications = async () => {
-    try {
-      const response = await fetch('/api/notifications?limit=10');
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const markAsRead = async (notificationIds: string[]) => {
-    try {
-      const response = await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notificationIds }),
-      });
-
-      if (response.ok) {
-        setNotifications(prev => 
-          prev.map(notification => 
-            notificationIds.includes(notification.id) 
-              ? { ...notification, isRead: true }
-              : notification
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
-      }
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      const response = await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ markAllAsRead: true }),
-      });
-
-      if (response.ok) {
-        setNotifications(prev => 
-          prev.map(notification => ({ ...notification, isRead: true }))
-        );
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  };
+  }, []);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'LIKE':
+      case "LIKE":
         return <Heart className="h-4 w-4 text-red-500" />;
-      case 'COMMENT':
+      case "COMMENT":
         return <MessageCircle className="h-4 w-4 text-blue-500" />;
-      case 'FOLLOW':
+      case "FOLLOW":
         return <UserPlus className="h-4 w-4 text-green-500" />;
+      case "ECHO":
+        return <MessageCircle className="h-4 w-4 text-purple-500" />;
       default:
         return <Bell className="h-4 w-4 text-gray-500" />;
     }
@@ -142,11 +106,15 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) {
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes}m`;
+      const diffInMinutes = Math.floor(
+        (now.getTime() - date.getTime()) / (1000 * 60),
+      );
+      return diffInMinutes <= 1 ? "Just now" : `${diffInMinutes}m`;
     } else if (diffInHours < 24) {
       return `${diffInHours}h`;
     } else {
@@ -157,20 +125,23 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotifications();
-    }
-  }, [isOpen]);
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const readNotifications = notifications.filter((n) => n.isRead);
 
-  const unreadNotifications = notifications.filter(n => !n.isRead);
+  const handleClearAllRead = async () => {
+    try {
+      await clearAllRead();
+    } catch (error) {
+      console.error("Failed to clear notifications:", error);
+    }
+  };
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -178,11 +149,11 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {unreadCount > 99 ? "99+" : unreadCount}
             </Badge>
           )}
           <span className="sr-only">Notifications</span>
@@ -193,13 +164,13 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
           <div>
             <h3 className="font-semibold">Notifications</h3>
             <p className="text-sm text-muted-foreground">
-              {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+              {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
             </p>
           </div>
           <div className="flex gap-1">
             {unreadNotifications.length > 0 && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={markAllAsRead}
                 title="Mark all as read"
@@ -207,17 +178,19 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
                 <Check className="h-4 w-4" />
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onOpenSettings}
-              title="Notification settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            {readNotifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllRead}
+                title="Clear all read notifications"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
-        
+
         <div className="max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="p-4 space-y-3">
@@ -253,7 +226,9 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${!notification.isRead ? 'font-semibold' : ''}`}>
+                      <p
+                        className={`text-sm font-medium ${!notification.isRead ? "font-semibold" : ""}`}
+                      >
                         {notification.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -268,7 +243,10 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
                     <div className="flex items-center gap-2">
                       {notification.actor && (
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={notification.actor.avatar} alt={notification.actor.name} />
+                          <AvatarImage
+                            src={notification.actor.avatar}
+                            alt={notification.actor.name}
+                          />
                           <AvatarFallback className="text-xs">
                             {getInitials(notification.actor.name)}
                           </AvatarFallback>
@@ -279,8 +257,8 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
                       </span>
                     </div>
                     {!notification.isRead && (
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0"
                         onClick={(e) => {
@@ -297,22 +275,6 @@ export default function NotificationDropdown({ onOpenSettings }: NotificationDro
             ))
           )}
         </div>
-        
-        {notifications.length > 0 && (
-          <div className="p-2 border-t text-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full text-xs"
-              onClick={() => {
-                // Navigate to full notifications page
-                window.location.href = '/notifications';
-              }}
-            >
-              View all notifications
-            </Button>
-          </div>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

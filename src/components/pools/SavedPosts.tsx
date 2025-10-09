@@ -1,17 +1,29 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PostCard } from '@/components/content/PostCard';
-import { Skeleton } from '@/components/ui/skeleton';
-import PoolItemActions from '@/components/pools/PoolItemActions';
-import SavedPostCard from '@/components/pools/SavedPostCard';
-import { MasonryGrid } from '@/components/ui/masonry-grid';
-import { Droplets, Filter, Grid, List } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PostCard } from "@/components/content/PostCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import PoolItemActions from "@/components/pools/PoolItemActions";
+import SavedPostCard from "@/components/pools/SavedPostCard";
+import { MasonryGrid } from "@/components/ui/masonry-grid";
+import { Droplets, Filter, Grid, List, RefreshCw } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Post {
   id: string;
@@ -55,19 +67,25 @@ interface SavedPostsProps {
   onCategoriesRefresh?: () => void;
 }
 
-export default function SavedPosts({ selectedCategoryId, categories, onItemsCountChange, onCategoriesRefresh }: SavedPostsProps) {
-  const t = useTranslations('saved');
+export default function SavedPosts({
+  selectedCategoryId,
+  categories,
+  onItemsCountChange,
+  onCategoriesRefresh,
+}: SavedPostsProps) {
+  const t = useTranslations("saved");
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const { user } = useAuth();
 
   const getAuthHeaders = () => {
     return {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     } as Record<string, string>;
   };
 
@@ -76,7 +94,7 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
       setIsLoading(true);
       const params = new URLSearchParams();
       if (selectedCategoryId) {
-        params.append('categoryId', selectedCategoryId);
+        params.append("categoryId", selectedCategoryId);
       }
 
       const headers = getAuthHeaders();
@@ -84,18 +102,20 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts);
-        
+
         // Initialize saved posts set
-        const savedSet = new Set<string>(data.posts.map((post: Post) => post.id));
+        const savedSet = new Set<string>(
+          data.posts.map((post: Post) => post.id),
+        );
         setSavedPosts(savedSet);
-        
+
         // Notify parent component about items count
         if (onItemsCountChange) {
           onItemsCountChange(data.posts.length);
         }
       }
     } catch (error) {
-      console.error('Error fetching saved posts:', error);
+      console.error("Error fetching saved posts:", error);
     } finally {
       setIsLoading(false);
     }
@@ -104,85 +124,92 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
   const handleLike = async (postId: string) => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch('/api/likes', {
-        method: 'POST',
+      const response = await fetch("/api/likes", {
+        method: "POST",
         headers,
         body: JSON.stringify({ postId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to toggle like');
+        throw new Error("Failed to toggle like");
       }
 
       const data = await response.json();
-      
+
       // Update the post in the list
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, _count: { ...post._count, likes: data.likesCount } }
-          : post
-      ));
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, _count: { ...post._count, likes: data.likesCount } }
+            : post,
+        ),
+      );
 
       // Update liked posts set
       if (data.liked) {
-        setLikedPosts(prev => new Set(prev).add(postId));
+        setLikedPosts((prev) => new Set(prev).add(postId));
       } else {
-        setLikedPosts(prev => {
+        setLikedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(postId);
           return newSet;
         });
       }
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error("Error toggling like:", error);
     }
   };
 
   const handleSave = async (postId: string) => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch('/api/pools', {
-        method: 'POST',
+      const response = await fetch("/api/pools", {
+        method: "POST",
         headers,
         body: JSON.stringify({ postId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to toggle save');
+        throw new Error("Failed to toggle save");
       }
 
       const data = await response.json();
-      
+
       // Update the post in the list
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, _count: { ...post._count, pools: data.poolsCount } }
-          : post
-      ));
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, _count: { ...post._count, pools: data.poolsCount } }
+            : post,
+        ),
+      );
 
       // Update saved posts set
       if (data.saved) {
-        setSavedPosts(prev => new Set(prev).add(postId));
+        setSavedPosts((prev) => new Set(prev).add(postId));
       } else {
-        setSavedPosts(prev => {
+        setSavedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(postId);
           return newSet;
         });
-        
+
         // Remove from posts list if unsaved
-        setPosts(prev => prev.filter(post => post.id !== postId));
+        setPosts((prev) => prev.filter((post) => post.id !== postId));
       }
     } catch (error) {
-      console.error('Error toggling save:', error);
+      console.error("Error toggling save:", error);
     }
   };
 
-  const handleMoveToCategory = async (postId: string, categoryId: string | null) => {
+  const handleMoveToCategory = async (
+    postId: string,
+    categoryId: string | null,
+  ) => {
     try {
       const headers = getAuthHeaders();
       const response = await fetch(`/api/pools/${postId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers,
         body: JSON.stringify({ categoryId }),
       });
@@ -196,54 +223,95 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
         }
       }
     } catch (error) {
-      console.error('Error moving post to category:', error);
+      console.error("Error moving post to category:", error);
     }
   };
 
   const handleRemove = async (postId: string) => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch('/api/pools', {
-        method: 'POST',
+      const response = await fetch("/api/pools", {
+        method: "POST",
         headers,
         body: JSON.stringify({ postId }),
       });
 
       if (response.ok) {
         // Remove from posts list
-        setPosts(prev => prev.filter(post => post.id !== postId));
-        setSavedPosts(prev => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId));
+        setSavedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(postId);
           return newSet;
         });
       }
     } catch (error) {
-      console.error('Error removing post:', error);
+      console.error("Error removing post:", error);
     }
   };
 
   const getSortedPosts = (posts: Post[]) => {
     const sorted = [...posts];
     switch (sortBy) {
-      case 'newest':
-        return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      case 'oldest':
-        return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      case 'title':
+      case "newest":
+        return sorted.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      case "oldest":
+        return sorted.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      case "title":
         return sorted.sort((a, b) => a.title.localeCompare(b.title));
       default:
         return sorted;
     }
   };
 
-  const selectedCategory = selectedCategoryId 
-    ? categories.find(cat => cat.id === selectedCategoryId)
+  const selectedCategory = selectedCategoryId
+    ? categories.find((cat) => cat.id === selectedCategoryId)
     : null;
 
   useEffect(() => {
     fetchSavedPosts();
   }, [selectedCategoryId]);
+
+  // Auto-refresh saved posts every 10 seconds
+  useEffect(() => {
+    if (!autoRefreshEnabled || !user) return;
+
+    const refreshInterval = setInterval(async () => {
+      // Silent refresh without loading state
+      try {
+        const params = new URLSearchParams();
+        if (selectedCategoryId) {
+          params.append("categoryId", selectedCategoryId);
+        }
+
+        const headers = getAuthHeaders();
+        const response = await fetch(`/api/pools?${params}`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setPosts(data.posts);
+
+          const savedSet = new Set<string>(
+            data.posts.map((post: Post) => post.id),
+          );
+          setSavedPosts(savedSet);
+
+          if (onItemsCountChange) {
+            onItemsCountChange(data.posts.length);
+          }
+        }
+      } catch (error) {
+        console.error("Auto-refresh error:", error);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [autoRefreshEnabled, user, selectedCategoryId]);
 
   if (isLoading) {
     return (
@@ -251,7 +319,7 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5" />
-            {selectedCategory ? selectedCategory.name : t('allSavedItems')}
+            {selectedCategory ? selectedCategory.name : t("allSavedItems")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -292,41 +360,57 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
           <div>
             <CardTitle className="flex items-center gap-2">
               <Droplets className="h-5 w-5" />
-              {selectedCategory ? selectedCategory.name : t('allSavedItems')}
+              {selectedCategory ? selectedCategory.name : t("allSavedItems")}
             </CardTitle>
             <CardDescription>
-              {selectedCategory 
-                ? `${selectedCategory.description || t('organizeMaterials')} • ${posts.length} ${t('items')}`
-                : `${t('organizeMaterials')} • ${posts.length} ${t('items')}`
-              }
+              {selectedCategory
+                ? `${selectedCategory.description || t("organizeMaterials")} • ${posts.length} ${t("items")}`
+                : `${t("organizeMaterials")} • ${posts.length} ${t("items")}`}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <Button
+              variant={autoRefreshEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+              title={
+                autoRefreshEnabled
+                  ? "Auto-refresh enabled (10s)"
+                  : "Auto-refresh disabled"
+              }
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${autoRefreshEnabled ? "animate-spin-slow" : ""}`}
+              />
+            </Button>
+            <Select
+              value={sortBy}
+              onValueChange={(value: any) => setSortBy(value)}
+            >
               <SelectTrigger className="w-32">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">{t('newest')}</SelectItem>
-                <SelectItem value="oldest">{t('oldest')}</SelectItem>
-                <SelectItem value="title">{t('title')}</SelectItem>
+                <SelectItem value="newest">{t("newest")}</SelectItem>
+                <SelectItem value="oldest">{t("oldest")}</SelectItem>
+                <SelectItem value="title">{t("title")}</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex border rounded-lg">
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                variant={viewMode === "grid" ? "default" : "ghost"}
                 size="sm"
                 className="rounded-r-none"
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode("grid")}
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
                 className="rounded-l-none"
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -338,17 +422,16 @@ export default function SavedPosts({ selectedCategoryId, categories, onItemsCoun
         {posts.length === 0 ? (
           <div className="text-center py-12">
             <Droplets className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">{t('noSavedItemsYet')}</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {t("noSavedItemsYet")}
+            </h3>
             <p className="text-muted-foreground mb-4">
-              {selectedCategory 
-                ? t('collectionEmpty')
-                : t('startSaving')
-              }
+              {selectedCategory ? t("collectionEmpty") : t("startSaving")}
             </p>
           </div>
         ) : (
           <>
-            {viewMode === 'grid' ? (
+            {viewMode === "grid" ? (
               <MasonryGrid
                 items={sortedPosts}
                 columns={[1, 2]}
