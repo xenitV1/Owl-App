@@ -11,6 +11,7 @@ OWL-App is a full-stack educational social platform that enables students and ed
 ## ✨ Key Features
 
 ### 📚 **Academic Content Sharing**
+
 - **Study Materials** - Share notes, exam materials, and educational resources
 - **AI Content Generation** - Auto-generate flashcards, questions, and study notes with Google Gemini
 - **Post Creation** - Rich text editor with image support and syntax highlighting
@@ -19,6 +20,7 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **Document Processing** - Upload PDFs, DOCX files for AI content generation
 
 ### 📱 **Advanced Media Support**
+
 - **Multi-format Video Player** - YouTube, Vimeo, custom videos
 - **Audio Playback** - Music and lecture recordings
 - **PDF Viewer** - Document reading and annotation
@@ -27,6 +29,7 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **Syntax Highlighting** - Code sharing and viewing
 
 ### 🎯 **Interactive Work Environment**
+
 - **Drag & Drop Workspace** - Customizable study environment
 - **Rich Note Editor** - Markdown support with version history
 - **Calendar Integration** - Event management and scheduling
@@ -38,18 +41,21 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **Real-time Collaboration** - Multi-user workspace sharing
 
 ### 👥 **Social Learning**
+
 - **Communities** - Join public academic communities by subject or interest
 - **Private Groups** - Create exclusive study groups with classmates
 - **Following System** - Follow peers and educators
 - **Real-time Notifications** - Stay updated on relevant activities
 
 ### 🛡️ **Advanced Moderation & Safety**
+
 - **Content Filtering** - Automated content moderation with customizable filters
 - **Report System** - Community-driven reporting with admin review
 - **Appeal Process** - Fair dispute resolution system
 - **User Management** - Comprehensive admin tools for user moderation
 
 ### 🔐 **Authentication & Security**
+
 - **NextAuth.js** - Modern authentication with Google OAuth (replaced Firebase Auth)
 - **Session Management** - JWT-based secure sessions with Prisma adapter
 - **Two-Factor Authentication** - Enhanced account security
@@ -57,6 +63,7 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **Age Verification** - Built-in age verification system
 
 ### 📊 **Content Management**
+
 - **Pools/Collections** - Organize and categorize saved content
 - **Tagging System** - Advanced content organization
 - **Search & Filter** - Powerful search capabilities
@@ -67,12 +74,14 @@ OWL-App is a full-stack educational social platform that enables students and ed
 > 📝 **Note:** Firebase was completely removed in v0.2.0. The platform now uses NextAuth.js for authentication, Prisma for database management, and local file system for storage - resulting in ~200KB bundle size reduction and better performance.
 
 ### 🎯 **Core Framework**
+
 - **Next.js 15** - React framework with App Router
 - **TypeScript 5** - Type-safe development
 - **Tailwind CSS 4** - Utility-first styling
 - **npm** - Node.js package manager
 
 ### 🗄️ **Database & Backend**
+
 - **Prisma ORM** - Type-safe database toolkit (replaced Firebase Firestore)
 - **SQLite** - Development database
 - **PostgreSQL** - Production-ready database (recommended)
@@ -81,22 +90,26 @@ OWL-App is a full-stack educational social platform that enables students and ed
 - **Local File System** - Image storage with Sharp optimization
 
 ### 🧩 **UI & Components**
+
 - **shadcn/ui** - High-quality UI components built on Radix UI
 - **Framer Motion** - Smooth animations and interactions
 - **React Hook Form** - Performant form handling
 - **Zod** - Schema validation
 
 ### 🔧 **Advanced Features**
+
 - **React Query** - Server state management
 - **Zustand** - Client state management
 - **Sharp** - Image optimization
 - **Google Gemini AI** - AI content generation
+- **Brave Search API** - Privacy-focused web search integration (2,000 free queries/month)
 - **Sanitize HTML** - XSS protection and content sanitization
 - **IndexedDB** - Client-side storage for offline-first features
 - **React Markdown** - Markdown rendering
 - **Recharts** - Data visualization
 
 ### 🌍 **Internationalization**
+
 - **Next Intl** - Multi-language support (English & Turkish)
 - **Localized UI** - Complete i18n implementation
 
@@ -104,12 +117,12 @@ OWL-App is a full-stack educational social platform that enables students and ed
 
 ### 🔄 Firebase Migration (v0.2.0)
 
-| Firebase Service | Replaced With | Benefits |
-|-----------------|---------------|----------|
-| **Firebase Auth** | NextAuth.js + Google OAuth | Better CSRF protection, JWT sessions |
-| **Firestore** | Prisma ORM + SQLite/PostgreSQL | Type safety, better migrations, SQL power |
-| **Firebase Storage** | Local File System + Sharp | No external dependencies, faster processing |
-| **Firebase SDK** | Removed | ~200KB bundle size reduction |
+| Firebase Service     | Replaced With                  | Benefits                                    |
+| -------------------- | ------------------------------ | ------------------------------------------- |
+| **Firebase Auth**    | NextAuth.js + Google OAuth     | Better CSRF protection, JWT sessions        |
+| **Firestore**        | Prisma ORM + SQLite/PostgreSQL | Type safety, better migrations, SQL power   |
+| **Firebase Storage** | Local File System + Sharp      | No external dependencies, faster processing |
+| **Firebase SDK**     | Removed                        | ~200KB bundle size reduction                |
 
 All user data was automatically migrated with zero data loss. The new architecture provides better performance, type safety, and developer experience.
 
@@ -118,6 +131,7 @@ All user data was automatically migrated with zero data loss. The new architectu
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - Git
 
@@ -147,7 +161,7 @@ npm run dev
 
 Create a `.env.local` file with the following variables:
 
-```env
+````env
 # Database
 DATABASE_URL="file:./dev.db"
 
@@ -168,6 +182,9 @@ YOUTUBE_API_KEY="your-youtube-api-key"
 # Spotify Web API (Optional - for Spotify playlist integration)
 SPOTIFY_CLIENT_ID="your-spotify-client-id"
 SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
+
+# Brave Search API (for Owl Search feature)
+BRAVE_SEARCH_API_KEY="your-brave-search-api-key"
 
 ## 🔧 API Setup Instructions
 
@@ -226,45 +243,79 @@ To enable Spotify playlist integration in RSS feeds:
 
 **Note**: Without API credentials, Spotify integration falls back to embed-only mode.
 
+### Brave Search API Setup
+
+To enable web search functionality in Owl Search feature:
+
+1. **Get Brave Search API Key**:
+   - Go to [Brave Search API](https://api.search.brave.com/register)
+   - Sign up for a free account
+   - Navigate to API Keys section
+   - Create a new API key
+
+2. **Free Tier Benefits**:
+   - **2,000 free queries per month**
+   - No credit card required for free tier
+   - High-quality search results
+   - Privacy-focused (no user tracking)
+   - Fast response times (200-500ms)
+
+3. **Configure Environment Variables**:
+   - Add to your `.env.local` file:
+     ```
+     BRAVE_SEARCH_API_KEY=your_actual_brave_api_key_here
+     ```
+
+4. **Features Enabled**:
+   - Web search integration in work environment
+   - Search result cards with thumbnails
+   - Domain favicons and metadata
+   - Pagination support
+   - Safe search filtering
+
+**Note**: The system includes fallback mock data if API key is not configured, but real search requires a valid API key.
+
 ## 📁 Project Structure
 
-```
+````
+
 src/
-├── app/                    # Next.js App Router
-│   ├── [locale]/          # Internationalized routes
-│   │   ├── admin/         # Admin dashboard
-│   │   ├── communities/   # Community features
-│   │   ├── moderation/    # Moderation tools
-│   │   └── ...           # Other pages
-│   └── api/               # API routes
-│       ├── auth/          # Authentication endpoints
-│       ├── admin/         # Admin APIs
-│       ├── ai/            # AI content generation
-│       ├── communities/   # Community management
-│       ├── posts/         # Content management
-│       ├── sounds/        # Secure sound file serving
-│       └── ...           # Other APIs
-├── components/            # React components
-│   ├── admin/            # Admin components
-│   ├── ai/               # AI content generation components
-│   ├── auth/             # Authentication components
-│   ├── communities/      # Community components
-│   ├── content/          # Content components
-│   ├── moderation/       # Moderation components
-│   ├── work-environment/ # Workspace cards and tools
-│   └── ui/               # shadcn/ui components
-├── contexts/             # React contexts
-├── hooks/                # Custom hooks
-├── lib/                  # Utility functions
-│   ├── ai/              # AI integration and document processing
-│   └── ...              # Other utilities
-├── messages/             # Internationalization files
-└── types/                # TypeScript definitions
+├── app/ # Next.js App Router
+│ ├── [locale]/ # Internationalized routes
+│ │ ├── admin/ # Admin dashboard
+│ │ ├── communities/ # Community features
+│ │ ├── moderation/ # Moderation tools
+│ │ └── ... # Other pages
+│ └── api/ # API routes
+│ ├── auth/ # Authentication endpoints
+│ ├── admin/ # Admin APIs
+│ ├── ai/ # AI content generation
+│ ├── communities/ # Community management
+│ ├── posts/ # Content management
+│ ├── sounds/ # Secure sound file serving
+│ └── ... # Other APIs
+├── components/ # React components
+│ ├── admin/ # Admin components
+│ ├── ai/ # AI content generation components
+│ ├── auth/ # Authentication components
+│ ├── communities/ # Community components
+│ ├── content/ # Content components
+│ ├── moderation/ # Moderation components
+│ ├── work-environment/ # Workspace cards and tools
+│ └── ui/ # shadcn/ui components
+├── contexts/ # React contexts
+├── hooks/ # Custom hooks
+├── lib/ # Utility functions
+│ ├── ai/ # AI integration and document processing
+│ └── ... # Other utilities
+├── messages/ # Internationalization files
+└── types/ # TypeScript definitions
 
 prisma/
-├── schema.prisma         # Database schema
-└── migrations/           # Database migrations
-```
+├── schema.prisma # Database schema
+└── migrations/ # Database migrations
+
+````
 
 ## 🎨 Features Deep Dive
 
@@ -307,9 +358,10 @@ npm run db:migrate
 
 # Reset database
 npm run db:reset
-```
+````
 
 ### Testing
+
 ```bash
 # Set up test data
 npm run test:e2e:setup-data
@@ -322,6 +374,7 @@ npm run test:e2e:reset-db
 ```
 
 ### Linting & Formatting
+
 ```bash
 # Run ESLint
 npm run lint
@@ -346,7 +399,9 @@ docker run -p 3000:3000 owl-platform
 ```
 
 ### GitHub Actions
+
 Automated CI/CD pipeline includes:
+
 - **Code Quality** - ESLint and TypeScript checks
 - **Testing** - Automated test suite
 - **Security Scan** - Dependency vulnerability scanning
@@ -356,18 +411,21 @@ Automated CI/CD pipeline includes:
 ## 📊 Admin Features
 
 ### User Management
+
 - **User Analytics** - Comprehensive user statistics
 - **Role Management** - User role assignment and permissions
 - **Account Actions** - Suspend, ban, or verify users
 - **Activity Monitoring** - Track user engagement and behavior
 
 ### Content Moderation
+
 - **Bulk Actions** - Manage multiple content items simultaneously
 - **Filter Management** - Configure automated content filters
 - **Report Resolution** - Handle community reports efficiently
 - **Appeal Processing** - Manage content appeals and disputes
 
 ### Platform Analytics
+
 - **Engagement Metrics** - User interaction and platform usage
 - **Content Analytics** - Post performance and trending topics
 - **Safety Metrics** - Moderation effectiveness and platform health
@@ -376,6 +434,7 @@ Automated CI/CD pipeline includes:
 ## 🌐 Internationalization
 
 Currently supports:
+
 - **English** - Complete localization
 - **Turkish** - Full native language support
 
@@ -384,6 +443,7 @@ Easy to extend with additional languages through Next Intl configuration.
 ## 🔒 Security Features
 
 ### Data Protection
+
 - **Input Validation** - Comprehensive Zod schema validation
 - **SQL Injection Prevention** - Prisma ORM protection
 - **XSS Protection** - Industry-standard sanitize-html library (OWASP compliance)
@@ -394,13 +454,16 @@ Easy to extend with additional languages through Next Intl configuration.
 - **API Route Security** - Protected endpoints with user-agent validation
 
 ### User Safety
+
 - **Content Filtering** - Multi-layer content moderation
 - **Report System** - Community-driven safety reporting
 - **Parental Controls** - COPPA compliance features
 - **Privacy Controls** - User data management tools
 
 ### 🚨 Security Notice
-⚠️ **Important**: Never commit sensitive credentials to version control. 
+
+⚠️ **Important**: Never commit sensitive credentials to version control.
+
 - Use `.env` files for local development
 - Use environment variables for production
 - See `SECURITY.md` for detailed security guidelines
@@ -418,12 +481,12 @@ We welcome contributions from the community! 🎉
 
 ### Ways to Contribute
 
-* 🐛 **Report bugs** - Help us identify and fix issues
-* ✨ **Suggest features** - Share your ideas for new functionality
-* 💻 **Write code** - Submit pull requests with improvements
-* 📚 **Improve documentation** - Help make our docs better
-* 🎨 **UI/UX improvements** - Enhance the user experience
-* 🌐 **Translations** - Add support for new languages
+- 🐛 **Report bugs** - Help us identify and fix issues
+- ✨ **Suggest features** - Share your ideas for new functionality
+- 💻 **Write code** - Submit pull requests with improvements
+- 📚 **Improve documentation** - Help make our docs better
+- 🎨 **UI/UX improvements** - Enhance the user experience
+- 🌐 **Translations** - Add support for new languages
 
 ### Getting Started
 
@@ -461,13 +524,13 @@ For clarity on what counts as non‑commercial vs commercial usage, see section 
 
 ### Community vs Enterprise
 
-| Capability | Community (NC) | Enterprise |
-| --- | --- | --- |
-| Production commercial use | ❌ Not permitted | ✅ Permitted |
-| Source access | ✅ Yes | ✅ Yes |
-| Brand usage | Limited (see TRADEMARKS) | With agreement |
-| Updates | ✅ Public releases | ✅ Public releases |
-| Support/SLA | Community best effort | Optional SLAs |
+| Capability                | Community (NC)           | Enterprise         |
+| ------------------------- | ------------------------ | ------------------ |
+| Production commercial use | ❌ Not permitted         | ✅ Permitted       |
+| Source access             | ✅ Yes                   | ✅ Yes             |
+| Brand usage               | Limited (see TRADEMARKS) | With agreement     |
+| Updates                   | ✅ Public releases       | ✅ Public releases |
+| Support/SLA               | Community best effort    | Optional SLAs      |
 
 ### Commercial Licensing
 
@@ -486,6 +549,7 @@ Feel free to reach out for questions, feedback, or collaboration opportunities! 
 ## 🙏 Acknowledgments
 
 Special thanks to the open-source community and the following technologies that made this platform possible:
+
 - Next.js team for the amazing framework
 - Google for Gemini AI and authentication services
 - Radix UI for accessible component primitives
