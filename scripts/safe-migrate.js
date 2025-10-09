@@ -58,7 +58,8 @@ async function safeMigrate() {
       // - Syncs schema directly without migrations
       // - Safe for initial deploys
       // - Does not track migration history
-      execSync("npx prisma db push --skip-generate", {
+      // - Accepts data loss for removed columns (e.g., theme, fontSize moved to client-side)
+      execSync("npx prisma db push --skip-generate --accept-data-loss", {
         stdio: "inherit",
         env: process.env,
       });
