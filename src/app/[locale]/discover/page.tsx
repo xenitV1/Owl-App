@@ -1,19 +1,34 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PostCard } from '@/components/content/PostCard';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { Search, TrendingUp, Users, BookOpen, UserPlus, Clock, Hash } from 'lucide-react';
-import { MasonryGrid } from '@/components/ui/masonry-grid';
+import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PostCard } from "@/components/content/PostCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Search,
+  TrendingUp,
+  Users,
+  BookOpen,
+  UserPlus,
+  Clock,
+  Hash,
+  RefreshCw,
+} from "lucide-react";
+import { MasonryGrid } from "@/components/ui/masonry-grid";
 
 interface Post {
   id: string;
@@ -83,29 +98,32 @@ export default function DiscoverPage() {
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('trending');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("trending");
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const { toast } = useToast();
 
   const fetchTrendingPosts = async () => {
     try {
       // Use NextAuth session (cookie-based, no token needed)
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
-      const response = await fetch('/api/posts?trending=true&limit=12', { headers });
+      const response = await fetch("/api/posts?trending=true&limit=12", {
+        headers,
+      });
       if (response.ok) {
         const data = await response.json();
         setTrendingPosts(data.posts || []);
-        
+
         // Update liked and saved posts from backend data
         if (data.posts && data.posts.length > 0) {
           const newLikedPosts = new Set(likedPosts);
           const newSavedPosts = new Set(savedPosts);
-          
+
           data.posts.forEach((post: Post) => {
             if (post.isLikedByCurrentUser) {
               newLikedPosts.add(post.id);
@@ -114,27 +132,27 @@ export default function DiscoverPage() {
               newSavedPosts.add(post.id);
             }
           });
-          
+
           setLikedPosts(newLikedPosts);
           setSavedPosts(newSavedPosts);
         }
       }
     } catch (error) {
-      console.error('Error fetching trending posts:', error);
+      console.error("Error fetching trending posts:", error);
     }
   };
 
   const fetchRecommendedUsers = async () => {
     if (isGuest) return;
-    
+
     try {
-      const response = await fetch('/api/users?recommended=true&limit=8');
+      const response = await fetch("/api/users?recommended=true&limit=8");
       if (response.ok) {
         const data = await response.json();
         setRecommendedUsers(data.users || []);
       }
     } catch (error) {
-      console.error('Error fetching recommended users:', error);
+      console.error("Error fetching recommended users:", error);
     }
   };
 
@@ -142,16 +160,18 @@ export default function DiscoverPage() {
     try {
       // Use NextAuth session (cookie-based, no token needed)
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
-      const response = await fetch('/api/posts?subjects=true&limit=10', { headers });
+      const response = await fetch("/api/posts?subjects=true&limit=10", {
+        headers,
+      });
       if (response.ok) {
         const data = await response.json();
         setPopularSubjects(data.subjects || []);
       }
     } catch (error) {
-      console.error('Error fetching popular subjects:', error);
+      console.error("Error fetching popular subjects:", error);
     }
   };
 
@@ -159,19 +179,21 @@ export default function DiscoverPage() {
     try {
       // Use NextAuth session (cookie-based, no token needed)
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
-      const response = await fetch('/api/posts?recent=true&limit=12', { headers });
+      const response = await fetch("/api/posts?recent=true&limit=12", {
+        headers,
+      });
       if (response.ok) {
         const data = await response.json();
         setRecentPosts(data.posts || []);
-        
+
         // Update liked and saved posts from backend data
         if (data.posts && data.posts.length > 0) {
           const newLikedPosts = new Set(likedPosts);
           const newSavedPosts = new Set(savedPosts);
-          
+
           data.posts.forEach((post: Post) => {
             if (post.isLikedByCurrentUser) {
               newLikedPosts.add(post.id);
@@ -180,49 +202,51 @@ export default function DiscoverPage() {
               newSavedPosts.add(post.id);
             }
           });
-          
+
           setLikedPosts(newLikedPosts);
           setSavedPosts(newSavedPosts);
         }
       }
     } catch (error) {
-      console.error('Error fetching recent posts:', error);
+      console.error("Error fetching recent posts:", error);
     }
   };
 
   const fetchCommunities = async () => {
     try {
-      const response = await fetch('/api/communities?limit=12');
+      const response = await fetch("/api/communities?limit=12");
       if (response.ok) {
         const data = await response.json();
         setCommunities(data.communities || []);
       }
     } catch (error) {
-      console.error('Error fetching communities:', error);
+      console.error("Error fetching communities:", error);
     }
   };
 
-
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     try {
       // Use NextAuth session (cookie-based, no token needed)
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
-      const response = await fetch(`/api/posts?search=${encodeURIComponent(searchQuery)}&limit=20`, { headers });
+      const response = await fetch(
+        `/api/posts?search=${encodeURIComponent(searchQuery)}&limit=20`,
+        { headers },
+      );
       if (response.ok) {
         const data = await response.json();
         setTrendingPosts(data.posts || []);
-        setActiveTab('trending');
-        
+        setActiveTab("trending");
+
         // Update liked and saved posts from search results
         if (data.posts && data.posts.length > 0) {
           const newLikedPosts = new Set(likedPosts);
           const newSavedPosts = new Set(savedPosts);
-          
+
           data.posts.forEach((post: Post) => {
             if (post.isLikedByCurrentUser) {
               newLikedPosts.add(post.id);
@@ -231,13 +255,13 @@ export default function DiscoverPage() {
               newSavedPosts.add(post.id);
             }
           });
-          
+
           setLikedPosts(newLikedPosts);
           setSavedPosts(newSavedPosts);
         }
       }
     } catch (error) {
-      console.error('Error searching posts:', error);
+      console.error("Error searching posts:", error);
       toast({
         title: "Search Error",
         description: "Failed to search posts",
@@ -248,12 +272,12 @@ export default function DiscoverPage() {
 
   const handleFollowUser = async (userId: string, userName: string) => {
     if (isGuest) return;
-    
+
     try {
-      const response = await fetch('/api/follow', {
-        method: 'POST',
+      const response = await fetch("/api/follow", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ followingId: userId }),
       });
@@ -262,20 +286,25 @@ export default function DiscoverPage() {
         const data = await response.json();
         if (data.following) {
           // Update user list to reflect the follow
-          setRecommendedUsers(prev => prev.map(u => 
-            u.id === userId 
-              ? { ...u, _count: { ...u._count, followers: u._count.followers + 1 } }
-              : u
-          ));
-          
+          setRecommendedUsers((prev) =>
+            prev.map((u) =>
+              u.id === userId
+                ? {
+                    ...u,
+                    _count: { ...u._count, followers: u._count.followers + 1 },
+                  }
+                : u,
+            ),
+          );
+
           toast({
             title: "Followed",
-            description: `You are now following ${userName || 'this user'}`,
+            description: `You are now following ${userName || "this user"}`,
           });
         }
       }
     } catch (error) {
-      console.error('Error following user:', error);
+      console.error("Error following user:", error);
       toast({
         title: "Error",
         description: "Failed to follow user",
@@ -286,43 +315,45 @@ export default function DiscoverPage() {
 
   const handleLike = async (postId: string) => {
     try {
-      const response = await fetch('/api/likes', {
-        method: 'POST',
+      const response = await fetch("/api/likes", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ postId }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to toggle like: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to toggle like: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
-      
+
       // Update the post in both trending and recent posts
-      const updatePostLikes = (posts: Post[]) => 
-        posts.map(post => 
-          post.id === postId 
+      const updatePostLikes = (posts: Post[]) =>
+        posts.map((post) =>
+          post.id === postId
             ? { ...post, _count: { ...post._count, likes: data.likesCount } }
-            : post
+            : post,
         );
-      
+
       setTrendingPosts(updatePostLikes);
       setRecentPosts(updatePostLikes);
 
       // Update liked posts set
       if (data.liked) {
-        setLikedPosts(prev => new Set(prev).add(postId));
+        setLikedPosts((prev) => new Set(prev).add(postId));
       } else {
-        setLikedPosts(prev => {
+        setLikedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(postId);
           return newSet;
         });
       }
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error("Error toggling like:", error);
       toast({
         title: "Error",
         description: "Failed to toggle like",
@@ -333,43 +364,45 @@ export default function DiscoverPage() {
 
   const handleSave = async (postId: string) => {
     try {
-      const response = await fetch('/api/pools', {
-        method: 'POST',
+      const response = await fetch("/api/pools", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ postId }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to toggle save: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to toggle save: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
-      
+
       // Update the post in both trending and recent posts
-      const updatePostSaves = (posts: Post[]) => 
-        posts.map(post => 
-          post.id === postId 
+      const updatePostSaves = (posts: Post[]) =>
+        posts.map((post) =>
+          post.id === postId
             ? { ...post, _count: { ...post._count, pools: data.poolsCount } }
-            : post
+            : post,
         );
-      
+
       setTrendingPosts(updatePostSaves);
       setRecentPosts(updatePostSaves);
 
       // Update saved posts set
       if (data.saved) {
-        setSavedPosts(prev => new Set(prev).add(postId));
+        setSavedPosts((prev) => new Set(prev).add(postId));
       } else {
-        setSavedPosts(prev => {
+        setSavedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(postId);
           return newSet;
         });
       }
     } catch (error) {
-      console.error('Error toggling save:', error);
+      console.error("Error toggling save:", error);
       toast({
         title: "Error",
         description: "Failed to toggle save",
@@ -380,36 +413,36 @@ export default function DiscoverPage() {
 
   const handleCommentAdded = (postId: string) => {
     // Increment comment count when a new comment is added
-    const updatePostComments = (posts: Post[]) => 
-      posts.map(post => 
-        post.id === postId 
-          ? { 
-              ...post, 
-              _count: { 
-                ...post._count, 
-                comments: post._count.comments + 1 
-              } 
+    const updatePostComments = (posts: Post[]) =>
+      posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              _count: {
+                ...post._count,
+                comments: post._count.comments + 1,
+              },
             }
-          : post
+          : post,
       );
-    
+
     setTrendingPosts(updatePostComments);
     setRecentPosts(updatePostComments);
   };
 
   const handleDeletePost = (postId: string) => {
     // Remove the deleted post from both trending and recent posts
-    setTrendingPosts(prev => prev.filter(post => post.id !== postId));
-    setRecentPosts(prev => prev.filter(post => post.id !== postId));
-    
+    setTrendingPosts((prev) => prev.filter((post) => post.id !== postId));
+    setRecentPosts((prev) => prev.filter((post) => post.id !== postId));
+
     // Also remove from liked and saved sets if present
-    setLikedPosts(prev => {
+    setLikedPosts((prev) => {
       const newSet = new Set(prev);
       newSet.delete(postId);
       return newSet;
     });
-    
-    setSavedPosts(prev => {
+
+    setSavedPosts((prev) => {
       const newSet = new Set(prev);
       newSet.delete(postId);
       return newSet;
@@ -424,19 +457,31 @@ export default function DiscoverPage() {
         fetchRecommendedUsers(),
         fetchPopularSubjects(),
         fetchRecentPosts(),
-        fetchCommunities()
+        fetchCommunities(),
       ]);
       setIsLoading(false);
     };
-    
+
     loadData();
   }, [isGuest]);
 
+  // Auto-refresh feed every 10 seconds (silent background update)
+  useEffect(() => {
+    if (!autoRefreshEnabled || isGuest) return;
+
+    const refreshInterval = setInterval(async () => {
+      // Silent refresh without showing loading state
+      await Promise.all([fetchTrendingPosts(), fetchRecentPosts()]);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [autoRefreshEnabled, isGuest]);
+
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -444,14 +489,16 @@ export default function DiscoverPage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Just now';
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
+    if (diffInHours < 1) return "Just now";
     if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 48) return 'Yesterday';
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
+    if (diffInHours < 48) return "Yesterday";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -463,7 +510,7 @@ export default function DiscoverPage() {
             <Skeleton className="h-12 w-64 mb-4" />
             <Skeleton className="h-10 w-full max-w-md" />
           </div>
-          
+
           <div className="grid gap-6 lg:grid-cols-4">
             <div className="lg:col-span-3">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -481,7 +528,7 @@ export default function DiscoverPage() {
                 ))}
               </div>
             </div>
-            
+
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -502,7 +549,7 @@ export default function DiscoverPage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <Skeleton className="h-6 w-32" />
@@ -527,9 +574,9 @@ export default function DiscoverPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">{t('discoverPage.title')}</h1>
+          <h1 className="text-4xl font-bold mb-4">{t("discoverPage.title")}</h1>
           <p className="text-xl text-muted-foreground">
-            {t('discoverPage.subtitle')}
+            {t("discoverPage.subtitle")}
           </p>
         </div>
 
@@ -538,10 +585,10 @@ export default function DiscoverPage() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('discoverPage.searchPlaceholder')}
+              placeholder={t("discoverPage.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="pl-10"
             />
           </div>
@@ -551,30 +598,65 @@ export default function DiscoverPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">
+            <div className="flex items-center justify-between mb-6">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex-1"
+              >
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger
+                    value="trending"
+                    className="flex items-center gap-2"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    {t("discoverPage.tabs.trending")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="recent"
+                    className="flex items-center gap-2"
+                  >
+                    <Clock className="h-4 w-4" />
+                    {t("discoverPage.tabs.recent")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="communities"
+                    className="flex items-center gap-2"
+                  >
+                    <Hash className="h-4 w-4" />
+                    {t("discoverPage.tabs.communities")}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Button
+                variant={autoRefreshEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+                title={
+                  autoRefreshEnabled
+                    ? "Auto-refresh enabled (10s)"
+                    : "Auto-refresh disabled"
+                }
+                className="ml-4"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${autoRefreshEnabled ? "animate-spin-slow" : ""}`}
+                />
+              </Button>
+            </div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="trending" className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  {t('discoverPage.tabs.trending')}
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {t('discoverPage.tabs.recent')}
-                </TabsTrigger>
-                <TabsTrigger value="communities" className="flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
-                  {t('discoverPage.tabs.communities')}
-                </TabsTrigger>
-              </TabsList>
-              
+              <div className="hidden" />
+
               <TabsContent value="trending">
                 {trendingPosts.length === 0 ? (
                   <Card>
                     <CardContent className="p-8 text-center">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">{t('discoverPage.emptyState.noTrendingPosts')}</h3>
+                      <h3 className="text-lg font-semibold mb-2">
+                        {t("discoverPage.emptyState.noTrendingPosts")}
+                      </h3>
                       <p className="text-muted-foreground">
-                        {t('discoverPage.emptyState.checkBackLater')}
+                        {t("discoverPage.emptyState.checkBackLater")}
                       </p>
                     </CardContent>
                   </Card>
@@ -601,15 +683,17 @@ export default function DiscoverPage() {
                   />
                 )}
               </TabsContent>
-              
+
               <TabsContent value="recent">
                 {recentPosts.length === 0 ? (
                   <Card>
                     <CardContent className="p-8 text-center">
                       <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">{t('common.noPosts')}</h3>
+                      <h3 className="text-lg font-semibold mb-2">
+                        {t("common.noPosts")}
+                      </h3>
                       <p className="text-muted-foreground">
-                        {t('home.beFirst')}
+                        {t("home.beFirst")}
                       </p>
                     </CardContent>
                   </Card>
@@ -636,15 +720,17 @@ export default function DiscoverPage() {
                   />
                 )}
               </TabsContent>
-              
+
               <TabsContent value="communities">
                 {communities.length === 0 ? (
                   <Card>
                     <CardContent className="p-8 text-center">
                       <Hash className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">{t('communities.noCommunities')}</h3>
+                      <h3 className="text-lg font-semibold mb-2">
+                        {t("communities.noCommunities")}
+                      </h3>
                       <p className="text-muted-foreground">
-                        {t('communities.createNew')}
+                        {t("communities.createNew")}
                       </p>
                     </CardContent>
                   </Card>
@@ -656,7 +742,10 @@ export default function DiscoverPage() {
                     media={[640, 768, 1024]}
                     useBalancedLayout={true}
                     renderItem={(community) => (
-                      <Card key={community.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                      <Card
+                        key={community.id}
+                        className="hover:shadow-lg transition-shadow cursor-pointer"
+                      >
                         <CardHeader className="pb-3">
                           <div className="flex items-start gap-3">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
@@ -667,28 +756,38 @@ export default function DiscoverPage() {
                                 {community.name}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={community.isPublic ? "default" : "secondary"} className="text-xs">
-                                  {community.isPublic ? t('common.public') : t('common.private')}
+                                <Badge
+                                  variant={
+                                    community.isPublic ? "default" : "secondary"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {community.isPublic
+                                    ? t("common.public")
+                                    : t("common.private")}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {community._count.members} {t('common.members')}
+                                  {community._count.members}{" "}
+                                  {t("common.members")}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </CardHeader>
-                        
+
                         <CardContent className="pt-0">
                           {community.description && (
                             <CardDescription className="mb-3 line-clamp-2 text-sm">
                               {community.description}
                             </CardDescription>
                           )}
-                          
+
                           <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>{community._count.posts} {t('common.posts')}</span>
+                            <span>
+                              {community._count.posts} {t("common.posts")}
+                            </span>
                             <Button size="sm" variant="outline">
-                              {t('common.view')}
+                              {t("common.view")}
                             </Button>
                           </div>
                         </CardContent>
@@ -708,39 +807,53 @@ export default function DiscoverPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    {t('home.stats.activeStudents')}
+                    {t("home.stats.activeStudents")}
                   </CardTitle>
-                  <CardDescription>
-                    {t('home.subtitle')}
-                  </CardDescription>
+                  <CardDescription>{t("home.subtitle")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {recommendedUsers.slice(0, 4).map((recommendedUser) => (
-                      <div key={recommendedUser.id} className="flex items-center justify-between">
+                      <div
+                        key={recommendedUser.id}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={recommendedUser.avatar} alt={recommendedUser.name || t('common.user')} />
+                            <AvatarImage
+                              src={recommendedUser.avatar}
+                              alt={recommendedUser.name || t("common.user")}
+                            />
                             <AvatarFallback className="text-xs">
-                              {recommendedUser.name ? getInitials(recommendedUser.name) : 'U'}
+                              {recommendedUser.name
+                                ? getInitials(recommendedUser.name)
+                                : "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium text-sm">
-                              {recommendedUser.name || t('common.anonymousUser')}
+                              {recommendedUser.name ||
+                                t("common.anonymousUser")}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {recommendedUser._count.posts} {t('common.posts')} • {recommendedUser._count.followers} {t('common.followers')}
+                              {recommendedUser._count.posts} {t("common.posts")}{" "}
+                              • {recommendedUser._count.followers}{" "}
+                              {t("common.followers")}
                             </p>
                           </div>
                         </div>
                         <Button
                           size="sm"
-                          onClick={() => handleFollowUser(recommendedUser.id, recommendedUser.name || t('common.user'))}
+                          onClick={() =>
+                            handleFollowUser(
+                              recommendedUser.id,
+                              recommendedUser.name || t("common.user"),
+                            )
+                          }
                           disabled={isGuest}
                         >
                           <UserPlus className="h-3 w-3 mr-1" />
-                          {t('common.follow')}
+                          {t("common.follow")}
                         </Button>
                       </div>
                     ))}
@@ -755,16 +868,20 @@ export default function DiscoverPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BookOpen className="h-5 w-5" />
-                    {t('discover.subjects')}
+                    {t("discover.subjects")}
                   </CardTitle>
                   <CardDescription>
-                    {t('home.stats.studyMaterials')}
+                    {t("home.stats.studyMaterials")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {popularSubjects.slice(0, 8).map((subject, index) => (
-                      <Badge key={index} variant="secondary" className="cursor-pointer hover:bg-primary/80">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-primary/80"
+                      >
                         {subject.name}
                         <span className="ml-1 text-xs">({subject.count})</span>
                       </Badge>
@@ -777,24 +894,38 @@ export default function DiscoverPage() {
             {/* Platform Stats */}
             <Card>
               <CardHeader>
-                <CardTitle>{t('discoverPage.platformStats.title')}</CardTitle>
+                <CardTitle>{t("discoverPage.platformStats.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t('discoverPage.platformStats.totalPosts')}</span>
-                    <span className="font-medium">{trendingPosts.length + recentPosts.length}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {t("discoverPage.platformStats.totalPosts")}
+                    </span>
+                    <span className="font-medium">
+                      {trendingPosts.length + recentPosts.length}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t('discoverPage.platformStats.activeUsers')}</span>
-                    <span className="font-medium">{recommendedUsers.length}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {t("discoverPage.platformStats.activeUsers")}
+                    </span>
+                    <span className="font-medium">
+                      {recommendedUsers.length}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t('discoverPage.platformStats.subjects')}</span>
-                    <span className="font-medium">{popularSubjects.length}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {t("discoverPage.platformStats.subjects")}
+                    </span>
+                    <span className="font-medium">
+                      {popularSubjects.length}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t('discoverPage.platformStats.communities')}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {t("discoverPage.platformStats.communities")}
+                    </span>
                     <span className="font-medium">{communities.length}</span>
                   </div>
                 </div>
