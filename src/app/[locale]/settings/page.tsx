@@ -1,52 +1,102 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useFontSize } from '@/contexts/FontSizeContext';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Settings, User, Palette, Type, Bell, Shield, Save, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useFontSize } from "@/contexts/FontSizeContext";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Settings,
+  User,
+  Palette,
+  Type,
+  Bell,
+  Shield,
+  Save,
+  ArrowLeft,
+} from "lucide-react";
 
+// Keep values aligned with Onboarding modal and stored profile values
 const GRADES = [
-  '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', 
-  '11th Grade', '12th Grade', 'Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'
+  { value: "9th Grade", key: "9th" },
+  { value: "10th Grade", key: "10th" },
+  { value: "11th Grade", key: "11th" },
+  { value: "12th Grade", key: "12th" },
+  { value: "Freshman", key: "freshman" },
+  { value: "Sophomore", key: "sophomore" },
+  { value: "Junior", key: "junior" },
+  { value: "Senior", key: "senior" },
+  { value: "High School Graduate", key: "highschoolGraduate" },
+  { value: "University Graduate", key: "universityGraduate" },
+  { value: "Graduate", key: "graduateStudent" },
+  { value: "Teacher", key: "teacher" },
+  { value: "Other", key: "other" },
 ];
 
 const SUBJECTS = [
-  'Mathematics', 'Science', 'English', 'History', 'Geography', 'Physics', 
-  'Chemistry', 'Biology', 'Computer Science', 'Literature', 'Art', 'Music',
-  'Physical Education', 'Foreign Language', 'Economics', 'Psychology', 'Sociology', 'Philosophy', 'Other'
+  "Mathematics",
+  "Science",
+  "English",
+  "History",
+  "Geography",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Computer Science",
+  "Literature",
+  "Art",
+  "Music",
+  "Physical Education",
+  "Foreign Language",
+  "Economics",
+  "Psychology",
+  "Sociology",
+  "Philosophy",
+  "Other",
 ];
 
 export default function SettingsPage() {
-  const t = useTranslations('settings');
-  const tr = useTranslations('roles');
+  const t = useTranslations("settings");
+  const tOnb = useTranslations("onboarding");
+  const tr = useTranslations("roles");
   const { loading, isGuest, user, dbUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const { fontSize, setFontSize } = useFontSize();
-  
+
   const [isLoading, setIsLoading] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [saveMessage, setSaveMessage] = useState("");
   const [formData, setFormData] = useState({
-    name: '',
-    bio: '',
-    school: '',
-    grade: '',
-    favoriteSubject: '',
-    role: '',
+    name: "",
+    bio: "",
+    school: "",
+    grade: "",
+    favoriteSubject: "",
+    role: "",
     emailNotifications: true,
-    pushNotifications: true
+    pushNotifications: true,
   });
 
   useEffect(() => {
@@ -54,27 +104,27 @@ export default function SettingsPage() {
       // Load user data
       const loadUserData = async () => {
         try {
-          const response = await fetch('/api/users/profile', {
+          const response = await fetch("/api/users/profile", {
             headers: {
-              ...(user?.email ? { 'x-user-email': user.email } : {}),
-              ...(dbUser?.name ? { 'x-user-name': dbUser.name } : {}),
+              ...(user?.email ? { "x-user-email": user.email } : {}),
+              ...(dbUser?.name ? { "x-user-name": dbUser.name } : {}),
             },
           });
           if (response.ok) {
             const userData = await response.json();
             setFormData({
-              name: userData.name || '',
-              bio: userData.bio || '',
-              school: userData.school || '',
-              grade: userData.grade || '',
-              favoriteSubject: userData.favoriteSubject || '',
-              role: userData.role || '',
+              name: userData.name || "",
+              bio: userData.bio || "",
+              school: userData.school || "",
+              grade: userData.grade || "",
+              favoriteSubject: userData.favoriteSubject || "",
+              role: userData.role || "",
               emailNotifications: true, // Default values
-              pushNotifications: true
+              pushNotifications: true,
             });
           }
         } catch (error) {
-          console.error('Error loading user data:', error);
+          console.error("Error loading user data:", error);
         }
       };
       loadUserData();
@@ -83,28 +133,28 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsLoading(true);
-    setSaveMessage('');
-    
+    setSaveMessage("");
+
     try {
-      const response = await fetch('/api/users/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/users/profile", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          ...(user?.email ? { 'x-user-email': user.email } : {}),
-          ...(dbUser?.name ? { 'x-user-name': dbUser.name } : {}),
+          "Content-Type": "application/json",
+          ...(user?.email ? { "x-user-email": user.email } : {}),
+          ...(dbUser?.name ? { "x-user-name": dbUser.name } : {}),
         },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
-        setSaveMessage('Settings saved successfully!');
-        setTimeout(() => setSaveMessage(''), 3000);
+        setSaveMessage("Settings saved successfully!");
+        setTimeout(() => setSaveMessage(""), 3000);
       } else {
-        setSaveMessage('Failed to save settings');
+        setSaveMessage("Failed to save settings");
       }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      setSaveMessage('Failed to save settings');
+      console.error("Error saving settings:", error);
+      setSaveMessage("Failed to save settings");
     } finally {
       setIsLoading(false);
     }
@@ -112,9 +162,9 @@ export default function SettingsPage() {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -144,9 +194,12 @@ export default function SettingsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <Settings className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Sign in to access settings</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Sign in to access settings
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Create an account to customize your experience and manage your preferences.
+                Create an account to customize your experience and manage your
+                preferences.
               </p>
             </CardContent>
           </Card>
@@ -160,7 +213,11 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.history.back()}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -191,13 +248,13 @@ export default function SettingsPage() {
                 <Avatar className="h-20 w-20 mb-3">
                   {/* Settings page avatar: Show user's uploaded image only when they have uploaded one */}
                   {/* After Google signup, show default empty image until user uploads their own image */}
-                  <AvatarImage src={undefined} alt={dbUser?.name || 'User'} />
+                  <AvatarImage src={undefined} alt={dbUser?.name || "User"} />
                   <AvatarFallback className="text-lg">
-                    {dbUser?.name ? getInitials(dbUser.name) : 'U'}
+                    {dbUser?.name ? getInitials(dbUser.name) : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold">{dbUser?.name || 'User'}</h3>
+                  <h3 className="font-semibold">{dbUser?.name || "User"}</h3>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                   <Badge variant="secondary" className="mt-1">
                     Student
@@ -216,11 +273,15 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">School:</span>
-                  <span className="font-medium">{formData.school || 'Not set'}</span>
+                  <span className="font-medium">
+                    {formData.school || "Not set"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Grade:</span>
-                  <span className="font-medium">{formData.grade || 'Not set'}</span>
+                  <span className="font-medium">
+                    {formData.grade || "Not set"}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -232,22 +293,29 @@ export default function SettingsPage() {
           {/* Profile Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('profileInformation')}</CardTitle>
+              <CardTitle>{t("profileInformation")}</CardTitle>
               <CardDescription>
-                {t('profileInformationDescription')}
-              <div>
-                <Label htmlFor="role">{t('roleLabel')}</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('rolePlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="STUDENT">{tr('STUDENT')}</SelectItem>
-                    <SelectItem value="TEACHER">{tr('TEACHER')}</SelectItem>
-                    <SelectItem value="ACADEMICIAN">{tr('ACADEMICIAN')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                {t("profileInformationDescription")}
+                <div>
+                  <Label htmlFor="role">{t("roleLabel")}</Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, role: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("rolePlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="STUDENT">{tr("STUDENT")}</SelectItem>
+                      <SelectItem value="TEACHER">{tr("TEACHER")}</SelectItem>
+                      <SelectItem value="ACADEMICIAN">
+                        {tr("ACADEMICIAN")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -257,7 +325,9 @@ export default function SettingsPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="Enter your name"
                   />
                 </div>
@@ -265,19 +335,21 @@ export default function SettingsPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={user?.email || ''}
+                    value={user?.email || ""}
                     disabled
                     className="bg-muted"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="bio">Bio</Label>
                 <Textarea
                   id="bio"
                   value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
                   placeholder="Tell us about yourself..."
                   rows={3}
                 />
@@ -289,20 +361,27 @@ export default function SettingsPage() {
                   <Input
                     id="school"
                     value={formData.school}
-                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, school: e.target.value })
+                    }
                     placeholder="Your school name"
                   />
                 </div>
                 <div>
                   <Label htmlFor="grade">Grade</Label>
-                  <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
+                  <Select
+                    value={formData.grade}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, grade: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your grade" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GRADES.map((grade) => (
-                        <SelectItem key={grade} value={grade}>
-                          {grade}
+                      {GRADES.map((g) => (
+                        <SelectItem key={g.value} value={g.value}>
+                          {tOnb(`grade.levels.${g.key}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -312,7 +391,12 @@ export default function SettingsPage() {
 
               <div>
                 <Label htmlFor="favoriteSubject">Favorite Subject</Label>
-                <Select value={formData.favoriteSubject} onValueChange={(value) => setFormData({ ...formData, favoriteSubject: value })}>
+                <Select
+                  value={formData.favoriteSubject}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, favoriteSubject: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your favorite subject" />
                   </SelectTrigger>
@@ -343,29 +427,45 @@ export default function SettingsPage() {
               <div>
                 <Label>Theme</Label>
                 <div className="grid gap-2 mt-2">
-                  {(['light', 'dark', 'system', 'retro-light', 'retro-dark'] as const).map((themeOption) => (
+                  {(
+                    [
+                      "light",
+                      "dark",
+                      "system",
+                      "retro-light",
+                      "retro-dark",
+                    ] as const
+                  ).map((themeOption) => (
                     <div
                       key={themeOption}
                       className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                        theme === themeOption ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'
+                        theme === themeOption
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted"
                       }`}
                       onClick={() => setTheme(themeOption)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          theme === themeOption ? 'border-primary' : 'border-border'
-                        }`}>
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            theme === themeOption
+                              ? "border-primary"
+                              : "border-border"
+                          }`}
+                        >
                           {theme === themeOption && (
                             <div className="w-2 h-2 rounded-full bg-primary m-0.5" />
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="capitalize font-medium">
-                            {themeOption === 'retro-light' ? 'Retro Light' : 
-                             themeOption === 'retro-dark' ? 'Retro Dark' : 
-                             themeOption}
+                            {themeOption === "retro-light"
+                              ? "Retro Light"
+                              : themeOption === "retro-dark"
+                                ? "Retro Dark"
+                                : themeOption}
                           </span>
-                          {themeOption.startsWith('retro-') && (
+                          {themeOption.startsWith("retro-") && (
                             <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full">
                               ✦ Retro
                             </span>
@@ -380,28 +480,41 @@ export default function SettingsPage() {
               <div>
                 <Label>Font Size</Label>
                 <div className="grid gap-2 mt-2">
-                  {(['small', 'normal', 'large'] as const).map((sizeOption) => (
+                  {(["small", "normal", "large"] as const).map((sizeOption) => (
                     <div
                       key={sizeOption}
                       className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                        fontSize === sizeOption ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'
+                        fontSize === sizeOption
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted"
                       }`}
                       onClick={() => setFontSize(sizeOption)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          fontSize === sizeOption ? 'border-primary' : 'border-border'
-                        }`}>
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            fontSize === sizeOption
+                              ? "border-primary"
+                              : "border-border"
+                          }`}
+                        >
                           {fontSize === sizeOption && (
                             <div className="w-2 h-2 rounded-full bg-primary m-0.5" />
                           )}
                         </div>
-                        <span className="capitalize font-medium">{sizeOption}</span>
+                        <span className="capitalize font-medium">
+                          {sizeOption}
+                        </span>
                       </div>
-                      <span className={`text-muted-foreground ${
-                        sizeOption === 'small' ? 'text-sm' : 
-                        sizeOption === 'large' ? 'text-lg' : 'text-base'
-                      }`}>
+                      <span
+                        className={`text-muted-foreground ${
+                          sizeOption === "small"
+                            ? "text-sm"
+                            : sizeOption === "large"
+                              ? "text-lg"
+                              : "text-base"
+                        }`}
+                      >
                         Aa
                       </span>
                     </div>
@@ -432,7 +545,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   checked={formData.emailNotifications}
-                  onCheckedChange={(checked) => setFormData({ ...formData, emailNotifications: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, emailNotifications: checked })
+                  }
                 />
               </div>
               <Separator />
@@ -445,7 +560,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   checked={formData.pushNotifications}
-                  onCheckedChange={(checked) => setFormData({ ...formData, pushNotifications: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, pushNotifications: checked })
+                  }
                 />
               </div>
             </CardContent>
@@ -455,16 +572,20 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               {saveMessage && (
-                <p className={`text-sm ${
-                  saveMessage.includes('success') ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <p
+                  className={`text-sm ${
+                    saveMessage.includes("success")
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
                   {saveMessage}
                 </p>
               )}
             </div>
             <Button onClick={handleSave} disabled={isLoading}>
               <Save className="h-4 w-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save Changes'}
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </div>
