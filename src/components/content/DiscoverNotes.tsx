@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Compass, Clock, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Compass, Clock, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 
 interface DiscoverNote {
   id: string;
@@ -40,30 +40,36 @@ export function DiscoverNotes() {
 
   const fetchDiscoverNotes = async () => {
     try {
-      const response = await fetch('/api/posts/discover');
+      const response = await fetch("/api/posts/discover");
       if (response.ok) {
         const data = await response.json();
         setNotes(data.notes);
       }
     } catch (error) {
-      console.error('Error fetching discover notes:', error);
+      console.error("Error fetching discover notes:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNoteClick = (noteId: string) => {
-    router.push(`/${locale}/posts/${noteId}`);
+    // Bu component'te post detail modal'ı yok, geçici olarak kaldırıldı
+    console.log("Note clicked:", noteId);
+    // TODO: Post detail modal'ını açmak için parent component'e callback eklenebilir
   };
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) {
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes}m ago`;
+      const diffInMinutes = Math.floor(
+        (now.getTime() - date.getTime()) / (1000 * 60),
+      );
+      return diffInMinutes <= 1 ? "Just now" : `${diffInMinutes}m ago`;
     } else if (diffInHours < 24) {
       return `${diffInHours}h ago`;
     } else {
@@ -117,7 +123,10 @@ export function DiscoverNotes() {
             >
               <div className="flex items-start gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src={note.author.avatar} alt={note.author.name} />
+                  <AvatarImage
+                    src={note.author.avatar}
+                    alt={note.author.name}
+                  />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {note.author.name.charAt(0).toUpperCase()}
                   </AvatarFallback>

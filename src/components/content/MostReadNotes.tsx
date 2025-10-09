@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, TrendingUp, BookOpen } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Eye, TrendingUp, BookOpen } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 
 interface MostReadNote {
   id: string;
@@ -35,20 +35,22 @@ export function MostReadNotes() {
 
   const fetchMostReadNotes = async () => {
     try {
-      const response = await fetch('/api/posts/most-read');
+      const response = await fetch("/api/posts/most-read");
       if (response.ok) {
         const data = await response.json();
         setNotes(data.notes);
       }
     } catch (error) {
-      console.error('Error fetching most read notes:', error);
+      console.error("Error fetching most read notes:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNoteClick = (noteId: string) => {
-    router.push(`/${locale}/posts/${noteId}`);
+    // Bu component'te post detail modal'ı yok, geçici olarak kaldırıldı
+    console.log("Note clicked:", noteId);
+    // TODO: Post detail modal'ını açmak için parent component'e callback eklenebilir
   };
 
   const formatViewCount = (count: number) => {
@@ -105,7 +107,10 @@ export function MostReadNotes() {
             >
               <div className="flex items-start gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src={note.author.avatar} alt={note.author.name} />
+                  <AvatarImage
+                    src={note.author.avatar}
+                    alt={note.author.name}
+                  />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {note.author.name.charAt(0).toUpperCase()}
                   </AvatarFallback>

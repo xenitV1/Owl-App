@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Shield, 
-  Users, 
-  BarChart3, 
-  FileText, 
-  AlertTriangle, 
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Shield,
+  Users,
+  BarChart3,
+  FileText,
+  AlertTriangle,
   CheckCircle,
   TrendingUp,
   TrendingDown,
@@ -26,13 +32,14 @@ import {
   Share2,
   Filter,
   Search,
-  Download
-} from 'lucide-react';
-import { UserManagement } from './UserManagement';
-import { Analytics } from './Analytics';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { ContentModeration } from './ContentModeration';
+  Download,
+} from "lucide-react";
+import { UserManagement } from "./UserManagement";
+import { Analytics } from "./Analytics";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { ContentModeration } from "./ContentModeration";
+import AlgorithmAnalytics from "./AlgorithmAnalytics";
 
 interface AdminStats {
   totalUsers: number;
@@ -88,12 +95,12 @@ export function AdminDashboard() {
     totalGroups: 0,
     userGrowth: 0,
     postGrowth: 0,
-    reportGrowth: 0
+    reportGrowth: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedTab, setSelectedTab] = useState("overview");
 
   useEffect(() => {
     fetchAdminData();
@@ -102,9 +109,9 @@ export function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
       const [statsRes, usersRes, logsRes] = await Promise.all([
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/users'),
-        fetch('/api/admin/activity-logs')
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/users"),
+        fetch("/api/admin/activity-logs"),
       ]);
 
       if (statsRes.ok) {
@@ -122,15 +129,15 @@ export function AdminDashboard() {
         setActivityLogs(logsData.logs);
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      console.error("Error fetching admin data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
     return num.toString();
   };
 
@@ -147,7 +154,7 @@ export function AdminDashboard() {
   };
 
   const getGrowthColor = (growth: number) => {
-    return growth >= 0 ? 'text-green-500' : 'text-red-500';
+    return growth >= 0 ? "text-green-500" : "text-red-500";
   };
 
   if (loading) {
@@ -178,12 +185,17 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs
+        value={selectedTab}
+        onValueChange={setSelectedTab}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="algorithm">Algorithm</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -193,18 +205,25 @@ export function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(stats.totalUsers)}</div>
+                <div className="text-2xl font-bold">
+                  {formatNumber(stats.totalUsers)}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Active: {formatNumber(stats.activeUsers)}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   {getGrowthIcon(stats.userGrowth)}
-                  <span className={`text-xs ${getGrowthColor(stats.userGrowth)}`}>
-                    {stats.userGrowth >= 0 ? '+' : ''}{stats.userGrowth}% from last month
+                  <span
+                    className={`text-xs ${getGrowthColor(stats.userGrowth)}`}
+                  >
+                    {stats.userGrowth >= 0 ? "+" : ""}
+                    {stats.userGrowth}% from last month
                   </span>
                 </div>
               </CardContent>
@@ -212,18 +231,25 @@ export function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Posts
+                </CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(stats.totalPosts)}</div>
+                <div className="text-2xl font-bold">
+                  {formatNumber(stats.totalPosts)}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Educational content
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   {getGrowthIcon(stats.postGrowth)}
-                  <span className={`text-xs ${getGrowthColor(stats.postGrowth)}`}>
-                    {stats.postGrowth >= 0 ? '+' : ''}{stats.postGrowth}% from last month
+                  <span
+                    className={`text-xs ${getGrowthColor(stats.postGrowth)}`}
+                  >
+                    {stats.postGrowth >= 0 ? "+" : ""}
+                    {stats.postGrowth}% from last month
                   </span>
                 </div>
               </CardContent>
@@ -235,14 +261,19 @@ export function AdminDashboard() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(stats.totalReports)}</div>
+                <div className="text-2xl font-bold">
+                  {formatNumber(stats.totalReports)}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Pending: {stats.pendingReports}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   {getGrowthIcon(stats.reportGrowth)}
-                  <span className={`text-xs ${getGrowthColor(stats.reportGrowth)}`}>
-                    {stats.reportGrowth >= 0 ? '+' : ''}{stats.reportGrowth}% from last month
+                  <span
+                    className={`text-xs ${getGrowthColor(stats.reportGrowth)}`}
+                  >
+                    {stats.reportGrowth >= 0 ? "+" : ""}
+                    {stats.reportGrowth}% from last month
                   </span>
                 </div>
               </CardContent>
@@ -250,19 +281,21 @@ export function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Communities</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Communities
+                </CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCommunities}</div>
+                <div className="text-2xl font-bold">
+                  {stats.totalCommunities}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Groups: {stats.totalGroups}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-xs text-green-500">
-                    All active
-                  </span>
+                  <span className="text-xs text-green-500">All active</span>
                 </div>
               </CardContent>
             </Card>
@@ -273,7 +306,9 @@ export function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest admin actions and system events</CardDescription>
+                <CardDescription>
+                  Latest admin actions and system events
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -282,7 +317,9 @@ export function AdminDashboard() {
                       <Activity className="h-4 w-4 text-blue-500 mt-0.5" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{log.adminName}</span>
+                          <span className="font-medium text-sm">
+                            {log.adminName}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDate(log.timestamp)}
                           </span>
@@ -300,7 +337,9 @@ export function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>System Health</CardTitle>
-                <CardDescription>Platform performance and status</CardDescription>
+                <CardDescription>
+                  Platform performance and status
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -353,17 +392,27 @@ export function AdminDashboard() {
           <ContentModeration />
         </TabsContent>
 
+        {/* Algorithm Tab */}
+        <TabsContent value="algorithm" className="space-y-6">
+          <AlgorithmAnalytics />
+        </TabsContent>
+
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Admin Activity Log</CardTitle>
-              <CardDescription>Complete audit trail of all admin actions</CardDescription>
+              <CardDescription>
+                Complete audit trail of all admin actions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {activityLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                  <div
+                    key={log.id}
+                    className="flex items-start gap-4 p-4 border rounded-lg"
+                  >
                     <Activity className="h-5 w-5 text-blue-500 mt-0.5" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
