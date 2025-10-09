@@ -1,0 +1,60 @@
+/* React Grid Layout styles */
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
+
+/* Custom grid layout improvements for responsive content */
+.react-grid-item {
+  transition: all 150ms ease;
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item.resizing {
+  transition: none;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+}
+
+.react-grid-item > div {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Responsive grid content containers */
+.grid-content-container {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Auto-fit grid for posts */
+.auto-fit-grid {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  height: 100%;
+}
+
+.auto-fit-grid.small-container {
+  grid-template-columns: 1fr;
+}
+
+.auto-fit-grid.medium-container {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.auto-fit-grid.large-container {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.auto-fit-grid.extra-large-container {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+

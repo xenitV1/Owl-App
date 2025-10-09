@@ -77,6 +77,75 @@
     "profileIncomplete": "Lütfen profilinizi tamamlayın",
     "completeProfile": "Profili Tamamla"
   },
+  "onboarding": {
+    "welcome": "Hoş Geldin!",
+    "welcomeDescription": "Sana en uygun içerikleri gösterebilmemiz için birkaç bilgiye ihtiyacımız var.",
+    "step": "Adım",
+    "stepOf": "/",
+    "country": {
+      "title": "Ülkenizi Seçin",
+      "description": "Kişiselleştirilmiş içerik almak için ülkenizi seçin",
+      "placeholder": "Ülke seçin",
+      "important": "Önemli:",
+      "permanentWarning": "Ülke seçimi kalıcıdır ve değiştirilemez",
+      "selectCorrectly": "Lütfen doğru ülkeyi seçtiğinizden emin olun",
+      "error": "Lütfen ülkenizi seçin"
+    },
+    "grade": {
+      "title": "Seviyenizi Seçin",
+      "description": "Mevcut eğitim seviyenizi seçin",
+      "placeholder": "Sınıf/Seviye seçin",
+      "important": "Önemli:",
+      "changeWarning": "Bunu 24 saat sonra değiştirebilirsiniz",
+      "levels": {
+        "9th": "9. Sınıf",
+        "10th": "10. Sınıf",
+        "11th": "11. Sınıf",
+        "12th": "12. Sınıf",
+        "freshman": "Hazırlık/1. Sınıf (Üniversite)",
+        "sophomore": "2. Sınıf (Üniversite)",
+        "junior": "3. Sınıf (Üniversite)",
+        "senior": "4. Sınıf (Üniversite)",
+        "highschoolGraduate": "Lise Mezunu",
+        "universityGraduate": "Üniversite Mezunu",
+        "graduateStudent": "Yüksek Lisans/Doktora",
+        "teacher": "Öğretmen",
+        "other": "Diğer"
+      },
+      "error": "Lütfen seviyenizi seçin"
+    },
+    "subject": {
+      "title": "Favori Dersiniz",
+      "description": "En çok ilgilendiğiniz konuyu seçin. Bu, size özel içerik önerileri sunmamıza yardımcı olacak.",
+      "subjects": {
+        "math": "Matematik",
+        "physics": "Fizik",
+        "chemistry": "Kimya",
+        "biology": "Biyoloji",
+        "literature": "Edebiyat",
+        "history": "Tarih",
+        "geography": "Coğrafya",
+        "english": "İngilizce",
+        "computer": "Bilgisayar Bilimi",
+        "art": "Sanat"
+      },
+      "error": "Lütfen favori dersinizi seçin"
+    },
+    "interests": {
+      "title": "İlgi Alanlarınız",
+      "optional": "Opsiyonel",
+      "description": "İlgilendiğiniz diğer konuları seçin (birden fazla seçebilirsiniz)."
+    },
+    "buttons": {
+      "continue": "Devam Et",
+      "back": "Geri",
+      "complete": "Tamamla",
+      "saving": "Kaydediliyor..."
+    },
+    "errors": {
+      "saveError": "Bir hata oluştu. Lütfen tekrar deneyin."
+    }
+  },
   "home": {
     "title": "Hoş Geldiniz",
     "subtitle": "Ders notlarını, sınav materyallerini ve eğitim içeriğini diğer öğrencilerle paylaşın. Birlikte öğrenin ve destekleyici bir akademik topluluk oluşturun.",
@@ -151,6 +220,7 @@
     "unlike": "Beğeniyi Geri Al",
     "showMore": "Daha Fazla Göster",
     "showLess": "Daha Az Göster",
+    "originalPost": "Orijinal gönderi:",
     "save": "Kaydet",
     "unsave": "Kaydı Kaldır",
     "comment": "Yorum Yap",
@@ -179,7 +249,10 @@
     "sharePost": "Gönderiyi Paylaş",
     "titleRequired": "Başlık gerekli",
     "postCreatedSuccess": "Gönderi başarıyla oluşturuldu",
-    "errorCreatingPost": "Gönderi oluşturulurken hata oluştu"
+    "errorCreatingPost": "Gönderi oluşturulurken hata oluştu",
+    "viewPost": "Gönderiyi Gör",
+    "aiDetected": "AI",
+    "categoryDetectedByAI": "Kategori otomatik olarak AI tarafından belirlendi"
   },
   "comments": {
     "addComment": "Yorum ekle...",
@@ -1010,8 +1083,8 @@
       "tagline": "Öğrencileri işbirlikçi öğrenme ile güçlendiriyoruz.",
       "description": "OWL Platform, öğrencilerin akademik başarıya ulaşması için tasarlanmış yeni nesil bir eğitim platformudur.",
       "links": {
-      "about": "Hakkımızda",
-      "contact": "İletişim",
+        "about": "Hakkımızda",
+        "contact": "İletişim",
         "privacy": "Gizlilik Politikası",
         "terms": "Kullanım Koşulları",
         "faq": "Sık Sorulan Sorular"
@@ -1271,5 +1344,24 @@
       "customPlaceholder": "Dil adını yazın (örn: Almanca, Japonca)",
       "hint": "AI içeriği bu dilde oluşturacak"
     }
+  },
+  "echo": {
+    "echo": "Echo",
+    "echoed": "Echo yaptı",
+    "echoThis": "Echo yap",
+    "quickEcho": "Hızlı Echo",
+    "quoteEcho": "Yorumla Echo Yap",
+    "removeEcho": "Echo'yu Kaldır",
+    "addYourThoughts": "Düşüncelerini ekle...",
+    "echoWith": "Yorumla echo yap",
+    "echoCount": "{count} echo",
+    "echoSuccess": "Gönderi başarıyla echo yapıldı",
+    "echoRemoved": "Echo kaldırıldı",
+    "echoedBy": "{name} echo yaptı",
+    "viewEchoes": "Echo'ları görüntüle",
+    "yourEchoes": "Echo'larınız",
+    "characterLimit": "{current}/{max} karakter",
+    "aiChanged": "AI",
+    "categoryChangedByAI": "Daha doğru kategori için AI tarafından düzeltildi"
   }
 }

@@ -1,0 +1,155 @@
+/* Root color variables and default theme */
+:root {
+  --radius: 0.625rem;
+  /* Light palette: Mint Drift (#A2CBC3), Frosted Pearl (#F3F3F3), Deep Harbor (#0C2D39), Obsidian Mist (#2B2B2B), Onyx Whisper (#101010) */
+  --background: #F3F3F3;              /* Frosted Pearl - ana arka plan */
+  --foreground: #101010;              /* Onyx Whisper - ana metin */
+  --card: #FFFFFF;                    /* Beyaz - kartlar için */
+  --card-foreground: #101010;         /* Onyx Whisper */
+  --popover: #FFFFFF;                 /* Beyaz - popover'lar için */
+  --popover-foreground: #101010;      /* Onyx Whisper */
+  --primary: #0C2D39;                 /* Deep Harbor - ana vurgu rengi */
+  --primary-foreground: #F3F3F3;      /* Frosted Pearl */
+  --secondary: #A2CBC3;               /* Mint Drift - ikincil renk */
+  --secondary-foreground: #0C2D39;    /* Deep Harbor */
+  --muted: #E0E0E0;                   /* Açık gri - muted alanlar */
+  --muted-foreground: #2B2B2B;        /* Obsidian Mist - muted metin */
+  --accent: #A2CBC3;                  /* Mint Drift - vurgular */
+  --accent-foreground: #0C2D39;       /* Deep Harbor */
+  --destructive: #E74C3C;             /* Kırmızı - uyarılar */
+  --border: #D6D6D6;                  /* Açık gri - kenarlıklar */
+  --input: #E0E0E0;                   /* Açık gri - input alanları */
+  --ring: #A2CBC3;                    /* Mint Drift - focus ring */
+  --chart-1: #A2CBC3;                 /* Mint Drift */
+  --chart-2: #0C2D39;                 /* Deep Harbor */
+  --chart-3: #2B2B2B;                 /* Obsidian Mist */
+  --chart-4: #7AB5AC;                 /* Mint Drift açık varyant */
+  --chart-5: #5FA69B;                 /* Mint Drift orta varyant */
+  --sidebar: #FAFAFA;                 /* Çok açık gri - sidebar */
+  --sidebar-foreground: #101010;      /* Onyx Whisper */
+  --sidebar-primary: #0C2D39;         /* Deep Harbor */
+  --sidebar-primary-foreground: #F3F3F3;
+  --sidebar-accent: #A2CBC3;          /* Mint Drift */
+  --sidebar-accent-foreground: #0C2D39;
+  --sidebar-border: #D6D6D6;
+  --sidebar-ring: #A2CBC3;            /* Mint Drift */
+}
+
+/* Dark theme - Premium deep ocean theme */
+.dark {
+  /* Dark theme palette:
+     Mint Drift #A2CBC3, Deep Harbor #0C2D39, Obsidian Mist #2B2B2B,
+     Onyx Whisper #101010, Frosted Pearl #F3F3F3 */
+  --background: #101010;              /* Onyx Whisper - deepest background */
+  --foreground: #F3F3F3;              /* Frosted Pearl - clean text */
+  --card: #2B2B2B;                    /* Obsidian Mist - elevated surfaces */
+  --card-foreground: #F3F3F3;         /* Frosted Pearl */
+  --popover: #2B2B2B;                 /* Obsidian Mist */
+  --popover-foreground: #F3F3F3;      /* Frosted Pearl */
+  --primary: #A2CBC3;                 /* Mint Drift - signature accent */
+  --primary-foreground: #0C2D39;      /* Deep Harbor - contrast on mint */
+  --secondary: #0C2D39;               /* Deep Harbor - secondary surfaces */
+  --secondary-foreground: #A2CBC3;    /* Mint Drift - text on deep harbor */
+  --muted: #1A1A1A;                   /* Subtle muted areas between onyx and obsidian */
+  --muted-foreground: #9CA3AF;        /* Soft gray for muted text */
+  --accent: #A2CBC3;                  /* Mint Drift - interactive elements */
+  --accent-foreground: #0C2D39;       /* Deep Harbor */
+  --destructive: #E74C3C;             /* Warm red for warnings */
+  --destructive-foreground: #F3F3F3;  /* Frosted Pearl */
+  --border: #3A3A3A;                  /* Slightly lighter than obsidian for visibility */
+  --input: #1A1A1A;                   /* Subtle input background */
+  --ring: #A2CBC3;                    /* Mint Drift - focus rings */
+  /* Enhanced chart colors with palette harmony */
+  --chart-1: #A2CBC3;                 /* Mint Drift */
+  --chart-2: #7AB5AC;                 /* Mint Drift darker variant */
+  --chart-3: #0C2D39;                 /* Deep Harbor */
+  --chart-4: #164A5F;                 /* Deep Harbor lighter variant */
+  --chart-5: #5FA69B;                 /* Mint-Harbor blend */
+  /* Sidebar with deep harbor theme */
+  --sidebar: #0C2D39;                 /* Deep Harbor - distinctive sidebar */
+  --sidebar-foreground: #F3F3F3;      /* Frosted Pearl */
+  --sidebar-primary: #A2CBC3;         /* Mint Drift */
+  --sidebar-primary-foreground: #0C2D39;
+  --sidebar-accent: #164A5F;          /* Deep Harbor lighter */
+  --sidebar-accent-foreground: #A2CBC3;
+  --sidebar-border: #164A5F;          /* Subtle harbor border */
+  --sidebar-ring: #A2CBC3;            /* Mint Drift */
+}
+
+/* Dark theme enhancements - Mint Drift accent glow effects */
+.dark {
+  /* Subtle ambient glow for better depth perception */
+  --ambient-glow: 0 0 40px rgba(12, 45, 57, 0.15);
+  --card-glow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --mint-glow: 0 0 20px rgba(162, 203, 195, 0.15);
+}
+
+.dark [data-slot="card"],
+.dark .card {
+  background: var(--card) !important;
+  box-shadow: var(--card-glow) !important;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.dark [data-slot="card"]:hover,
+.dark .card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--mint-glow) !important;
+  border-color: rgba(162, 203, 195, 0.3);
+}
+
+/* Mint Drift accent on interactive elements */
+.dark button[class*="primary"],
+.dark a[class*="primary"] {
+  box-shadow: 0 2px 8px rgba(162, 203, 195, 0.2);
+  transition: all 0.2s ease;
+}
+
+.dark button[class*="primary"]:hover,
+.dark a[class*="primary"]:hover {
+  box-shadow: 0 4px 16px rgba(162, 203, 195, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Enhanced input fields with Mint Drift focus */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #A2CBC3;
+  box-shadow: 0 0 0 3px rgba(162, 203, 195, 0.15);
+  background: #1A1A1A;
+}
+
+/* Subtle text glow for better readability on deep backgrounds */
+.dark h1,
+.dark h2,
+.dark h3 {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge and tag enhancements */
+.dark [class*="badge"],
+.dark .badge {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Scrollbar styling for dark theme */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1A1A1A;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3A3A3A;
+  border-radius: 5px;
+  border: 2px solid #1A1A1A;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #A2CBC3;
+}
+

@@ -1,0 +1,178 @@
+/* Interaction animations */
+@keyframes like-pulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(12deg);
+  }
+}
+
+@keyframes save-pulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(-12deg);
+  }
+}
+
+@keyframes number-pop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Card Lock/Unlock Pulse Animations - 600ms duration synced with audio */
+@keyframes lock-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.9);
+    transform: scale(1);
+  }
+  10% {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.6);
+    transform: scale(1.01);
+  }
+  30% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    transform: scale(1);
+  }
+}
+
+@keyframes unlock-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.9);
+    transform: scale(1);
+  }
+  10% {
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.6);
+    transform: scale(1.01);
+  }
+  30% {
+    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(249, 115, 22, 0);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    transform: scale(1);
+  }
+}
+
+/* Dark mode variants with enhanced glow - 600ms synced */
+@media (prefers-color-scheme: dark) {
+  @keyframes lock-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 1), 0 0 20px rgba(34, 197, 94, 0.5);
+      transform: scale(1);
+    }
+    10% {
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.7), 0 0 25px rgba(34, 197, 94, 0.4);
+      transform: scale(1.01);
+    }
+    30% {
+      box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.4), 0 0 30px rgba(34, 197, 94, 0.3);
+      transform: scale(1.02);
+    }
+    50% {
+      box-shadow: 0 0 0 12px rgba(34, 197, 94, 0), 0 0 30px rgba(34, 197, 94, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 0 0 rgba(34, 197, 94, 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes unlock-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 1), 0 0 20px rgba(249, 115, 22, 0.5);
+      transform: scale(1);
+    }
+    10% {
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.7), 0 0 25px rgba(249, 115, 22, 0.4);
+      transform: scale(1.01);
+    }
+    30% {
+      box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.4), 0 0 30px rgba(249, 115, 22, 0.3);
+      transform: scale(1.02);
+    }
+    50% {
+      box-shadow: 0 0 0 12px rgba(249, 115, 22, 0), 0 0 30px rgba(249, 115, 22, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), 0 0 0 rgba(249, 115, 22, 0);
+      transform: scale(1);
+    }
+  }
+}
+
+/* Explicit dark class support - 600ms synced */
+.dark {
+  @keyframes lock-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 1), 0 0 20px rgba(34, 197, 94, 0.5);
+      transform: scale(1);
+    }
+    10% {
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.7), 0 0 25px rgba(34, 197, 94, 0.4);
+      transform: scale(1.01);
+    }
+    30% {
+      box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.4), 0 0 30px rgba(34, 197, 94, 0.3);
+      transform: scale(1.02);
+    }
+    50% {
+      box-shadow: 0 0 0 12px rgba(34, 197, 94, 0), 0 0 30px rgba(34, 197, 94, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 0 0 rgba(34, 197, 94, 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes unlock-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 1), 0 0 20px rgba(249, 115, 22, 0.5);
+      transform: scale(1);
+    }
+    10% {
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.7), 0 0 25px rgba(249, 115, 22, 0.4);
+      transform: scale(1.01);
+    }
+    30% {
+      box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.4), 0 0 30px rgba(249, 115, 22, 0.3);
+      transform: scale(1.02);
+    }
+    50% {
+      box-shadow: 0 0 0 12px rgba(249, 115, 22, 0), 0 0 30px rgba(249, 115, 22, 0.2);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), 0 0 0 rgba(249, 115, 22, 0);
+      transform: scale(1);
+    }
+  }
+}
+
+@keyframes retro-twinkle {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+

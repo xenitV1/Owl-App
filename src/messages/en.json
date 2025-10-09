@@ -77,6 +77,75 @@
     "profileIncomplete": "Please complete your profile",
     "completeProfile": "Complete Profile"
   },
+  "onboarding": {
+    "welcome": "Welcome!",
+    "welcomeDescription": "We need some information to show you the best content.",
+    "step": "Step",
+    "stepOf": "of",
+    "country": {
+      "title": "Select Your Country",
+      "description": "Choose your country to get personalized content",
+      "placeholder": "Select country",
+      "important": "Important:",
+      "permanentWarning": "Country selection is permanent and cannot be changed",
+      "selectCorrectly": "Please make sure to select the correct country",
+      "error": "Please select your country"
+    },
+    "grade": {
+      "title": "Select Your Level",
+      "description": "Choose your current education level",
+      "placeholder": "Select grade/level",
+      "important": "Important:",
+      "changeWarning": "You can change this after 24 hours",
+      "levels": {
+        "9th": "9th Grade",
+        "10th": "10th Grade",
+        "11th": "11th Grade",
+        "12th": "12th Grade",
+        "freshman": "Freshman (University 1st Year)",
+        "sophomore": "Sophomore (University 2nd Year)",
+        "junior": "Junior (University 3rd Year)",
+        "senior": "Senior (University 4th Year)",
+        "highschoolGraduate": "High School Graduate",
+        "universityGraduate": "University Graduate",
+        "graduateStudent": "Graduate Student",
+        "teacher": "Teacher",
+        "other": "Other"
+      },
+      "error": "Please select your grade"
+    },
+    "subject": {
+      "title": "Favorite Subject",
+      "description": "Select your most interested topic for personalized recommendations.",
+      "subjects": {
+        "math": "Mathematics",
+        "physics": "Physics",
+        "chemistry": "Chemistry",
+        "biology": "Biology",
+        "literature": "Literature",
+        "history": "History",
+        "geography": "Geography",
+        "english": "English",
+        "computer": "Computer Science",
+        "art": "Art"
+      },
+      "error": "Please select your favorite subject"
+    },
+    "interests": {
+      "title": "Your Interests",
+      "optional": "Optional",
+      "description": "Select other topics you're interested in (multiple selection allowed)."
+    },
+    "buttons": {
+      "continue": "Continue",
+      "back": "Back",
+      "complete": "Complete",
+      "saving": "Saving..."
+    },
+    "errors": {
+      "saveError": "An error occurred. Please try again."
+    }
+  },
   "home": {
     "title": "Welcome to",
     "subtitle": "Share study notes, exam materials, and educational content with fellow students. Learn together and build a supportive academic community.",
@@ -151,6 +220,7 @@
     "unlike": "Unlike",
     "showMore": "Show More",
     "showLess": "Show Less",
+    "originalPost": "Original post by",
     "save": "Save",
     "unsave": "Unsave",
     "comment": "Comment",
@@ -179,7 +249,8 @@
     "sharePost": "Share Post",
     "titleRequired": "Title required",
     "postCreatedSuccess": "Post created successfully",
-    "errorCreatingPost": "Error creating post"
+    "errorCreatingPost": "Error creating post",
+    "viewPost": "View Post"
   },
   "comments": {
     "addComment": "Add a comment...",
@@ -1005,8 +1076,8 @@
       "tagline": "Empowering students through collaborative learning.",
       "description": "OWL Platform is a next-generation educational platform designed for students to achieve academic success.",
       "links": {
-      "about": "About",
-      "contact": "Contact",
+        "about": "About",
+        "contact": "Contact",
         "privacy": "Privacy Policy",
         "terms": "Terms of Service",
         "faq": "FAQ"
@@ -1266,5 +1337,26 @@
       "customPlaceholder": "Type language name (e.g. German, Japanese)",
       "hint": "AI will generate content in this language"
     }
+  },
+  "echo": {
+    "echo": "Echo",
+    "echoed": "Echoed",
+    "echoThis": "Echo this",
+    "quickEcho": "Quick Echo",
+    "quoteEcho": "Quote Echo",
+    "removeEcho": "Remove Echo",
+    "addYourThoughts": "Add your thoughts...",
+    "echoWith": "Echo with comment",
+    "echoCount": "{count} echo(s)",
+    "echoSuccess": "Post echoed successfully",
+    "echoRemoved": "Echo removed",
+    "echoedBy": "{name} echoed this",
+    "viewEchoes": "View echoes",
+    "yourEchoes": "Your Echoes",
+    "characterLimit": "{current}/{max} characters",
+    "aiDetected": "AI",
+    "aiChanged": "AI",
+    "categoryDetectedByAI": "Category automatically detected by AI",
+    "categoryChangedByAI": "Category corrected by AI for better accuracy"
   }
 }
