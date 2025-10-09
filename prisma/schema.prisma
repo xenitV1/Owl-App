@@ -8,39 +8,45 @@ datasource db {
 }
 
 model User {
-  id                 String             @id @default(cuid())
-  email              String             @unique
+  id                 String               @id @default(cuid())
+  email              String               @unique
   name               String?
   avatar             String?
-  role               UserRole           @default(STUDENT)
+  role               UserRole             @default(STUDENT)
+  country            String?
+  language           String?              @default("en")
+  preferLocalContent Boolean              @default(true)
   school             String?
   grade              String?
   favoriteSubject    String?
   bio                String?
-  isVerified         Boolean            @default(false)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  isVerified         Boolean              @default(false)
+  totalInteractions  Int                  @default(0)
+  onboardingComplete Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   adminActivityLogs  AdminActivityLog[]
-  reviewedAppeals    Appeal[]           @relation("AppealReviewer")
+  reviewedAppeals    Appeal[]             @relation("AppealReviewer")
   appeals            Appeal[]
   comments           Comment[]
   communityMembers   CommunityMember[]
-  followers          Follow[]           @relation("UserFollowers")
-  following          Follow[]           @relation("UserFollowing")
+  followers          Follow[]             @relation("UserFollowers")
+  following          Follow[]             @relation("UserFollowing")
   groupMembers       GroupMember[]
   likes              Like[]
   moderationActions  ModerationAction[]
-  actorNotifications Notification[]     @relation("NotificationActor")
+  actorNotifications Notification[]       @relation("NotificationActor")
   notifications      Notification[]
   poolCategories     PoolCategory[]
   pools              Pool[]
   posts              Post[]
-  assignedReports    Report[]           @relation("ModeratorAssignments")
+  assignedReports    Report[]             @relation("ModeratorAssignments")
   reports            Report[]
-  blockedBy          UserBlock[]        @relation("UserBlocked")
-  blockedUsers       UserBlock[]        @relation("UserBlocking")
-  mutedBy            UserMute[]         @relation("UserMuted")
-  mutedUsers         UserMute[]         @relation("UserMuting")
+  blockedBy          UserBlock[]          @relation("UserBlocked")
+  blockedUsers       UserBlock[]          @relation("UserBlocking")
+  mutedBy            UserMute[]           @relation("UserMuted")
+  mutedUsers         UserMute[]           @relation("UserMuting")
+  echoes             Echo[]
 
   @@map("users")
 }
@@ -51,11 +57,15 @@ model Post {
   content             String?
   image               String?
   subject             String?
+  grade               String?
   isPublic            Boolean        @default(true)
   authorId            String
   communityId         String?
   groupId             String?
-  viewCount           Int            @default(0)
+  
+  // Country and language fields for content distribution
+  authorCountry       String?
+  language            String?        @default("en")
   
   // AI-generated content fields
   aiGenerated         Boolean        @default(false)
@@ -64,18 +74,27 @@ model Post {
   aiSourceDocument    String?        // Original document name
   aiAgeGroup          String?        // Target age group
   aiPromptUsed        String?        // For tracking/debugging
-  
+
+  // Algorithm fields
+  upvotes             Int            @default(0)
+  downvotes           Int            @default(0)
+  sharesCount         Int            @default(0)
+  reportCount         Int            @default(0)
+
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
   comments            Comment[]
   likes               Like[]
   notifications       Notification[]
   pools               Pool[]
+  echoes              Echo[]
   group               PrivateGroup?  @relation(fields: [groupId], references: [id])
   community           Community?     @relation(fields: [communityId], references: [id])
   author              User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   reports             Report[]
 
+  @@index([createdAt])
+  @@index([grade, createdAt])
   @@map("posts")
 }
 
@@ -188,6 +207,21 @@ model Like {
 
   @@unique([userId, postId])
   @@map("likes")
+}
+
+model Echo {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  comment   String?
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+  @@index([postId])
+  @@map("echoes")
 }
 
 model Pool {
@@ -439,5 +473,71 @@ enum NotificationType {
   COMMENT
   FOLLOW
   POST
+  ECHO
   SYSTEM
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // JSON
+  updatedAt DateTime @default(now())
+
+  @@map("system_config")
+}
+
+model UserInterestVector {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  subjects       String   // JSON array of subjects
+  grades         String   // JSON array of grades
+  lastUpdated    DateTime @default(now())
+  driftScore     Float    @default(0)
+  diversityScore Float    @default(0)
+
+  @@map("user_interest_vectors")
+}
+
+model SimilarUser {
+  id            String   @id @default(cuid())
+  userId        String
+  similarUserId String
+  similarity    Float
+  updatedAt     DateTime @default(now())
+
+  @@unique([userId, similarUserId])
+  @@map("similar_users")
+}
+
+model Interaction {
+  id          String   @id @default(cuid())
+  userId      String
+  contentId   String
+  contentType String
+  type        String
+  subject     String?
+  grade       String?
+  weight      Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([contentId])
+  @@index([createdAt])
+  @@map("interactions")
+}
+
+model AlgorithmMetrics {
+  id               String   @id @default(cuid())
+  userId           String
+  algorithmVersion String
+  sessionDuration  Int
+  contentViews     Int
+  contentLikes     Int
+  returnRate       Float
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([algorithmVersion])
+  @@index([createdAt])
+  @@map("algorithm_metrics")
 }
