@@ -172,7 +172,7 @@ export async function fetchFeed(feedUrl: string, limit: number, page: number) {
         linkUrl: link,
       });
       const isShort =
-        /^https?:\/\/.*youtube\.com\/shorts\//i.test(link) ||
+        /^https?:\/\/(www\.)?youtube\.com\/shorts\//i.test(link) ||
         /#shorts/i.test(title || "") ||
         /#shorts/i.test(summary || "");
       items.push({
@@ -221,7 +221,7 @@ export async function fetchFeed(feedUrl: string, limit: number, page: number) {
         linkUrl: link,
       });
       const isShort =
-        /^https?:\/\/.*youtube\.com\/shorts\//i.test(link) ||
+        /^https?:\/\/(www\.)?youtube\.com\/shorts\//i.test(link) ||
         /#shorts/i.test(title || "") ||
         /#shorts/i.test(description || "");
       items.push({
