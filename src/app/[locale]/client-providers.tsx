@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FontSizeProvider } from "@/contexts/FontSizeContext";
-import { SessionProvider } from 'next-auth/react';
-import { NextIntlClientProvider } from 'next-intl';
-import { useEffect } from 'react';
+import { SessionProvider } from "next-auth/react";
+import { NextIntlClientProvider } from "next-intl";
+import { OnboardingCheck } from "@/components/auth/OnboardingCheck";
+import { useEffect } from "react";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -13,21 +14,25 @@ interface ClientProvidersProps {
   messages: Record<string, any>;
 }
 
-export function ClientProviders({ children, locale, messages }: ClientProvidersProps) {
+export function ClientProviders({
+  children,
+  locale,
+  messages,
+}: ClientProvidersProps) {
   // Suppress linkifyjs warnings globally (only in development)
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
-    
+    if (process.env.NODE_ENV !== "development") return;
+
     const originalWarn = console.warn;
     console.warn = (...args: any[]) => {
-      const message = args[0]?.toString?.() || '';
+      const message = args[0]?.toString?.() || "";
       // Filter out linkify warnings from BlockNote
-      if (message.includes('linkifyjs') || message.includes('linkify')) {
+      if (message.includes("linkifyjs") || message.includes("linkify")) {
         return;
       }
       originalWarn.apply(console, args);
     };
-    
+
     return () => {
       console.warn = originalWarn;
     };
@@ -38,6 +43,7 @@ export function ClientProviders({ children, locale, messages }: ClientProvidersP
         <AuthProvider>
           <ThemeProvider>
             <FontSizeProvider>
+              <OnboardingCheck />
               {children}
             </FontSizeProvider>
           </ThemeProvider>
