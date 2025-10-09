@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Settings,
   RefreshCw,
@@ -30,23 +30,26 @@ import {
   Bookmark,
   ExternalLink,
   Filter,
-  Play
-} from 'lucide-react';
-import { VideoPlayer } from '@/components/media/VideoPlayer';
-import { useLoadingMessages } from '@/hooks/useLoadingMessages';
-import { useTranslations, useLocale } from 'next-intl';
-import { getLocalizedSubjectLabel } from '@/lib/utils';
-import { WebContentViewer } from './WebContentViewer';
-
-
-
-
+  Play,
+} from "lucide-react";
+import { useLoadingMessages } from "@/hooks/useLoadingMessages";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocalizedSubjectLabel } from "@/lib/utils";
+import { VideoContent } from "./platform-content/VideoContent";
+import { WebContent } from "./platform-content/WebContent";
+import { usePlatformContentData } from "./platform-content/usePlatformContentData";
 
 interface PlatformContentCardProps {
   cardId: string;
   cardData?: any; // Card data from workspace store
   config?: {
-    contentType: 'posts' | 'communities' | 'users' | 'trending' | 'following' | 'discover';
+    contentType:
+      | "posts"
+      | "communities"
+      | "users"
+      | "trending"
+      | "following"
+      | "discover";
     filters?: {
       subject?: string;
       communityId?: string;
@@ -116,44 +119,59 @@ interface User {
   };
 }
 
-interface ApiResponse {
-  type: string;
-  data: Post[] | Community[] | User[] | any;
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
+// Response shape consolidated in hook
 
-export function PlatformContentCard({ cardId, cardData, config }: PlatformContentCardProps) {
+export function PlatformContentCard({
+  cardId,
+  cardData,
+  config,
+}: PlatformContentCardProps) {
   const t = useTranslations();
   const locale = useLocale();
 
-  const [contentType, setContentType] = useState(config?.contentType || 'posts');
-  const [data, setData] = useState<Post[] | Community[] | User[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState(config?.filters || {});
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0,
-  });
   const [showSettings, setShowSettings] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(config?.autoRefresh || false);
-  const [refreshInterval, setRefreshInterval] = useState(config?.refreshInterval || 5);
+  const {
+    state: {
+      contentType,
+      data,
+      loading,
+      error,
+      filters,
+      pagination,
+      autoRefresh,
+      refreshInterval,
+    },
+    actions: {
+      fetchData,
+      setPagination,
+      setAutoRefresh,
+      setRefreshInterval,
+      handleContentTypeChange,
+      handleFilterChange,
+    },
+  } = usePlatformContentData({
+    initialType: (config?.contentType as any) || "posts",
+    initialFilters: config?.filters,
+    initialAutoRefresh: config?.autoRefresh,
+    initialRefreshInterval: config?.refreshInterval,
+  });
 
   const { currentMessage } = useLoadingMessages({
     isLoading: loading,
-    messageKeys: ['fetching', 'processing', 'analyzing', 'preparing', 'optimizing'],
-    interval: 1000
+    messageKeys: [
+      "fetching",
+      "processing",
+      "analyzing",
+      "preparing",
+      "optimizing",
+    ],
+    interval: 1000,
   });
 
   // Check if this card contains video content
-  const isVideoCard = cardData?.content && typeof cardData.content === 'string' &&
+  const isVideoCard =
+    cardData?.content &&
+    typeof cardData.content === "string" &&
     (() => {
       try {
         const parsed = JSON.parse(cardData.content);
@@ -164,7 +182,9 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
     })();
 
   // Check if this card contains web content
-  const isWebCard = cardData?.content && typeof cardData.content === 'string' &&
+  const isWebCard =
+    cardData?.content &&
+    typeof cardData.content === "string" &&
     (() => {
       try {
         const parsed = JSON.parse(cardData.content);
@@ -174,118 +194,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
       }
     })();
 
-  // Refs for cleanup
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const fetchData = useCallback(async (page = 1) => {
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    abortControllerRef.current = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        type: contentType,
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-      });
-
-      // Only add filters if they have values
-      if (filters.search) params.append('search', filters.search);
-      if (filters.subject) params.append('subject', filters.subject);
-      if (filters.communityId) params.append('communityId', filters.communityId);
-      if (filters.userId) params.append('userId', filters.userId);
-
-      const response = await fetch(`/api/platform-content?${params}`, {
-        signal: abortControllerRef.current.signal,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const result: ApiResponse = await response.json();
-      
-      // Handle different data structures
-      let dataArray: any[] = [];
-      if (Array.isArray(result.data)) {
-        dataArray = result.data;
-      } else if (result.data && typeof result.data === 'object') {
-        // For discover type, we might have nested data
-        if (result.type === 'discover' && result.data.recentPosts) {
-          dataArray = result.data.recentPosts;
-        } else {
-          dataArray = [];
-        }
-      }
-      
-      setData(dataArray);
-      setPagination(result.pagination);
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return; // Request was cancelled, don't update state
-      }
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [contentType, pagination.limit, filters]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Auto refresh with proper cleanup
-  useEffect(() => {
-    if (!autoRefresh) {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-      return;
-    }
-
-    refreshIntervalRef.current = setInterval(() => {
-      fetchData(pagination.page);
-    }, refreshInterval * 60 * 1000);
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, [autoRefresh, refreshInterval, pagination.page, fetchData]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const handleContentTypeChange = (newType: string) => {
-    setContentType(newType as any);
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value || undefined,
-    }));
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  // data management moved to hook
 
   const renderPost = (post: Post) => (
     <Card key={post.id} className="mb-3 hover:shadow-md transition-shadow">
@@ -298,7 +207,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-medium text-sm">{post.author.name}</span>
-              {post.author.role !== 'STUDENT' && (
+              {post.author.role !== "STUDENT" && (
                 <Badge variant="secondary" className="text-xs">
                   {post.author.role}
                 </Badge>
@@ -310,7 +219,9 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
                 </Badge>
               )}
             </div>
-            <h3 className="font-semibold text-sm mb-1 line-clamp-2">{post.title}</h3>
+            <h3 className="font-semibold text-sm mb-1 line-clamp-2">
+              {post.title}
+            </h3>
             {post.content && (
               <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                 {post.content}
@@ -393,7 +304,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-medium text-sm">{user.name}</span>
-              {user.role !== 'STUDENT' && (
+              {user.role !== "STUDENT" && (
                 <Badge variant="secondary" className="text-xs">
                   {user.role}
                 </Badge>
@@ -429,185 +340,16 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
     </Card>
   );
 
-  // Extract YouTube video ID from various URL formats
-  const extractYouTubeVideoId = (url: string): string | null => {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-
-    // If no pattern matches, try to extract from query parameters
-    try {
-      const urlObj = new URL(url);
-      return urlObj.searchParams.get('v');
-    } catch {
-      return null;
-    }
-  };
-
-  // Extract Spotify embed URL from Spotify URL
-  const extractSpotifyEmbedUrl = (url: string): string | null => {
-    const patterns = [
-      /spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) {
-        const [, type, id] = match;
-        return `https://open.spotify.com/embed/${type}/${id}`;
-      }
-    }
-
-    return null;
-  };
-
-  const renderVideoContent = () => {
-    if (!isVideoCard || !cardData?.content) return null;
-
-    try {
-      const mediaData = JSON.parse(cardData.content);
-      const { videoType, videoUrl, videoFile, videoTitle, connectedTo } = mediaData;
-
-      return (
-        <div className="w-full h-full flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <span className="text-lg">
-                  {videoType === 'spotify' ? '🎵' :
-                   videoType === 'youtube' ? '▶️' : '🎬'}
-                </span>
-                {videoTitle || (videoType === 'spotify' ? 'Spotify' :
-                               videoType === 'youtube' ? 'YouTube Video' : 'Video')}
-              </CardTitle>
-              <Badge variant="secondary" className="text-xs">
-                {videoType === 'spotify' ? 'Spotify' :
-                 videoType === 'youtube' ? 'YouTube' :
-                 videoType === 'direct' ? 'Video URL' : 'Local File'}
-              </Badge>
-            </div>
-          </CardHeader>
-
-          <CardContent className="flex-1">
-            <div className="w-full bg-muted rounded-md overflow-hidden relative" style={{ height: videoType === 'spotify' ? '352px' : 'auto', aspectRatio: videoType === 'spotify' ? 'auto' : '16/9' }}>
-              {videoType === 'youtube' && videoUrl && (
-                <>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYouTubeVideoId(videoUrl) || 'dQw4w9WgXcQ'}?rel=0&modestbranding=1`}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    loading="lazy"
-                    title="YouTube Video"
-                    onError={(e) => {
-                      const target = e.target as HTMLIFrameElement;
-                      target.style.display = 'none';
-                      const fallback = target.parentElement?.querySelector('.youtube-fallback');
-                      if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                    }}
-                  />
-                  <div className="youtube-fallback absolute inset-0 items-center justify-center bg-muted/50 hidden flex-col">
-                    <div className="text-center p-4">
-                      <Play className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        YouTube Video
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Video may be blocked by privacy settings
-                      </p>
-                      <a
-                        href={videoUrl.startsWith('http') ? videoUrl : `https://www.youtube.com/watch?v=${videoUrl}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline mt-2 inline-block"
-                      >
-                        Open in YouTube
-                      </a>
-                    </div>
-                  </div>
-                </>
-              )}
-              {videoType === 'spotify' && videoUrl && (
-                <iframe
-                  src={extractSpotifyEmbedUrl(videoUrl) || 'https://open.spotify.com/embed/playlist/2VLBh9qpGUB7a6hQxIdGtw'}
-                  style={{ width: '100%', height: '100%' }}
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  loading="lazy"
-                  title="Spotify"
-                />
-              )}
-              {videoType === 'direct' && videoUrl && (
-                <VideoPlayer src={videoUrl} />
-              )}
-              {videoType === 'file' && videoFile && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Play className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Local video file: {videoFile}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Local file playback not supported in this view
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </div>
-      );
-    } catch (error) {
-      console.error('Error parsing video data:', error);
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-red-500">Error loading video content</p>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  const renderWebContent = () => {
-    if (!isWebCard || !cardData?.content) return null;
-
-    try {
-      const webData = JSON.parse(cardData.content);
-      const { webUrl, webTitle, connectedTo } = webData;
-
-      return (
-        <WebContentViewer
-          url={webUrl}
-          title={webTitle}
-          cardId={cardId}
-          connectedTo={connectedTo}
-        />
-      );
-    } catch (error) {
-      console.error('Error parsing web data:', error);
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-red-500">Error loading web content</p>
-          </div>
-        </div>
-      );
-    }
-  };
+  // video/web specialized renderers moved to subcomponents
 
   const renderContent = () => {
     if (loading) {
       return (
         <div className="flex items-center justify-center h-32">
           <RefreshCw className="h-6 w-6 animate-spin" />
-          <span className="ml-2 text-sm text-muted-foreground">{currentMessage || t('common.loading')}</span>
+          <span className="ml-2 text-sm text-muted-foreground">
+            {currentMessage || t("common.loading")}
+          </span>
         </div>
       );
     }
@@ -617,9 +359,9 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
         <div className="flex items-center justify-center h-32 text-center">
           <div>
             <p className="text-sm text-red-500 mb-2">{error}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchData(pagination.page)}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -634,10 +376,12 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
       return (
         <div className="flex items-center justify-center h-32 text-center">
           <div>
-            <p className="text-sm text-muted-foreground mb-2">No content found</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <p className="text-sm text-muted-foreground mb-2">
+              No content found
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchData(pagination.page)}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -651,12 +395,12 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
     return (
       <div className="space-y-2">
         {data.map((item: any) => {
-          if (contentType === 'posts') return renderPost(item);
-          if (contentType === 'communities') return renderCommunity(item);
-          if (contentType === 'users') return renderUser(item);
+          if (contentType === "posts") return renderPost(item);
+          if (contentType === "communities") return renderCommunity(item);
+          if (contentType === "users") return renderUser(item);
           return null;
         })}
-        
+
         {pagination.pages > 1 && (
           <div className="flex justify-center gap-2 mt-4">
             <Button
@@ -685,20 +429,20 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
   };
 
   // If this is a video card, render video content instead
-  if (isVideoCard) {
-    return renderVideoContent();
-  }
+  if (isVideoCard && cardData?.content)
+    return <VideoContent content={cardData.content} />;
 
   // If this is a web card, render web content instead
-  if (isWebCard) {
-    return renderWebContent();
-  }
+  if (isWebCard && cardData?.content)
+    return <WebContent content={cardData.content} cardId={cardId} />;
 
   return (
     <div className="w-full h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Platform Content</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Platform Content
+          </CardTitle>
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -707,7 +451,9 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowSettings(!showSettings)}>
+                <DropdownMenuItem
+                  onClick={() => setShowSettings(!showSettings)}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
@@ -719,7 +465,7 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
             </DropdownMenu>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Select value={contentType} onValueChange={handleContentTypeChange}>
             <SelectTrigger className="w-full">
@@ -774,24 +520,30 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
                 type="text"
                 placeholder="Search..."
                 className="flex-1 px-2 py-1 text-xs border rounded"
-                value={filters.search || ''}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                value={filters.search || ""}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
               />
             </div>
-            {contentType === 'posts' && (
+            {contentType === "posts" && (
               <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Subject:</label>
+                <label className="text-xs text-muted-foreground">
+                  Subject:
+                </label>
                 <input
                   type="text"
                   placeholder="Subject filter..."
                   className="flex-1 px-2 py-1 text-xs border rounded"
-                  value={filters.subject || ''}
-                  onChange={(e) => handleFilterChange('subject', e.target.value)}
+                  value={filters.subject || ""}
+                  onChange={(e) =>
+                    handleFilterChange("subject", e.target.value)
+                  }
                 />
               </div>
             )}
             <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground">Auto Refresh:</label>
+              <label className="text-xs text-muted-foreground">
+                Auto Refresh:
+              </label>
               <input
                 type="checkbox"
                 checked={autoRefresh}
@@ -801,7 +553,9 @@ export function PlatformContentCard({ cardId, cardData, config }: PlatformConten
             </div>
             {autoRefresh && (
               <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Interval (min):</label>
+                <label className="text-xs text-muted-foreground">
+                  Interval (min):
+                </label>
                 <input
                   type="number"
                   min="1"
