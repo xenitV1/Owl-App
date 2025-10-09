@@ -27,29 +27,52 @@ async function safeMigrate() {
   }
 
   try {
-    console.log("🗄️ Running production database migrations...");
-    console.log("📊 Migration type: SAFE (preserves existing data)");
+    const fs = require("fs");
+    const path = require("path");
+    const migrationsPath = path.join(__dirname, "..", "prisma", "migrations");
+    const hasMigrations =
+      fs.existsSync(migrationsPath) &&
+      fs.readdirSync(migrationsPath).length > 0;
 
-    // prisma migrate deploy:
-    // - Only applies pending migrations
-    // - Never drops tables or data
-    // - Production-safe command
-    // - Idempotent (can run multiple times safely)
-    execSync("npx prisma migrate deploy", {
-      stdio: "inherit",
-      env: process.env,
-    });
+    if (hasMigrations) {
+      console.log("🗄️ Running production database migrations...");
+      console.log("📊 Migration type: SAFE (preserves existing data)");
 
-    console.log("✅ Migrations completed successfully");
-    console.log("💾 All existing data preserved");
+      // prisma migrate deploy:
+      // - Only applies pending migrations
+      // - Never drops tables or data
+      // - Production-safe command
+      // - Idempotent (can run multiple times safely)
+      execSync("npx prisma migrate deploy", {
+        stdio: "inherit",
+        env: process.env,
+      });
+
+      console.log("✅ Migrations completed successfully");
+      console.log("💾 All existing data preserved");
+    } else {
+      console.log("📦 No migrations found - using db push");
+      console.log("🔄 Syncing database schema...");
+
+      // prisma db push:
+      // - Syncs schema directly without migrations
+      // - Safe for initial deploys
+      // - Does not track migration history
+      execSync("npx prisma db push --skip-generate", {
+        stdio: "inherit",
+        env: process.env,
+      });
+
+      console.log("✅ Database schema synced successfully");
+    }
   } catch (error) {
-    console.error("❌ Migration failed!");
+    console.error("❌ Database sync failed!");
     console.error("Error:", error.message);
 
-    // In production, fail the build if migration fails
+    // In production, fail the build if sync fails
     // This prevents deploying broken code
     if (isProduction) {
-      console.error("🛑 Build stopped - fix migrations before deploying");
+      console.error("🛑 Build stopped - fix database issues before deploying");
       process.exit(1);
     }
   }
