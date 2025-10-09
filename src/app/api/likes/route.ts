@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { createLikeNotification } from '@/lib/notifications';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { createLikeNotification } from "@/lib/notifications";
+import { recordInteraction } from "@/lib/algorithms/helpers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,10 +11,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await db.user.findUnique({
@@ -21,18 +19,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { postId } = await request.json();
 
     if (!postId) {
       return NextResponse.json(
-        { error: 'Post ID is required' },
-        { status: 400 }
+        { error: "Post ID is required" },
+        { status: 400 },
       );
     }
 
@@ -40,15 +35,12 @@ export async function POST(request: NextRequest) {
     const post = await db.post.findUnique({
       where: { id: postId },
       include: {
-        author: true
-      }
+        author: true,
+      },
     });
 
     if (!post) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     // Check if user is blocked by post author or vice versa
@@ -56,16 +48,13 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [
           { blockerId: user.id, blockedId: post.authorId },
-          { blockerId: post.authorId, blockedId: user.id }
-        ]
-      }
+          { blockerId: post.authorId, blockedId: user.id },
+        ],
+      },
     });
 
     if (isBlocked) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Check if user already liked the post
@@ -101,6 +90,17 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // ✅ ALGORITHM: Record interaction for recommendation system
+      await recordInteraction(
+        user.id,
+        postId,
+        "post",
+        "LIKE",
+        post.subject || undefined,
+        post.grade || undefined,
+        3, // LIKE weight
+      );
+
       // Create notification for the post author
       await createLikeNotification(postId, user.id);
 
@@ -112,10 +112,10 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Error toggling like:', error);
+    console.error("Error toggling like:", error);
     return NextResponse.json(
-      { error: 'Failed to toggle like' },
-      { status: 500 }
+      { error: "Failed to toggle like" },
+      { status: 500 },
     );
   }
 }

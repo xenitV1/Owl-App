@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import apiDebugLogger, { withApiDebug } from '@/lib/apiDebug';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import apiDebugLogger, { withApiDebug } from "@/lib/apiDebug";
 
 export async function GET(request: NextRequest) {
-  const timer = apiDebugLogger.startTimer('GET /api/posts/most-read');
+  const timer = apiDebugLogger.startTimer("GET /api/posts/most-read");
   const logEntry = await apiDebugLogger.logRequest(request);
-  
+
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get("limit") || "10");
 
-    // Get posts ordered by view count (most viewed first)
+    // Get posts ordered by creation date (algorithm system removed)
+    // This endpoint now returns recent posts instead of most-read
     const posts = await db.post.findMany({
       where: {
         isPublic: true,
@@ -32,23 +33,17 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [
-        {
-          viewCount: 'desc',
-        },
-        {
-          createdAt: 'desc',
-        },
-      ],
+      orderBy: {
+        createdAt: "desc",
+      },
       take: limit,
     });
 
     const response = NextResponse.json({
-      notes: posts.map(post => ({
+      notes: posts.map((post) => ({
         id: post.id,
         title: post.title,
         subject: post.subject,
-        viewCount: post.viewCount,
         author: post.author,
         createdAt: post.createdAt,
       })),
@@ -58,15 +53,15 @@ export async function GET(request: NextRequest) {
       postsCount: posts.length,
       limit,
     });
-    
+
     timer();
     return response;
   } catch (error) {
     apiDebugLogger.logError(logEntry, error);
-    console.error('Error fetching most read posts:', error);
+    console.error("Error fetching most read posts:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch most read posts' },
-      { status: 500 }
+      { error: "Failed to fetch most read posts" },
+      { status: 500 },
     );
   }
 }

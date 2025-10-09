@@ -1,29 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { ContentFilterService } from '@/lib/contentFilter';
-import { ImageOptimizer } from '@/lib/imageOptimizer';
-import apiDebugLogger, { withApiDebug } from '@/lib/apiDebug';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { ContentFilterService } from "@/lib/contentFilter";
+import { ImageOptimizer } from "@/lib/imageOptimizer";
+import apiDebugLogger, { withApiDebug } from "@/lib/apiDebug";
 
 export async function GET(request: NextRequest) {
-  const timer = apiDebugLogger.startTimer('GET /api/posts');
+  const timer = apiDebugLogger.startTimer("GET /api/posts");
   const logEntry = await apiDebugLogger.logRequest(request);
-  
+
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const subject = searchParams.get('subject');
-    const school = searchParams.get('school');
-    const trending = searchParams.get('trending') === 'true';
-    const following = searchParams.get('following') === 'true';
-    const recent = searchParams.get('recent') === 'true';
-    const search = searchParams.get('search');
-    const subjects = searchParams.get('subjects') === 'true';
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const subject = searchParams.get("subject");
+    const school = searchParams.get("school");
+    const trending = searchParams.get("trending") === "true";
+    const following = searchParams.get("following") === "true";
+    const recent = searchParams.get("recent") === "true";
+    const search = searchParams.get("search");
+    const subjects = searchParams.get("subjects") === "true";
 
-    console.log('Posts API request parameters:', {
-      page, limit, subject, school, trending, following, recent, search, subjects
+    console.log("Posts API request parameters:", {
+      page,
+      limit,
+      subject,
+      school,
+      trending,
+      following,
+      recent,
+      search,
+      subjects,
     });
 
     const skip = (page - 1) * limit;
@@ -31,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Handle popular subjects request
     if (subjects) {
       const subjectCounts = await db.post.groupBy({
-        by: ['subject'],
+        by: ["subject"],
         where: {
           isPublic: true,
           subject: {
@@ -43,15 +51,15 @@ export async function GET(request: NextRequest) {
         },
         orderBy: {
           _count: {
-            subject: 'desc',
+            subject: "desc",
           },
         },
         take: limit,
       });
 
       const popularSubjects = subjectCounts
-        .filter(item => item.subject)
-        .map(item => ({
+        .filter((item) => item.subject)
+        .map((item) => ({
           name: item.subject!,
           count: item._count.subject,
         }));
@@ -72,7 +80,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (session?.user?.email) {
       currentUser = await db.user.findUnique({
-        where: { email: session.user.email }
+        where: { email: session.user.email },
       });
     }
 
@@ -82,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
     if (school) {
       where.author = {
-        school: school
+        school: school,
       };
     }
 
@@ -92,29 +100,29 @@ export async function GET(request: NextRequest) {
         ...where.author,
         followers: {
           some: {
-            followerId: currentUser.id
-          }
-        }
+            followerId: currentUser.id,
+          },
+        },
       };
     }
 
     // Apply trending/recent filters
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: any = { createdAt: "desc" };
     if (trending) {
       orderBy = [
-        { likes: { _count: 'desc' } },
-        { comments: { _count: 'desc' } },
-        { createdAt: 'desc' }
+        { likes: { _count: "desc" } },
+        { comments: { _count: "desc" } },
+        { createdAt: "desc" },
       ];
     } else if (recent) {
-      orderBy = { createdAt: 'desc' };
+      orderBy = { createdAt: "desc" };
     }
 
     // Search functionality
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: "insensitive" } },
+        { content: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -124,14 +132,14 @@ export async function GET(request: NextRequest) {
         author: {
           OR: [
             { blockedBy: { some: { blockerId: currentUser.id } } },
-            { blockedUsers: { some: { blockedId: currentUser.id } } }
-          ]
-        }
+            { blockedUsers: { some: { blockedId: currentUser.id } } },
+          ],
+        },
       };
     }
 
     // Get posts with total count
-    const [posts, totalPosts] = await Promise.all([
+    const [posts, totalPosts, echoedPosts] = await Promise.all([
       db.post.findMany({
         where,
         include: {
@@ -149,119 +157,235 @@ export async function GET(request: NextRequest) {
               likes: true,
               comments: true,
               pools: true,
+              echoes: true,
             },
           },
-          likes: currentUser ? {
-            where: {
-              userId: currentUser.id
-            },
-            select: {
-              id: true
-            }
-          } : false,
-          pools: currentUser ? {
-            where: {
-              userId: currentUser.id
-            },
-            select: {
-              id: true
-            }
-          } : false,
+          likes: currentUser
+            ? {
+                where: {
+                  userId: currentUser.id,
+                },
+                select: {
+                  id: true,
+                },
+              }
+            : false,
+          pools: currentUser
+            ? {
+                where: {
+                  userId: currentUser.id,
+                },
+                select: {
+                  id: true,
+                },
+              }
+            : false,
+          echoes: currentUser
+            ? {
+                where: {
+                  userId: currentUser.id,
+                },
+                select: {
+                  id: true,
+                },
+              }
+            : false,
         },
         orderBy,
         skip,
         take: limit,
       }),
-      db.post.count({ where })
+      db.post.count({ where }),
+      // Get user's echoed posts
+      currentUser
+        ? db.echo.findMany({
+            where: {
+              userId: currentUser.id,
+            },
+            include: {
+              post: {
+                include: {
+                  author: {
+                    select: {
+                      id: true,
+                      name: true,
+                      avatar: true,
+                      school: true,
+                      grade: true,
+                    },
+                  },
+                  _count: {
+                    select: {
+                      likes: true,
+                      comments: true,
+                      pools: true,
+                      echoes: true,
+                    },
+                  },
+                  likes: {
+                    where: {
+                      userId: currentUser.id,
+                    },
+                    select: {
+                      id: true,
+                    },
+                  },
+                  pools: {
+                    where: {
+                      userId: currentUser.id,
+                    },
+                    select: {
+                      id: true,
+                    },
+                  },
+                  echoes: {
+                    where: {
+                      userId: currentUser.id,
+                    },
+                    select: {
+                      id: true,
+                      comment: true,
+                    },
+                  },
+                },
+              },
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
-    // Transform posts to include isLiked and isSaved flags
-    const transformedPosts = posts.map(post => ({
+    // Transform original posts
+    const transformedPosts = posts.map((post) => ({
       ...post,
-      isLikedByCurrentUser: currentUser ? (post.likes && Array.isArray(post.likes) && post.likes.length > 0) : false,
-      isSavedByCurrentUser: currentUser ? (post.pools && Array.isArray(post.pools) && post.pools.length > 0) : false,
-      likes: undefined, // Remove the likes array from response
-      pools: undefined, // Remove the pools array from response
+      isLikedByCurrentUser: currentUser
+        ? post.likes && Array.isArray(post.likes) && post.likes.length > 0
+        : false,
+      isSavedByCurrentUser: currentUser
+        ? post.pools && Array.isArray(post.pools) && post.pools.length > 0
+        : false,
+      isEchoedByCurrentUser: currentUser
+        ? post.echoes && Array.isArray(post.echoes) && post.echoes.length > 0
+        : false,
+      likes: undefined,
+      pools: undefined,
+      echoes: undefined,
     }));
 
+    // Transform echoed posts and add echo metadata
+    const transformedEchoedPosts = echoedPosts.map((echo) => ({
+      ...echo.post,
+      isLikedByCurrentUser: currentUser
+        ? echo.post.likes &&
+          Array.isArray(echo.post.likes) &&
+          echo.post.likes.length > 0
+        : false,
+      isSavedByCurrentUser: currentUser
+        ? echo.post.pools &&
+          Array.isArray(echo.post.pools) &&
+          echo.post.pools.length > 0
+        : false,
+      isEchoedByCurrentUser: true,
+      echoedBy: echo.user,
+      echoComment: echo.comment,
+      echoCreatedAt: echo.createdAt,
+      likes: undefined,
+      pools: undefined,
+      echoes: undefined,
+    }));
+
+    // Merge posts and echoed posts, sort by date
+    const allPosts = [...transformedPosts, ...transformedEchoedPosts].sort(
+      (a, b) => {
+        const dateA = (a as any).echoCreatedAt || a.createdAt;
+        const dateB = (b as any).echoCreatedAt || b.createdAt;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      },
+    );
+
+    // Apply pagination to merged results
+    const paginatedPosts = allPosts.slice(skip, skip + limit);
+
     return NextResponse.json({
-      posts: transformedPosts,
+      posts: paginatedPosts,
       pagination: {
         page,
-        pages: Math.ceil(totalPosts / limit),
-        total: totalPosts,
-        hasMore: page < Math.ceil(totalPosts / limit)
-      }
+        pages: Math.ceil(allPosts.length / limit),
+        total: allPosts.length,
+        hasMore: page < Math.ceil(allPosts.length / limit),
+      },
     });
   } catch (error) {
     apiDebugLogger.logError(logEntry, error);
-    console.error('Error fetching posts:', error);
+    console.error("Error fetching posts:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch posts' },
-      { status: 500 }
+      { error: "Failed to fetch posts" },
+      { status: 500 },
     );
   }
 }
 
 // POST method - Create new post
 export async function POST(request: NextRequest) {
-      const timer = apiDebugLogger.startTimer('POST /api/posts');
-      const logEntry = await apiDebugLogger.logRequest(request);
+  const timer = apiDebugLogger.startTimer("POST /api/posts");
+  const logEntry = await apiDebugLogger.logRequest(request);
 
-      try {
-        // Use NextAuth session instead of Firebase tokens
-        const session = await getServerSession(authOptions);
+  try {
+    // Use NextAuth session instead of Firebase tokens
+    const session = await getServerSession(authOptions);
 
-        if (!session?.user?.email) {
-          return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 401 }
-          );
-        }
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-        const user = await db.user.findUnique({
-          where: { email: session.user.email }
-        });
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+    });
 
-        if (!user) {
-          return NextResponse.json(
-            { error: 'User not found' },
-            { status: 404 }
-          );
-        }
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-        const formData = await request.formData();
-        const title = formData.get('title') as string;
-        const content = formData.get('content') as string;
-        const subject = formData.get('subject') as string;
-        const image = formData.get('image') as File;
-        
-        // AI-generated content fields
-        const aiGenerated = formData.get('aiGenerated') === 'true';
-        const aiContentType = formData.get('aiContentType') as string | null;
-        const aiGeneratedContent = formData.get('aiGeneratedContent') as string | null;
-        const aiAgeGroup = formData.get('aiAgeGroup') as string | null;
+    const formData = await request.formData();
+    const title = formData.get("title") as string;
+    const content = formData.get("content") as string;
+    const subject = formData.get("subject") as string;
+    const image = formData.get("image") as File;
 
-        console.log('Post creation data:', {
-          title: title?.substring(0, 50),
-          hasContent: !!content,
-          subject,
-          hasImage: !!image,
-          imageSize: image?.size,
-          aiGenerated,
-          aiContentType
-        });
+    // AI-generated content fields
+    const aiGenerated = formData.get("aiGenerated") === "true";
+    const aiContentType = formData.get("aiContentType") as string | null;
+    const aiGeneratedContent = formData.get("aiGeneratedContent") as
+      | string
+      | null;
+    const aiAgeGroup = formData.get("aiAgeGroup") as string | null;
 
-        if (!title || !title.trim()) {
-          apiDebugLogger.logResponse(logEntry, 400, { error: 'Title is required' });
-          timer();
-          return NextResponse.json(
-            { error: 'Title is required' },
-            { status: 400 }
-          );
-        }
+    console.log("Post creation data:", {
+      title: title?.substring(0, 50),
+      hasContent: !!content,
+      subject,
+      hasImage: !!image,
+      imageSize: image?.size,
+      aiGenerated,
+      aiContentType,
+    });
 
-        let imagePath: string | null = null;
+    if (!title || !title.trim()) {
+      apiDebugLogger.logResponse(logEntry, 400, { error: "Title is required" });
+      timer();
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    let imagePath: string | null = null;
     let imageMetadata: {
       buffer: Buffer;
       responsiveImages?: any;
@@ -275,7 +399,7 @@ export async function POST(request: NextRequest) {
       placeholder: string;
       responsive: Record<string, any>;
     } | null = null;
-    
+
     if (image && image.size > 0) {
       const bytes = await image.arrayBuffer();
       let buffer = Buffer.from(bytes);
@@ -283,26 +407,26 @@ export async function POST(request: NextRequest) {
       // Validate image
       const validation = ImageOptimizer.validateImage(buffer);
       if (!validation.valid) {
-        return NextResponse.json(
-          { error: validation.error },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: validation.error }, { status: 400 });
       }
 
       try {
         // Optimize image with WebP support
         const optimizedImage = await ImageOptimizer.optimizeImage(buffer, {
-          format: 'webp',
+          format: "webp",
           quality: 85,
-          maxSize: 5 * 1024 * 1024 // 5MB max
+          maxSize: 5 * 1024 * 1024, // 5MB max
         });
 
         // Generate responsive images
-        const responsiveImages = await ImageOptimizer.generateResponsiveImages(buffer, [
-          { width: 320, name: 'small' },
-          { width: 640, name: 'medium' },
-          { width: 1024, name: 'large' }
-        ]);
+        const responsiveImages = await ImageOptimizer.generateResponsiveImages(
+          buffer,
+          [
+            { width: 320, name: "small" },
+            { width: 640, name: "medium" },
+            { width: 1024, name: "large" },
+          ],
+        );
 
         // Generate placeholder for lazy loading
         const placeholder = await ImageOptimizer.generatePlaceholder(buffer);
@@ -320,33 +444,37 @@ export async function POST(request: NextRequest) {
           format: optimizedImage.format,
           quality: optimizedImage.quality,
           placeholder,
-          responsive: responsiveImages ? Object.keys(responsiveImages).reduce((acc, key) => {
-            const responsiveImage = responsiveImages![key];
-            if (responsiveImage) {
-              acc[key] = {
-                width: responsiveImage.width,
-                height: responsiveImage.height,
-                size: responsiveImage.size,
-              };
-            }
-            return acc;
-          }, {} as Record<string, any>) : {}
+          responsive: responsiveImages
+            ? Object.keys(responsiveImages).reduce(
+                (acc, key) => {
+                  const responsiveImage = responsiveImages![key];
+                  if (responsiveImage) {
+                    acc[key] = {
+                      width: responsiveImage.width,
+                      height: responsiveImage.height,
+                      size: responsiveImage.size,
+                    };
+                  }
+                  return acc;
+                },
+                {} as Record<string, any>,
+              )
+            : {},
         };
-
-
-
       } catch (error) {
-        console.error('Error processing image:', error);
-        console.error('Error details:', {
+        console.error("Error processing image:", error);
+        console.error("Error details:", {
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
         apiDebugLogger.logError(logEntry, error);
-        apiDebugLogger.logResponse(logEntry, 500, { error: 'Failed to process image' });
+        apiDebugLogger.logResponse(logEntry, 500, {
+          error: "Failed to process image",
+        });
         timer();
         return NextResponse.json(
-          { error: 'Failed to process image' },
-          { status: 500 }
+          { error: "Failed to process image" },
+          { status: 500 },
         );
       }
     }
@@ -359,6 +487,9 @@ export async function POST(request: NextRequest) {
         image: null, // Will be updated after PostImage creation
         authorId: user.id,
         isPublic: true,
+        // Country-aware content distribution
+        authorCountry: user.country || null,
+        language: user.language || "en",
         // AI-generated content metadata
         aiGenerated: aiGenerated,
         aiContentType: aiContentType,
@@ -394,78 +525,96 @@ export async function POST(request: NextRequest) {
           mimeType: imageMetadata.mimeType,
           size: imageMetadata.size,
           optimizedData: new Uint8Array(imageMetadata.buffer),
-          smallData: imageMetadata.responsiveImages?.small ? new Uint8Array(imageMetadata.responsiveImages.small.buffer) : null,
-          mediumData: imageMetadata.responsiveImages?.medium ? new Uint8Array(imageMetadata.responsiveImages.medium.buffer) : null,
-          largeData: imageMetadata.responsiveImages?.large ? new Uint8Array(imageMetadata.responsiveImages.large.buffer) : null,
+          smallData: imageMetadata.responsiveImages?.small
+            ? new Uint8Array(imageMetadata.responsiveImages.small.buffer)
+            : null,
+          mediumData: imageMetadata.responsiveImages?.medium
+            ? new Uint8Array(imageMetadata.responsiveImages.medium.buffer)
+            : null,
+          largeData: imageMetadata.responsiveImages?.large
+            ? new Uint8Array(imageMetadata.responsiveImages.large.buffer)
+            : null,
           width: imageMetadata.width,
           height: imageMetadata.height,
           placeholder: imageMetadata.placeholder,
-          responsive: imageMetadata.responsive
-        }
+          responsive: imageMetadata.responsive,
+        },
       });
 
       // Update post with image reference
       await db.post.update({
         where: { id: post.id },
-        data: { image: postImage.id }
+        data: { image: postImage.id },
       });
 
       imagePath = postImage.id;
     }
 
-    console.log('Post created successfully:', {
+    console.log("Post created successfully:", {
       postId: post.id,
       title: post.title,
       hasImage: !!post.image,
-      authorId: post.authorId
+      authorId: post.authorId,
     });
 
     // Apply content filtering
-    const contentToCheck = `${title} ${content || ''}`.trim();
+    const contentToCheck = `${title} ${content || ""}`.trim();
     if (contentToCheck) {
-      const filterResult = await ContentFilterService.checkContent(contentToCheck, 'POST');
-      
+      const filterResult = await ContentFilterService.checkContent(
+        contentToCheck,
+        "POST",
+      );
+
       if (filterResult.matched) {
-        console.log('Content filter matched:', {
+        console.log("Content filter matched:", {
           postId: post.id,
-          filterResult
+          filterResult,
         });
-        
+
         // Apply the filter action
         await ContentFilterService.applyFilterAction(
           filterResult,
           post.id,
-          'POST',
-          user.id
+          "POST",
+          user.id,
         );
 
         // If the content was removed/blocked, return a different response
-        if (filterResult.action === 'BLOCK' || filterResult.action === 'REMOVE') {
+        if (
+          filterResult.action === "BLOCK" ||
+          filterResult.action === "REMOVE"
+        ) {
           apiDebugLogger.logResponse(logEntry, 201, {
-            message: 'Post was blocked by content filter',
+            message: "Post was blocked by content filter",
             filterResult,
-            blocked: true
+            blocked: true,
           });
           timer();
-          return NextResponse.json({
-            message: 'Post was blocked by content filter',
-            filterResult,
-            blocked: true
-          }, { status: 201 });
+          return NextResponse.json(
+            {
+              message: "Post was blocked by content filter",
+              filterResult,
+              blocked: true,
+            },
+            { status: 201 },
+          );
         }
 
         // If flagged or escalated, include that info in the response
         apiDebugLogger.logResponse(logEntry, 201, {
           ...post,
           filterResult,
-          flagged: true
+          flagged: true,
         });
         timer();
-        return NextResponse.json({
-          ...post,
-          filterResult,
-          flagged: true
-        }, { status: 201 });
+        return NextResponse.json(
+          {
+            ...post,
+            filterResult,
+            flagged: true,
+          },
+          { status: 201 },
+        );
       }
     }
 
@@ -474,10 +623,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     apiDebugLogger.logError(logEntry, error);
-    console.error('Error creating post:', error);
+    console.error("Error creating post:", error);
     return NextResponse.json(
-      { error: 'Failed to create post' },
-      { status: 500 }
+      { error: "Failed to create post" },
+      { status: 500 },
     );
   }
 }

@@ -1,17 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await db.user.findUnique({
@@ -19,16 +16,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const unreadOnly = searchParams.get("unreadOnly") === "true";
 
     const whereClause: any = { userId: user.id };
     if (unreadOnly) {
@@ -44,26 +38,26 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               avatar: true,
-            }
+            },
           },
           post: {
             select: {
               id: true,
               title: true,
-            }
-          }
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
-        take: limit
+        take: limit,
       }),
       db.notification.count({ where: whereClause }),
-      db.notification.count({ 
-        where: { 
+      db.notification.count({
+        where: {
           userId: user.id,
-          isRead: false 
-        } 
-      })
+          isRead: false,
+        },
+      }),
     ]);
 
     return NextResponse.json({
@@ -73,14 +67,14 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
+        pages: Math.ceil(totalCount / limit),
+      },
     });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error("Error fetching notifications:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
-      { status: 500 }
+      { error: "Failed to fetch notifications" },
+      { status: 500 },
     );
   }
 }
@@ -88,12 +82,9 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await db.user.findUnique({
@@ -101,10 +92,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { notificationIds, markAllAsRead } = await request.json();
@@ -114,29 +102,77 @@ export async function PUT(request: NextRequest) {
       await db.notification.updateMany({
         where: {
           userId: user.id,
-          isRead: false
+          isRead: false,
         },
-        data: { isRead: true }
+        data: { isRead: true },
       });
     } else if (notificationIds && Array.isArray(notificationIds)) {
       // Mark specific notifications as read
       await db.notification.updateMany({
         where: {
           id: {
-            in: notificationIds
+            in: notificationIds,
           },
-          userId: user.id
+          userId: user.id,
         },
-        data: { isRead: true }
+        data: { isRead: true },
       });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating notifications:', error);
+    console.error("Error updating notifications:", error);
     return NextResponse.json(
-      { error: 'Failed to update notifications' },
-      { status: 500 }
+      { error: "Failed to update notifications" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { notificationIds, deleteAll } = await request.json();
+
+    if (deleteAll) {
+      // Delete all read notifications for the user
+      await db.notification.deleteMany({
+        where: {
+          userId: user.id,
+          isRead: true,
+        },
+      });
+    } else if (notificationIds && Array.isArray(notificationIds)) {
+      // Delete specific notifications
+      await db.notification.deleteMany({
+        where: {
+          id: {
+            in: notificationIds,
+          },
+          userId: user.id,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting notifications:", error);
+    return NextResponse.json(
+      { error: "Failed to delete notifications" },
+      { status: 500 },
     );
   }
 }
