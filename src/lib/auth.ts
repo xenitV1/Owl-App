@@ -1,6 +1,7 @@
-import { NextAuthOptions } from 'next-auth';
-import { db } from '@/lib/db';
-import GoogleProvider from 'next-auth/providers/google';
+import { NextAuthOptions } from "next-auth";
+import { db } from "@/lib/db";
+import GoogleProvider from "next-auth/providers/google";
+import { initializeUserVector } from "@/lib/algorithms/stableVectorManager";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,7 +11,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -29,12 +30,18 @@ export const authOptions: NextAuthOptions = {
               data: {
                 id: user.id,
                 email: user.email!,
-                name: user.name || user.email!.split('@')[0],
+                name: user.name || user.email!.split("@")[0],
                 avatar: user.image,
-                role: 'STUDENT', // Default role
+                role: "STUDENT", // Default role
               },
             });
-            console.log('Created new user:', newUser.email);
+            console.log("Created new user:", newUser.email);
+
+            // ✅ ALGORITHM: Initialize user interest vector for new user
+            // This runs in background, doesn't block login
+            initializeUserVector(newUser.id).catch((err) =>
+              console.error("Failed to initialize user vector:", err),
+            );
           } else {
             // Update existing user with latest info
             await db.user.update({
@@ -46,7 +53,7 @@ export const authOptions: NextAuthOptions = {
             });
           }
         } catch (error) {
-          console.error('Error creating/updating user in JWT callback:', error);
+          console.error("Error creating/updating user in JWT callback:", error);
           // Continue with authentication even if database update fails
         }
       }
@@ -54,7 +61,7 @@ export const authOptions: NextAuthOptions = {
       if (account) {
         token.accessToken = account.access_token;
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -88,7 +95,7 @@ export const authOptions: NextAuthOptions = {
             };
           }
         } catch (error) {
-          console.error('Error fetching user profile for session:', error);
+          console.error("Error fetching user profile for session:", error);
           // Continue without user profile data
         }
       }
@@ -96,6 +103,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/',
+    signIn: "/",
   },
 };
