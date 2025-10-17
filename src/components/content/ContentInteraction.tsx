@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +28,6 @@ interface ContentInteractionProps {
   onComment?: () => void;
   onSave?: () => void;
   onQuickEcho?: () => void;
-  onQuoteEcho?: () => void;
 }
 
 export const ContentInteraction: React.FC<ContentInteractionProps> = ({
@@ -42,9 +42,9 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
   onComment,
   onSave,
   onQuickEcho,
-  onQuoteEcho,
 }) => {
   const { isGuest } = useAuth();
+  const t = useTranslations("contentInteraction");
   const likeSoundRef = React.useRef<HTMLAudioElement | null>(null);
   const commentSoundRef = React.useRef<HTMLAudioElement | null>(null);
   const poolSoundRef = React.useRef<HTMLAudioElement | null>(null);
@@ -126,11 +126,9 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
-            Guest View
+            {t("guestView")}
           </CardTitle>
-          <CardDescription>
-            Sign in to like, comment, and save content
-          </CardDescription>
+          <CardDescription>{t("signInToInteract")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-around text-sm text-muted-foreground">
@@ -141,22 +139,29 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
                   alt="Likes"
                   width={16}
                   height={16}
-                  className="object-contain"
                 />
               </div>
-              <span>{likes} likes</span>
+              <span>
+                {likes} {t("likes")}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <MessageCircle className="h-4 w-4" />
-              <span>{comments} comments</span>
+              <span>
+                {comments} {t("comments")}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <Droplets className="h-4 w-4" />
-              <span>{pools} Pool</span>
+              <span>
+                {pools} {t("pool")}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <Eye className="h-4 w-4" />
-              <span>{echoes} echoes</span>
+              <span>
+                {echoes} {t("echoes")}
+              </span>
             </div>
           </div>
           <div className="flex justify-center">
@@ -227,7 +232,7 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
             alt="Like"
             width={16}
             height={16}
-            className={`object-contain ${isLiked ? "brightness-110" : "brightness-90"}`}
+            className={`${isLiked ? "brightness-110" : "brightness-90"}`}
           />
         </div>
         <span
@@ -249,12 +254,11 @@ export const ContentInteraction: React.FC<ContentInteractionProps> = ({
         <span className="text-xs">{comments}</span>
       </Button>
 
-      {onQuickEcho && onQuoteEcho && (
+      {onQuickEcho && (
         <EchoButton
           echoCount={echoes}
           isEchoed={isEchoed}
           onQuickEcho={onQuickEcho}
-          onQuoteEcho={onQuoteEcho}
           onRemoveEcho={onQuickEcho}
         />
       )}

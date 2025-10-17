@@ -25,7 +25,6 @@ import { AIFlashcardViewer } from "@/components/ai/AIFlashcardViewer";
 import { AIQuestionViewer } from "@/components/ai/AIQuestionViewer";
 import { AINotesViewer } from "@/components/ai/AINotesViewer";
 import { EchoIcon } from "@/components/icons/EchoIcon";
-import { QuoteEchoDialog } from "./QuoteEchoDialog";
 import { EchoPostCard } from "./EchoPostCard";
 import { QuotedPostModal } from "./QuotedPostModal";
 import {
@@ -129,7 +128,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
-  const [showQuoteEchoDialog, setShowQuoteEchoDialog] = useState(false);
   const [showQuotedPostModal, setShowQuotedPostModal] = useState(false);
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const tr = useTranslations("roles");
@@ -205,20 +203,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     } finally {
       setIsEchoLoading(false);
     }
-  };
-
-  const handleQuoteEcho = () => {
-    setShowQuoteEchoDialog(true);
-  };
-
-  const handleQuoteEchoSubmit = async (comment: string) => {
-    if (!onEcho) return;
-
-    await onEcho(post.id, comment);
-    toast({
-      title: te("echoSuccess"),
-      description: te("quoteEcho"),
-    });
   };
 
   const handleDelete = async () => {
@@ -686,7 +670,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                 onComment={handleComment}
                 onSave={handleSave}
                 onQuickEcho={handleQuickEcho}
-                onQuoteEcho={handleQuoteEcho}
               />
             </div>
 
@@ -729,14 +712,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           imageMetadata={post.imageMetadata}
         />
       )}
-
-      {/* Quote Echo Dialog */}
-      <QuoteEchoDialog
-        open={showQuoteEchoDialog}
-        onOpenChange={setShowQuoteEchoDialog}
-        post={post}
-        onSubmit={handleQuoteEchoSubmit}
-      />
 
       {/* Quoted Post Modal */}
       <QuotedPostModal

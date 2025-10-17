@@ -16,7 +16,6 @@ interface EchoButtonProps {
   echoCount: number;
   isEchoed?: boolean;
   onQuickEcho: () => void;
-  onQuoteEcho: () => void;
   onRemoveEcho?: () => void;
   isLoading?: boolean;
 }
@@ -25,7 +24,6 @@ export const EchoButton: React.FC<EchoButtonProps> = ({
   echoCount,
   isEchoed = false,
   onQuickEcho,
-  onQuoteEcho,
   onRemoveEcho,
   isLoading = false,
 }) => {
@@ -53,11 +51,6 @@ export const EchoButton: React.FC<EchoButtonProps> = ({
     playEchoSound();
     onQuickEcho();
     setTimeout(() => setIsAnimating(false), 300);
-  };
-
-  const handleQuoteEcho = () => {
-    playEchoSound();
-    onQuoteEcho();
   };
 
   return (
@@ -103,24 +96,14 @@ export const EchoButton: React.FC<EchoButtonProps> = ({
             {t("removeEcho")}
           </DropdownMenuItem>
         ) : (
-          <>
-            <DropdownMenuItem
-              onClick={handleQuickEcho}
-              disabled={isLoading}
-              className="cursor-pointer"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              {t("quickEcho")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleQuoteEcho}
-              disabled={isLoading}
-              className="cursor-pointer"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              {t("quoteEcho")}
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem
+            onClick={handleQuickEcho}
+            disabled={isLoading}
+            className="cursor-pointer"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            {t("quickEcho")}
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
