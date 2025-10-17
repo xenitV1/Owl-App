@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Edit, UserPlus, UserMinus } from "lucide-react";
+import { Calendar, Edit, UserPlus, UserMinus, Database } from "lucide-react";
 import { UserControls } from "@/components/moderation/UserControls";
 import { UserProfile } from "@/types/userProfile";
 import {
@@ -12,6 +12,8 @@ import {
   translateGrade,
   translateSubject,
 } from "@/utils/userProfile";
+import { getCountryNameByCode } from "@/constants/countries";
+import { clearAllLocalCaches, isIndexedDBSupported } from "@/lib/indexedDB";
 
 interface UserProfileHeaderProps {
   profile: UserProfile;
@@ -30,6 +32,7 @@ interface UserProfileHeaderProps {
   onMuteChange: (isMuted: boolean) => void;
   onAvatarClick: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onAvatarSelected: React.ChangeEventHandler<HTMLInputElement>;
 }
 
 export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
@@ -48,6 +51,7 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
   onBlockChange,
   onMuteChange,
   onAvatarClick,
+  onAvatarSelected,
   fileInputRef,
 }) => {
   return (
@@ -58,6 +62,7 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
             <AvatarImage
               src={profile.avatar || undefined}
               alt={profile.name || "User"}
+              className="object-cover"
             />
             <AvatarFallback className="text-2xl">
               {profile.name ? getInitials(profile.name) : "U"}
@@ -68,6 +73,7 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
             type="file"
             accept="image/*"
             className="hidden"
+            onChange={onAvatarSelected}
           />
 
           <div className="flex-1">
@@ -76,6 +82,16 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
                 <h1 className="text-2xl font-bold mb-1">
                   {profile.name || t("common.anonymousUser")}
                 </h1>
+                {/* Username and country line */}
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  {profile.username && <span>@{profile.username}</span>}
+                  {profile.country && (
+                    <span>
+                      •{" "}
+                      {getCountryNameByCode(profile.country) || profile.country}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>
@@ -87,10 +103,32 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
               </div>
 
               {isOwnProfile ? (
-                <Button variant="outline" size="sm" onClick={onEditClick}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  {t("profile.editProfile")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!isIndexedDBSupported()) return;
+                      const ok = confirm(t("profile.confirmClearIndexedDB"));
+                      if (!ok) return;
+                      const res = await clearAllLocalCaches();
+                      alert(
+                        res.success
+                          ? t("profile.indexedDBCleared")
+                          : t("profile.indexedDBClearFailed", {
+                              error: res.error || "",
+                            }),
+                      );
+                    }}
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    {t("profile.clearIndexedDB")}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onEditClick}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    {t("profile.editProfile")}
+                  </Button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <Button
