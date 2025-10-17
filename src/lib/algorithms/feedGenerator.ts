@@ -114,6 +114,7 @@ export async function generateHybridFeed(
       const whereClause: any = {
         isPublic: true,
         authorId: { not: userId },
+        communityId: null, // Exclude community posts from main feed
       };
 
       // Combine country filtering with existing filters
@@ -293,6 +294,7 @@ export async function generateSimplifiedFeed(
   const whereClause: any = {
     isPublic: true,
     authorId: { not: userId },
+    communityId: null, // Exclude community posts from main feed
   };
 
   if (user.grade) {
@@ -325,6 +327,7 @@ export async function generateChronologicalFeed(
     where: {
       isPublic: true,
       authorId: { not: userId },
+      communityId: null, // Exclude community posts from main feed
     },
     skip,
     take: limit,
