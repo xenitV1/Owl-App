@@ -11,6 +11,7 @@ model User {
   id                 String               @id @default(cuid())
   email              String               @unique
   name               String?
+  username           String?              @unique  // ✨ YENİ: Benzersiz kullanıcı adı
   avatar             String?
   role               UserRole             @default(STUDENT)
   country            String?
@@ -23,6 +24,14 @@ model User {
   isVerified         Boolean              @default(false)
   totalInteractions  Int                  @default(0)
   onboardingComplete Boolean              @default(false)
+  
+  // Country and grade change tracking
+  countryChangeCount Int                  @default(0)
+  lastCountryChange  DateTime?
+  lastGradeChange    DateTime?
+  pendingGrade       String?
+  pendingGradeDate   DateTime?
+  
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   adminActivityLogs  AdminActivityLog[]
@@ -47,6 +56,10 @@ model User {
   mutedBy            UserMute[]           @relation("UserMuted")
   mutedUsers         UserMute[]           @relation("UserMuting")
   echoes             Echo[]
+  createdCommunities Community[]          @relation("CommunityCreator")
+  createdChatRooms   ChatRoom[]           @relation("ChatRoomCreator")
+  chatRoomMembers    ChatRoomMember[]
+  chatMessages       ChatMessage[]
 
   @@map("users")
 }
@@ -119,16 +132,35 @@ model PostImage {
 }
 
 model Community {
-  id          String            @id @default(cuid())
-  name        String            @unique
-  description String?
-  avatar      String?
-  isPublic    Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  members     CommunityMember[]
-  posts       Post[]
-
+  id                  String            @id @default(cuid())
+  name                String            @unique
+  nameKey             String?
+  description         String?
+  avatar              String?
+  isPublic            Boolean           @default(true)
+  
+  // System community flags
+  isSystemGenerated   Boolean           @default(false)
+  country             String?
+  grade               String?
+  
+  // User community settings
+  creatorId           String?
+  allowedContentTypes String?
+  
+  // ✨ YENİ: Chat settings
+  chatEnabled         Boolean           @default(true)   // Chat özelliği aktif mi?
+  chatPublicAccess    Boolean           @default(false)  // Topluluk dışı erişim
+  chatMaxMembers      Int               @default(300)    // Kanal başına max üye
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  members             CommunityMember[]
+  posts               Post[]
+  chatRooms           ChatRoom[]
+  creator             User?             @relation("CommunityCreator", fields: [creatorId], references: [id])
+  
+  @@index([isSystemGenerated, country, grade])
   @@map("communities")
 }
 
@@ -475,6 +507,7 @@ enum NotificationType {
   POST
   ECHO
   SYSTEM
+  CHAT_MESSAGE  // ✨ YENİ: Chat mesaj bildirimi
 }
 
 model SystemConfig {
@@ -540,4 +573,124 @@ model AlgorithmMetrics {
   @@index([algorithmVersion])
   @@index([createdAt])
   @@map("algorithm_metrics")
+}
+
+model StudyNote {
+  id              String   @id @default(cuid())
+  title           String
+  content         String
+  subject         String?
+  ageGroup        String
+  language        String   @default("en")
+  sourceDocument  String?
+  userId          String
+  isPublic        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId, createdAt])
+  @@index([ageGroup])
+  @@index([subject])
+  @@map("study_notes")
+}
+
+
+model PendingGradeChange {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  currentGrade   String
+  newGrade       String
+  requestedAt    DateTime @default(now())
+  scheduledFor   DateTime
+  
+  @@index([scheduledFor])
+  @@map("pending_grade_changes")
+}
+
+// ✨ YENİ: Modern Chat System Models
+
+model ChatRoom {
+  id                String          @id @default(cuid())
+  communityId       String
+  name              String
+  description       String?
+
+  // Room types
+  isMainChat        Boolean         @default(false)  // Ana topluluk chati
+  isPrivate         Boolean         @default(false)  // Özel alt kanal
+
+  // Privacy settings
+  isPublic          Boolean         @default(true)   // Topluluk dışı erişim
+  maxMembers        Int             @default(300)    // Maksimum üye sayısı
+
+  // Private channel settings
+  inviteToken       String?         @unique          // Davet linki için token
+  allowedUserId     String?                          // Sadece bu kullanıcı girebilir
+  creatorId         String
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  community         Community       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  creator           User            @relation("ChatRoomCreator", fields: [creatorId], references: [id])
+  members           ChatRoomMember[]
+  messages          ChatMessage[]
+
+  @@index([communityId, isMainChat])
+  @@index([inviteToken])
+  @@map("chat_rooms")
+}
+
+model ChatRoomMember {
+  id          String      @id @default(cuid())
+  userId      String
+  chatRoomId  String
+  role        String      @default("member")  // member, moderator
+  joinedAt    DateTime    @default(now())
+  lastReadAt  DateTime?                       // Son okunan mesaj zamanı
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatRoom    ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatRoomId])
+  @@map("chat_room_members")
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  chatRoomId  String
+  senderId    String
+  content     String
+
+  // Message types
+  messageType String      @default("text")  // text, image, file, emoji
+  attachmentUrl String?
+
+  // Reactions
+  reactions   String?                       // JSON: { "👍": ["userId1", "userId2"], "❤️": ["userId3"] }
+
+  // Message status
+  isEdited    Boolean     @default(false)
+  isDeleted   Boolean     @default(false)
+  deletedAt   DateTime?
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  chatRoom    ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatRoomId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+
+model ChatTypingIndicator {
+  id          String      @id @default(cuid())
+  chatRoomId  String
+  userId      String
+  updatedAt   DateTime    @default(now())
+
+  @@unique([chatRoomId, userId])
+  @@map("chat_typing_indicators")
 }
