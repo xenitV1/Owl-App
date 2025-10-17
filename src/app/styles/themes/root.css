@@ -1,6 +1,9 @@
-/* Root color variables and default theme */
+/* Root color variables and default theme - Tailwind CSS v4 compatible */
+/* Legacy CSS variables for compatibility with existing components */
 :root {
   --radius: 0.625rem;
+  
+  /* Legacy CSS variables for compatibility */
   /* Light palette: Mint Drift (#A2CBC3), Frosted Pearl (#F3F3F3), Deep Harbor (#0C2D39), Obsidian Mist (#2B2B2B), Onyx Whisper (#101010) */
   --background: #F3F3F3;              /* Frosted Pearl - ana arka plan */
   --foreground: #101010;              /* Onyx Whisper - ana metin */
@@ -40,6 +43,8 @@
   /* Dark theme palette:
      Mint Drift #A2CBC3, Deep Harbor #0C2D39, Obsidian Mist #2B2B2B,
      Onyx Whisper #101010, Frosted Pearl #F3F3F3 */
+  
+  /* Legacy CSS variables for compatibility */
   --background: #101010;              /* Onyx Whisper - deepest background */
   --foreground: #F3F3F3;              /* Frosted Pearl - clean text */
   --card: #2B2B2B;                    /* Obsidian Mist - elevated surfaces */
@@ -74,6 +79,42 @@
   --sidebar-accent-foreground: #A2CBC3;
   --sidebar-border: #164A5F;          /* Subtle harbor border */
   --sidebar-ring: #A2CBC3;            /* Mint Drift */
+}
+
+/* Tailwind CSS v4 Dark Theme Variables */
+.dark {
+  --color-background: #101010;
+  --color-foreground: #F3F3F3;
+  --color-card: #2B2B2B;
+  --color-card-foreground: #F3F3F3;
+  --color-popover: #2B2B2B;
+  --color-popover-foreground: #F3F3F3;
+  --color-primary: #A2CBC3;
+  --color-primary-foreground: #0C2D39;
+  --color-secondary: #0C2D39;
+  --color-secondary-foreground: #A2CBC3;
+  --color-muted: #1A1A1A;
+  --color-muted-foreground: #9CA3AF;
+  --color-accent: #A2CBC3;
+  --color-accent-foreground: #0C2D39;
+  --color-destructive: #E74C3C;
+  --color-destructive-foreground: #F3F3F3;
+  --color-border: #3A3A3A;
+  --color-input: #1A1A1A;
+  --color-ring: #A2CBC3;
+  --color-chart-1: #A2CBC3;
+  --color-chart-2: #7AB5AC;
+  --color-chart-3: #0C2D39;
+  --color-chart-4: #164A5F;
+  --color-chart-5: #5FA69B;
+  --color-sidebar: #0C2D39;
+  --color-sidebar-foreground: #F3F3F3;
+  --color-sidebar-primary: #A2CBC3;
+  --color-sidebar-primary-foreground: #0C2D39;
+  --color-sidebar-accent: #164A5F;
+  --color-sidebar-accent-foreground: #A2CBC3;
+  --color-sidebar-border: #164A5F;
+  --color-sidebar-ring: #A2CBC3;
 }
 
 /* Dark theme enhancements - Mint Drift accent glow effects */

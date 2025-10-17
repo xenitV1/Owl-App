@@ -1,5 +1,6 @@
 /* Retro Theme - Light Mode */
 .retro-light {
+  /* Legacy CSS variables for compatibility */
   --background: #E7E1CB;
   --foreground: #2D1B1B;
   --card: #F5F0E8;
@@ -36,6 +37,40 @@
   /* Retro connector colors */
   --retro-connector-active: var(--secondary);
   --retro-connector-idle: var(--chart-5);
+  
+  /* Tailwind CSS v4 Retro Light Theme Variables */
+  --color-background: #E7E1CB;
+  --color-foreground: #2D1B1B;
+  --color-card: #F5F0E8;
+  --color-card-foreground: #2D1B1B;
+  --color-popover: #F5F0E8;
+  --color-popover-foreground: #2D1B1B;
+  --color-primary: #D39A09;
+  --color-primary-foreground: #2D1B1B;
+  --color-secondary: #E64B35;
+  --color-secondary-foreground: #F5F0E8;
+  --color-muted: #D4C4A8;
+  --color-muted-foreground: #5A4A3A;
+  --color-accent: #C6312B;
+  --color-accent-foreground: #F5F0E8;
+  --color-destructive: #992D3D;
+  --color-destructive-foreground: #F5F0E8;
+  --color-border: #B8A082;
+  --color-input: #D4C4A8;
+  --color-ring: #D39A09;
+  --color-chart-1: #D39A09;
+  --color-chart-2: #E64B35;
+  --color-chart-3: #C6312B;
+  --color-chart-4: #992D3D;
+  --color-chart-5: #702647;
+  --color-sidebar: #F5F0E8;
+  --color-sidebar-foreground: #2D1B1B;
+  --color-sidebar-primary: #D39A09;
+  --color-sidebar-primary-foreground: #2D1B1B;
+  --color-sidebar-accent: #E64B35;
+  --color-sidebar-accent-foreground: #F5F0E8;
+  --color-sidebar-border: #B8A082;
+  --color-sidebar-ring: #D39A09;
 }
 
 /* Retro Theme - Dark Mode */
@@ -79,6 +114,40 @@
   --retro-card-overlay: rgba(45, 37, 32, 0.55);
   --retro-card-overlay-hover: rgba(45, 37, 32, 0.72);
   --retro-card-border: #4A3F38;
+  
+  /* Tailwind CSS v4 Retro Dark Theme Variables */
+  --color-background: #1A1612;
+  --color-foreground: #F5F0E8;
+  --color-card: #2D2520;
+  --color-card-foreground: #F5F0E8;
+  --color-popover: #2D2520;
+  --color-popover-foreground: #F5F0E8;
+  --color-primary: #FBCD43;
+  --color-primary-foreground: #1A1612;
+  --color-secondary: #E64B35;
+  --color-secondary-foreground: #F5F0E8;
+  --color-muted: #3A322D;
+  --color-muted-foreground: #B8A082;
+  --color-accent: #C6312B;
+  --color-accent-foreground: #F5F0E8;
+  --color-destructive: #992D3D;
+  --color-destructive-foreground: #F5F0E8;
+  --color-border: #4A3F38;
+  --color-input: #3A322D;
+  --color-ring: #FBCD43;
+  --color-chart-1: #FBCD43;
+  --color-chart-2: #E64B35;
+  --color-chart-3: #C6312B;
+  --color-chart-4: #992D3D;
+  --color-chart-5: #702647;
+  --color-sidebar: #2D2520;
+  --color-sidebar-foreground: #F5F0E8;
+  --color-sidebar-primary: #FBCD43;
+  --color-sidebar-primary-foreground: #1A1612;
+  --color-sidebar-accent: #E64B35;
+  --color-sidebar-accent-foreground: #F5F0E8;
+  --color-sidebar-border: #4A3F38;
+  --color-sidebar-ring: #FBCD43;
 }
 
 /* Retro Dark: soften card hover whiteness and use palette tones */
@@ -240,7 +309,12 @@
 
 .retro-text-outline {
   -webkit-text-stroke: 1px var(--border);
-  text-stroke: 1px var(--border);
+  /* text-stroke is not widely supported, using text-shadow as fallback */
+  text-shadow: 
+    -1px -1px 0 var(--border),
+    1px -1px 0 var(--border),
+    -1px 1px 0 var(--border),
+    1px 1px 0 var(--border);
 }
 
 /* Retro border effects */
@@ -264,4 +338,3 @@
 .retro-gradient-chart {
   background: linear-gradient(45deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5));
 }
-

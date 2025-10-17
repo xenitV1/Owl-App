@@ -19,13 +19,12 @@ services:
     depends_on:
       - db
       - redis
-    volumes:
-      # No file system storage needed - all images stored in database
+    volumes: []
     restart: unless-stopped
     networks:
       - owl-network
 
-  db:ar
+  db:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB}

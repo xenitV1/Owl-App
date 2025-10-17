@@ -48,6 +48,42 @@
   --glass-opacity: 0.21;
   --glass-border-opacity: 0.3;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Tailwind CSS v4 Glass Light Theme Variables */
+  --color-background: #A2CBC3;
+  --color-foreground: #1a202c;
+  --color-card: rgba(255, 255, 255, 0.21);
+  --color-card-foreground: #1a202c;
+  --color-popover: rgba(255, 255, 255, 0.25);
+  --color-popover-foreground: #1a202c;
+  --color-primary: #0C2D39;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: rgba(255, 255, 255, 0.3);
+  --color-secondary-foreground: #1a202c;
+  --color-muted: rgba(255, 255, 255, 0.15);
+  --color-muted-foreground: #4a5568;
+  --color-accent: #7AB5AC;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #f56565;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgba(255, 255, 255, 0.3);
+  --color-input: rgba(255, 255, 255, 0.2);
+  --color-ring: rgba(162, 203, 195, 0.5);
+  --color-chart-1: #A2CBC3;
+  --color-chart-2: #7AB5AC;
+  --color-chart-3: #0C2D39;
+  --color-chart-4: #5FA69B;
+  --color-chart-5: #C1E1DC;
+  --color-sidebar: rgba(255, 255, 255, 0.18);
+  --color-sidebar-foreground: #1a202c;
+  --color-sidebar-primary: #0C2D39;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: rgba(162, 203, 195, 0.25);
+  --color-sidebar-accent-foreground: #1a202c;
+  --color-sidebar-border: rgba(255, 255, 255, 0.3);
+  --color-sidebar-ring: rgba(162, 203, 195, 0.5);
+  
+  /* Glass specific properties */
   --glass-inset-light: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   --glass-inset-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
   --glass-inner-glow: inset 0 0 16px 8px rgba(255, 255, 255, 0.8);
@@ -103,6 +139,42 @@
   --glass-opacity: 0.08;
   --glass-border-opacity: 0.18;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Tailwind CSS v4 Glass Dark Theme Variables */
+  --color-background: #0C2D39;
+  --color-foreground: #f7fafc;
+  --color-card: rgba(255, 255, 255, 0.08);
+  --color-card-foreground: #f7fafc;
+  --color-popover: rgba(255, 255, 255, 0.1);
+  --color-popover-foreground: #f7fafc;
+  --color-primary: #A2CBC3;
+  --color-primary-foreground: #0C2D39;
+  --color-secondary: rgba(255, 255, 255, 0.12);
+  --color-secondary-foreground: #f7fafc;
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #cbd5e0;
+  --color-accent: #7AB5AC;
+  --color-accent-foreground: #0C2D39;
+  --color-destructive: #fc8181;
+  --color-destructive-foreground: #1a202c;
+  --color-border: rgba(255, 255, 255, 0.18);
+  --color-input: rgba(255, 255, 255, 0.08);
+  --color-ring: rgba(162, 203, 195, 0.5);
+  --color-chart-1: #A2CBC3;
+  --color-chart-2: #7AB5AC;
+  --color-chart-3: #0C2D39;
+  --color-chart-4: #5FA69B;
+  --color-chart-5: #164A5F;
+  --color-sidebar: rgba(255, 255, 255, 0.06);
+  --color-sidebar-foreground: #f7fafc;
+  --color-sidebar-primary: #A2CBC3;
+  --color-sidebar-primary-foreground: #0C2D39;
+  --color-sidebar-accent: rgba(162, 203, 195, 0.1);
+  --color-sidebar-accent-foreground: #f7fafc;
+  --color-sidebar-border: rgba(255, 255, 255, 0.18);
+  --color-sidebar-ring: rgba(162, 203, 195, 0.5);
+  
+  /* Glass specific properties */
   --glass-inset-light: inset 0 1px 0 rgba(255, 255, 255, 0.15);
   --glass-inset-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   --glass-inner-glow: inset 0 0 20px 10px rgba(255, 255, 255, 0.03);

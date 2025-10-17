@@ -1,25 +1,66 @@
 /* Base imports and utilities */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 @import "tw-animate-css";
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Archivo+Black&display=swap');
 
+/* Tailwind CSS v4 theme configuration */
+@theme {
+  /* Radius */
+  --radius: 0.625rem;
+  
+  /* Colors - Light theme */
+  --color-background: #F3F3F3;
+  --color-foreground: #101010;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #101010;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #101010;
+  --color-primary: #0C2D39;
+  --color-primary-foreground: #F3F3F3;
+  --color-secondary: #A2CBC3;
+  --color-secondary-foreground: #0C2D39;
+  --color-muted: #E0E0E0;
+  --color-muted-foreground: #2B2B2B;
+  --color-accent: #A2CBC3;
+  --color-accent-foreground: #0C2D39;
+  --color-destructive: #E74C3C;
+  --color-destructive-foreground: #F3F3F3;
+  --color-border: #D6D6D6;
+  --color-input: #E0E0E0;
+  --color-ring: #A2CBC3;
+  --color-chart-1: #A2CBC3;
+  --color-chart-2: #0C2D39;
+  --color-chart-3: #2B2B2B;
+  --color-chart-4: #7AB5AC;
+  --color-chart-5: #5FA69B;
+  --color-sidebar: #FAFAFA;
+  --color-sidebar-foreground: #101010;
+  --color-sidebar-primary: #0C2D39;
+  --color-sidebar-primary-foreground: #F3F3F3;
+  --color-sidebar-accent: #A2CBC3;
+  --color-sidebar-accent-foreground: #0C2D39;
+  --color-sidebar-border: #D6D6D6;
+  --color-sidebar-ring: #A2CBC3;
+}
+
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--color-border);
+    outline-color: rgba(162, 203, 195, 0.5);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
   }
 }
 
-/* Line clamp utilities for text truncation */
+/* Line clamp utilities for text truncation - with standard property fallback */
 .line-clamp-1 {
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+  line-clamp: 1; /* Standard property fallback */
 }
 
 .line-clamp-2 {
@@ -27,6 +68,7 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* Standard property fallback */
 }
 
 .line-clamp-3 {
@@ -34,6 +76,7 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  line-clamp: 3; /* Standard property fallback */
 }
 
 /* Media layout helpers inside BlockNote editor */
