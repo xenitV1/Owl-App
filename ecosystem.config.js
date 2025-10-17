@@ -89,5 +89,21 @@ module.exports = {
         NODE_ENV: "production",
       },
     },
+    {
+      name: "grade-changes-cron",
+      script: "scripts/apply-grade-changes.js",
+      cron_restart: "0 * * * *", // Her saat başı
+      autorestart: false,
+      watch: false,
+      instances: 1,
+      exec_mode: "fork",
+      log_file: "./logs/grade-changes.log",
+      out_file: "./logs/grade-changes-out.log",
+      error_file: "./logs/grade-changes-error.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      env: {
+        NODE_ENV: "production",
+      },
+    },
   ],
 };
