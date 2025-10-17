@@ -1,28 +1,34 @@
-// İngilizce değerler (veritabanında saklanan)
+// İngilizce değerler (veritabanında saklanan) - OnboardingModal ile uyumlu
 export const GRADES_EN = [
-  "6th Grade",
-  "7th Grade",
-  "8th Grade",
-  "9th Grade (Freshman)",
-  "10th Grade (Sophomore)",
-  "11th Grade (Junior)",
-  "12th Grade (Senior)",
-  "Undergraduate",
+  "9th Grade",
+  "10th Grade",
+  "11th Grade",
+  "12th Grade",
+  "Freshman",
+  "Sophomore",
+  "Junior",
+  "Senior",
+  "High School Graduate",
+  "University Graduate",
   "Graduate",
+  "Teacher",
   "Other",
 ];
 
-// Türkçe değerler (görüntülenen)
+// Türkçe değerler (görüntülenen) - OnboardingModal ile uyumlu
 export const GRADES_TR = [
-  "6. Sınıf",
-  "7. Sınıf",
-  "8. Sınıf",
-  "9. Sınıf (Lise 1)",
-  "10. Sınıf (Lise 2)",
-  "11. Sınıf (Lise 3)",
-  "12. Sınıf (Lise 4)",
-  "Üniversite",
-  "Mezun",
+  "9. Sınıf",
+  "10. Sınıf",
+  "11. Sınıf",
+  "12. Sınıf",
+  "Hazırlık/1. Sınıf (Üniversite)",
+  "2. Sınıf (Üniversite)",
+  "3. Sınıf (Üniversite)",
+  "4. Sınıf (Üniversite)",
+  "Lise Mezunu",
+  "Üniversite Mezunu",
+  "Yüksek Lisans/Doktora",
+  "Öğretmen",
   "Diğer",
 ];
 
