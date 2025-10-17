@@ -1,12 +1,13 @@
 // API-specific AI Types
 
 export interface AIGenerateRequestBody {
-  contentType: 'flashcards' | 'questions' | 'notes';
+  contentType: "flashcards" | "questions" | "notes";
   documentContent: string;
-  ageGroup: 'elementary' | 'middle' | 'high' | 'university';
+  ageGroup: "elementary" | "middle" | "high" | "university";
   language: string; // Support any language
   subject?: string;
   cardCount?: number; // Number of cards to generate (max 20, only for flashcards/questions)
+  sourceDocument?: string; // Original PDF/document filename
 }
 
 export interface AIGenerateResponseBody {
@@ -20,6 +21,7 @@ export interface AIGenerateResponseBody {
       language: string;
       subject?: string;
       generatedAt: string;
+      savedNoteId?: string; // ID of saved study note (for notes content type)
     };
   };
   error?: string;
@@ -38,3 +40,13 @@ export interface ParseDocumentResponseBody {
   message?: string;
 }
 
+export interface AIGenerationProgress {
+  stage: "analyzing" | "chunking" | "processing" | "merging" | "complete";
+  currentBatch?: number;
+  totalBatches?: number;
+  currentChunk?: number;
+  totalChunks?: number;
+  estimatedTokens?: number;
+  message: string;
+  percentage: number;
+}
