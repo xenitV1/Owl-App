@@ -9,9 +9,10 @@ import { GRADES_EN, SUBJECTS_EN } from "@/constants/userProfile";
 
 interface UseUserProfileProps {
   userId?: string;
+  username?: string;
 }
 
-export const useUserProfile = ({ userId }: UseUserProfileProps) => {
+export const useUserProfile = ({ userId, username }: UseUserProfileProps) => {
   const { user, dbUser, isGuest } = useAuth();
   const t = useTranslations();
   const trRoles = useTranslations("roles");
@@ -36,12 +37,14 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
   );
   const [editForm, setEditForm] = useState<EditForm>({
     name: "",
+    username: "", // Add username field
     role: "STUDENT",
     school: "",
     grade: "",
     favoriteSubject: "",
     bio: "",
     avatar: undefined,
+    country: "",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [page, setPage] = useState(1);
@@ -49,17 +52,23 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const { toast } = useToast();
 
-  const isOwnProfile = !userId || userId === dbUser?.id;
+  const isOwnProfile =
+    (!userId && !username) || (!!userId && userId === dbUser?.id);
 
   const fetchProfile = async () => {
     try {
       const targetUserId = userId || dbUser?.id;
+      const lookupByUsername = username;
 
-      if (!targetUserId || !user) {
+      if ((!targetUserId && !lookupByUsername) || !user) {
         return;
       }
 
-      const response = await fetch(`/api/users?userId=${targetUserId}`, {
+      const url = lookupByUsername
+        ? `/api/users?username=${encodeURIComponent(lookupByUsername)}`
+        : `/api/users?userId=${targetUserId}`;
+
+      const response = await fetch(url, {
         headers: {
           ...(user?.email
             ? { "x-user-email": encodeToBase64(user.email) }
@@ -109,12 +118,14 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
 
       setEditForm({
         name: data.name || "",
+        username: data.username || "", // Add username field
         role: data.role || "STUDENT",
         school: data.school || "",
         grade: correctedGrade,
         favoriteSubject: correctedSubject,
         bio: data.bio || "",
         avatar: data.avatar || undefined,
+        country: data.country || "",
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -172,6 +183,94 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
     setIsSaving(true);
 
     try {
+      // Validate username before saving
+      if (editForm.username) {
+        // Check username length
+        if (editForm.username.length < 3 || editForm.username.length > 20) {
+          toast({
+            title: t("common.error"),
+            description: "Username must be between 3 and 20 characters",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Check username format
+        if (!/^[a-zA-Z0-9_]+$/.test(editForm.username)) {
+          toast({
+            title: t("common.error"),
+            description:
+              "Username can only contain letters, numbers, and underscores",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Check if username starts or ends with underscore
+        if (
+          editForm.username.startsWith("_") ||
+          editForm.username.endsWith("_")
+        ) {
+          toast({
+            title: t("common.error"),
+            description: "Username cannot start or end with an underscore",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Check for consecutive underscores
+        if (editForm.username.includes("__")) {
+          toast({
+            title: t("common.error"),
+            description: "Username cannot contain consecutive underscores",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Check username availability
+        const usernameCheckResponse = await fetch(
+          `/api/auth/check-username?username=${encodeURIComponent(editForm.username)}&currentUserId=${profile.id}`,
+          {
+            headers: {
+              ...(user?.email
+                ? { "x-user-email": encodeToBase64(user.email) }
+                : {}),
+              ...(dbUser?.name
+                ? { "x-user-name": encodeToBase64(dbUser.name) }
+                : {}),
+            },
+          },
+        );
+
+        if (!usernameCheckResponse.ok) {
+          toast({
+            title: t("common.error"),
+            description: "Failed to check username availability",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        const usernameCheckData = await usernameCheckResponse.json();
+        if (!usernameCheckData.available) {
+          toast({
+            title: t("common.error"),
+            description:
+              usernameCheckData.message || "Username is not available",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const response = await fetch("/api/users", {
         method: "PUT",
         headers: {
@@ -420,6 +519,7 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
           },
           body: JSON.stringify({
             name: editForm.name,
+            username: editForm.username, // Add username field
             role: editForm.role,
             school: editForm.school,
             grade: editForm.grade,
@@ -475,7 +575,7 @@ export const useUserProfile = ({ userId }: UseUserProfileProps) => {
     if (!isGuest && user) {
       loadData();
     }
-  }, [userId, dbUser, isGuest, user]);
+  }, [userId, username, dbUser, isGuest, user]);
 
   useEffect(() => {
     if (profile && !isOwnProfile && !isGuest) {
