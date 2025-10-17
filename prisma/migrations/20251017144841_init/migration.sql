@@ -3,6 +3,7 @@ CREATE TABLE "users" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "name" TEXT,
+    "username" TEXT,
     "avatar" TEXT,
     "role" TEXT NOT NULL DEFAULT 'STUDENT',
     "country" TEXT,
@@ -87,6 +88,9 @@ CREATE TABLE "communities" (
     "grade" TEXT,
     "creatorId" TEXT,
     "allowedContentTypes" TEXT,
+    "chatEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "chatPublicAccess" BOOLEAN NOT NULL DEFAULT false,
+    "chatMaxMembers" INTEGER NOT NULL DEFAULT 300,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "communities_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE
@@ -393,43 +397,6 @@ CREATE TABLE "study_notes" (
 );
 
 -- CreateTable
-CREATE TABLE "community_chats" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "communityId" TEXT NOT NULL,
-    "name" TEXT,
-    "isMainChat" BOOLEAN NOT NULL DEFAULT false,
-    "creatorId" TEXT,
-    "maxMessages" INTEGER NOT NULL DEFAULT 2000,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "community_chats_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "communities" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "community_chats_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "chat_messages" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "chatId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "content" TEXT NOT NULL,
-    "imageUrl" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "chat_messages_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "community_chats" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chat_messages_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "chat_members" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "chatId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'member',
-    "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "chat_members_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "community_chats" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "chat_members_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
 CREATE TABLE "pending_grade_changes" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -439,8 +406,68 @@ CREATE TABLE "pending_grade_changes" (
     "scheduledFor" DATETIME NOT NULL
 );
 
+-- CreateTable
+CREATE TABLE "chat_rooms" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "communityId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isMainChat" BOOLEAN NOT NULL DEFAULT false,
+    "isPrivate" BOOLEAN NOT NULL DEFAULT false,
+    "isPublic" BOOLEAN NOT NULL DEFAULT true,
+    "maxMembers" INTEGER NOT NULL DEFAULT 300,
+    "inviteToken" TEXT,
+    "allowedUserId" TEXT,
+    "creatorId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "chat_rooms_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "communities" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "chat_rooms_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "chat_room_members" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "chatRoomId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'member',
+    "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastReadAt" DATETIME,
+    CONSTRAINT "chat_room_members_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "chat_room_members_chatRoomId_fkey" FOREIGN KEY ("chatRoomId") REFERENCES "chat_rooms" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "chat_messages" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "chatRoomId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "messageType" TEXT NOT NULL DEFAULT 'text',
+    "attachmentUrl" TEXT,
+    "reactions" TEXT,
+    "isEdited" BOOLEAN NOT NULL DEFAULT false,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "chat_messages_chatRoomId_fkey" FOREIGN KEY ("chatRoomId") REFERENCES "chat_rooms" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "chat_messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "chat_typing_indicators" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "chatRoomId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
 CREATE INDEX "posts_createdAt_idx" ON "posts"("createdAt");
@@ -530,16 +557,28 @@ CREATE INDEX "study_notes_ageGroup_idx" ON "study_notes"("ageGroup");
 CREATE INDEX "study_notes_subject_idx" ON "study_notes"("subject");
 
 -- CreateIndex
-CREATE INDEX "community_chats_communityId_isMainChat_idx" ON "community_chats"("communityId", "isMainChat");
-
--- CreateIndex
-CREATE INDEX "chat_messages_chatId_createdAt_idx" ON "chat_messages"("chatId", "createdAt");
-
--- CreateIndex
-CREATE UNIQUE INDEX "chat_members_chatId_userId_key" ON "chat_members"("chatId", "userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "pending_grade_changes_userId_key" ON "pending_grade_changes"("userId");
 
 -- CreateIndex
 CREATE INDEX "pending_grade_changes_scheduledFor_idx" ON "pending_grade_changes"("scheduledFor");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "chat_rooms_inviteToken_key" ON "chat_rooms"("inviteToken");
+
+-- CreateIndex
+CREATE INDEX "chat_rooms_communityId_isMainChat_idx" ON "chat_rooms"("communityId", "isMainChat");
+
+-- CreateIndex
+CREATE INDEX "chat_rooms_inviteToken_idx" ON "chat_rooms"("inviteToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "chat_room_members_userId_chatRoomId_key" ON "chat_room_members"("userId", "chatRoomId");
+
+-- CreateIndex
+CREATE INDEX "chat_messages_chatRoomId_createdAt_idx" ON "chat_messages"("chatRoomId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "chat_messages_senderId_idx" ON "chat_messages"("senderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "chat_typing_indicators_chatRoomId_userId_key" ON "chat_typing_indicators"("chatRoomId", "userId");
