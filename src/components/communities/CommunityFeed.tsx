@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { PostCard } from '@/components/content/PostCard';
-import { PostCreationForm } from '@/components/content/PostCreationForm';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { MasonryGrid } from '@/components/ui/masonry-grid';
-import { ArrowLeft, Users, BookOpen, Hash, Plus } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { PostCard } from "@/components/content/PostCard";
+import { PostCreationForm } from "@/components/content/PostCreationForm";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { MasonryGrid } from "@/components/ui/masonry-grid";
+import { ArrowLeft, Users, BookOpen, Hash, Plus } from "lucide-react";
 
 interface Post {
   id: string;
@@ -65,7 +71,11 @@ interface CommunityFeedProps {
   onBack?: () => void;
 }
 
-export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityFeedProps) {
+export function CommunityFeed({
+  communityId,
+  currentUserId,
+  onBack,
+}: CommunityFeedProps) {
   const { toast } = useToast();
   const [community, setCommunity] = useState<Community | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -81,19 +91,21 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
         setCommunity(data);
       }
     } catch (error) {
-      console.error('Error fetching community:', error);
+      console.error("Error fetching community:", error);
     }
   };
 
   const fetchCommunityPosts = async () => {
     try {
-      const response = await fetch(`/api/communities/${communityId}/posts?limit=20`);
+      const response = await fetch(
+        `/api/communities/${communityId}/posts?limit=20`,
+      );
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts || []);
       }
     } catch (error) {
-      console.error('Error fetching community posts:', error);
+      console.error("Error fetching community posts:", error);
     }
   };
 
@@ -103,29 +115,33 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
     setIsPosting(true);
     try {
       const response = await fetch(`/api/communities/${communityId}/posts`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(postData),
       });
 
       if (response.ok) {
         const newPost = await response.json();
-        setPosts(prev => [newPost, ...prev]);
+        setPosts((prev) => [newPost, ...prev]);
         setShowCreateForm(false);
-        
+
         // Update community post count
         if (community) {
-          setCommunity(prev => prev ? {
-            ...prev,
-            _count: {
-              ...prev._count,
-              posts: prev._count.posts + 1
-            }
-          } : null);
+          setCommunity((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  _count: {
+                    ...prev._count,
+                    posts: prev._count.posts + 1,
+                  },
+                }
+              : null,
+          );
         }
-        
+
         toast({
           title: "Success",
           description: "Post created successfully",
@@ -154,7 +170,7 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
 
     try {
       const response = await fetch(`/api/communities/${communityId}/join`, {
-        method: 'POST',
+        method: "POST",
       });
 
       if (response.ok) {
@@ -185,7 +201,7 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
 
     try {
       const response = await fetch(`/api/communities/${communityId}/join`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
@@ -217,21 +233,18 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([
-        fetchCommunity(),
-        fetchCommunityPosts()
-      ]);
+      await Promise.all([fetchCommunity(), fetchCommunityPosts()]);
       setIsLoading(false);
     };
-    
+
     loadData();
   }, [communityId]);
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -239,21 +252,25 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
     if (diffInDays < 7) return `${diffInDays} days ago`;
     if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
-  const isMember = community?.members.some(m => m.user.id === currentUserId);
-  const userRole = community?.members.find(m => m.user.id === currentUserId)?.role;
+  const isMember = community?.members.some((m) => m.user.id === currentUserId);
+  const userRole = community?.members.find(
+    (m) => m.user.id === currentUserId,
+  )?.role;
 
   if (isLoading) {
     return (
@@ -269,7 +286,7 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
               </div>
             </div>
           </div>
-          
+
           <div className="grid gap-4">
             {[1, 2, 3, 4].map((i) => (
               <Card key={i}>
@@ -308,12 +325,12 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Communities
           </Button>
-          
+
           <div className="flex items-start gap-6">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-2xl font-bold">
               {getInitials(community.name)}
             </div>
-            
+
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold">{community.name}</h1>
@@ -324,11 +341,13 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
                   <Badge variant="outline">{userRole}</Badge>
                 )}
               </div>
-              
+
               {community.description && (
-                <p className="text-muted-foreground mb-4">{community.description}</p>
+                <p className="text-muted-foreground mb-4">
+                  {community.description}
+                </p>
               )}
-              
+
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
@@ -340,7 +359,7 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
                 </div>
                 <span>Created {formatDate(community.createdAt)}</span>
               </div>
-              
+
               {currentUserId && (
                 <div className="mt-4">
                   {isMember ? (
@@ -375,6 +394,7 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
                 onSubmit={handleCreatePost}
                 isSubmitting={isPosting}
                 onCancel={() => setShowCreateForm(false)}
+                hideAI={true}
               />
             </CardContent>
           </Card>
@@ -388,10 +408,9 @@ export function CommunityFeed({ communityId, currentUserId, onBack }: CommunityF
                 <Hash className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {isMember 
+                  {isMember
                     ? "Be the first to share something with the community!"
-                    : "Join this community to see and create posts."
-                  }
+                    : "Join this community to see and create posts."}
                 </p>
                 {isMember && (
                   <Button onClick={() => setShowCreateForm(true)}>
