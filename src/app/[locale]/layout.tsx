@@ -14,6 +14,7 @@ import DebugPanel from "@/components/DebugPanel";
 import { ResizeObserverErrorHandler } from "@/components/ResizeObserverErrorHandler";
 import { WebSiteSchema } from "@/components/seo/StructuredData";
 import { getLocaleMetadata } from "@/lib/seo";
+import { ChatPanelWrapper } from "./chat-wrapper";
 
 // Conditionally load Google Fonts only when not in Docker build
 let geistSans: any;
@@ -49,7 +50,7 @@ if (process.env.NEXT_FONT_GOOGLE_MOCKED_RESPONSES !== "1") {
       });
     };
 
-    // Execute the font loading
+    // Execute font loading
     loadFonts().catch((error) => {
       console.warn("Failed to load Google Fonts, using fallbacks:", error);
       geistSans = { variable: "--font-geist-sans", className: "" };
@@ -181,10 +182,10 @@ export default async function LocaleLayout({
 }>) {
   const { locale } = await params;
 
-  // Validate that the incoming `locale` parameter is valid
+  // Validate that incoming `locale` parameter is valid
   if (!locales.includes(locale as any)) notFound();
 
-  // Load messages explicitly based on the route param to avoid undefined locale issues
+  // Load messages explicitly based on route param to avoid undefined locale issues
   const messages = (await import(`../../messages/${locale}.json`)).default;
 
   const isProduction = process.env.NODE_ENV === "production";
@@ -207,7 +208,8 @@ export default async function LocaleLayout({
           id="main-content"
           role="main"
           tabIndex={-1}
-          className="flex-1 pb-16 md:pb-0 focus:outline-none"
+          className="flex-1 pb-16 md:pb-0 focus:outline-none transition-all duration-300"
+          style={{ paddingLeft: "50px" }} // Minimum space for collapsed chat panel
         >
           {children}
         </main>
@@ -236,6 +238,7 @@ export default async function LocaleLayout({
           <AnalyticsListener />
         </>
       )}
+      <ChatPanelWrapper />
     </ClientProviders>
   );
 }
