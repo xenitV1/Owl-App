@@ -1,8 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 interface Notification {
   id: string;
-  type: "LIKE" | "COMMENT" | "FOLLOW" | "POST" | "ECHO" | "SYSTEM";
+  type:
+    | "LIKE"
+    | "COMMENT"
+    | "FOLLOW"
+    | "POST"
+    | "ECHO"
+    | "SYSTEM"
+    | "CHAT_MESSAGE";
   title: string;
   message: string;
   isRead: boolean;
@@ -15,6 +23,10 @@ interface Notification {
   post?: {
     id: string;
     title: string;
+  };
+  chatRoom?: {
+    id: string;
+    name: string;
   };
 }
 
@@ -44,6 +56,16 @@ export function useRealtimeNotifications(
     onNewNotification,
   } = options;
 
+  const pathname = usePathname();
+
+  // Only enable polling on specific pages: home, discover, and community posts
+  const shouldEnablePolling =
+    enabled &&
+    (pathname === "/" ||
+      pathname.startsWith("/discover") ||
+      pathname.includes("/communities/") ||
+      pathname.includes("/posts"));
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +74,12 @@ export function useRealtimeNotifications(
   const previousNotificationIdsRef = useRef<Set<string>>(new Set());
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const onNewNotificationRef = useRef(options.onNewNotification);
+
+  // Update the callback ref when onNewNotification changes
+  useEffect(() => {
+    onNewNotificationRef.current = onNewNotification;
+  }, [onNewNotification]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -74,9 +102,12 @@ export function useRealtimeNotifications(
       );
 
       // Call callback for each new notification
-      if (onNewNotification && previousNotificationIdsRef.current.size > 0) {
+      if (
+        onNewNotificationRef.current &&
+        previousNotificationIdsRef.current.size > 0
+      ) {
         newNotifications.forEach((notification) => {
-          onNewNotification(notification);
+          onNewNotificationRef.current!(notification);
         });
       }
 
@@ -93,13 +124,29 @@ export function useRealtimeNotifications(
         setError(
           err instanceof Error ? err.message : "Failed to fetch notifications",
         );
+
+        // Stop polling on connection errors to prevent spam
+        if (
+          err instanceof Error &&
+          (err.message.includes("Failed to fetch") ||
+            err.message.includes("ERR_CONNECTION_REFUSED") ||
+            err.message.includes("NetworkError"))
+        ) {
+          console.warn(
+            "[useRealtimeNotifications] Stopping polling due to connection error",
+          );
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
       }
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
       }
     }
-  }, [onNewNotification]);
+  }, []);
 
   const markAsRead = useCallback(async (notificationIds: string[]) => {
     try {
@@ -236,7 +283,12 @@ export function useRealtimeNotifications(
 
   // Start polling
   useEffect(() => {
-    if (!enabled) {
+    if (!shouldEnablePolling) {
+      // If polling should not be enabled, clear any existing polling
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       return;
     }
 
@@ -253,7 +305,7 @@ export function useRealtimeNotifications(
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [enabled, pollingInterval, fetchNotifications]);
+  }, [shouldEnablePolling, pollingInterval, fetchNotifications]);
 
   // Cleanup on unmount
   useEffect(() => {
