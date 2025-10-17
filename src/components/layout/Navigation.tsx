@@ -16,12 +16,10 @@ import { Logo } from "@/components/ui/Logo";
 import {
   Home,
   Search,
-  Users,
-  User,
   BookOpen,
   Droplets,
-  Settings,
   Monitor,
+  MessageCircle,
 } from "lucide-react";
 
 export const Navigation: React.FC = () => {
@@ -33,14 +31,12 @@ export const Navigation: React.FC = () => {
   const navigation = [
     { name: t("home"), href: `/${locale}`, icon: Home },
     { name: t("discover"), href: `/${locale}/discover`, icon: Search },
-    { name: t("following"), href: `/${locale}/following`, icon: Users },
     { name: t("saved"), href: `/${locale}/saved`, icon: Droplets },
     {
       name: t("workEnvironment"),
       href: `/${locale}/work-environment`,
       icon: Monitor,
     },
-    { name: t("profile"), href: `/${locale}/profile`, icon: User },
     { name: t("communities"), href: `/${locale}/communities`, icon: BookOpen },
   ];
 
@@ -83,6 +79,20 @@ export const Navigation: React.FC = () => {
           <NotificationDropdown
             onOpenSettings={() => setSettingsPanelOpen(true)}
           />
+          <AuthGuard>
+            <button
+              onClick={() => {
+                // Chat panel state management will be handled by the global context
+                const event = new CustomEvent("toggle-chat-panel");
+                window.dispatchEvent(event);
+              }}
+              className="relative p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors md:flex hidden"
+              title="Open Chat"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {/* Unread badge can be added here */}
+            </button>
+          </AuthGuard>
           <LanguageSwitcher />
           <GlassSettingsPanel
             isOpen={settingsPanelOpen}
