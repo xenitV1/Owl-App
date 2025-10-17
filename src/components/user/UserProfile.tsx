@@ -14,7 +14,10 @@ import { UserProfileEdit } from "./UserProfileEdit";
 import { BlockedUsersModal } from "./BlockedUsersModal";
 import { UserProfileProps } from "@/types/userProfile";
 
-export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({
+  userId,
+  username,
+}) => {
   const {
     // State
     profile,
@@ -58,7 +61,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     setIsBlockedByMe,
     setIsMuted,
     setAutoRefreshEnabled,
-  } = useUserProfile({ userId });
+  } = useUserProfile({ userId, username });
 
   // Handle form changes for edit dialog
   const handleFormChange = (updates: Partial<typeof editForm>) => {
@@ -170,6 +173,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           onMuteChange={(isMuted) => setIsMuted(isMuted)}
           onAvatarClick={onAvatarClick}
           fileInputRef={fileInputRef}
+          onAvatarSelected={onAvatarSelected}
         />
 
         {/* Stats */}
