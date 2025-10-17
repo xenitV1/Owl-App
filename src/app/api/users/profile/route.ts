@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { autoJoinUserToCommunity } from "@/lib/services/systemCommunityService";
+import { requestGradeChange } from "@/lib/services/gradeChangeService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +31,11 @@ export async function GET(request: NextRequest) {
         bio: true,
         isVerified: true,
         onboardingComplete: true,
+        countryChangeCount: true,
+        lastCountryChange: true,
+        lastGradeChange: true,
+        pendingGrade: true,
+        pendingGradeDate: true,
         createdAt: true,
       },
     });
@@ -96,14 +103,72 @@ export async function PUT(request: NextRequest) {
     if (role !== undefined) updateData.role = role;
     if (bio !== undefined) updateData.bio = bio;
     if (school !== undefined) updateData.school = school;
-    if (grade !== undefined) updateData.grade = grade;
     if (favoriteSubject !== undefined)
       updateData.favoriteSubject = favoriteSubject;
     if (avatar !== undefined) updateData.avatar = avatar;
 
-    // Country can only be set once, never changed
-    if (country !== undefined && !user.country) {
+    // Country change logic with 2-time limit
+    if (country !== undefined && country !== user.country) {
+      if (user.countryChangeCount >= 2) {
+        return NextResponse.json(
+          {
+            error: "You have reached the maximum number of country changes (2)",
+          },
+          { status: 400 },
+        );
+      }
+
       updateData.country = country;
+      updateData.countryChangeCount = user.countryChangeCount + 1;
+      updateData.lastCountryChange = new Date();
+
+      // Auto-join to new system community if grade is set
+      if (user.grade) {
+        try {
+          await autoJoinUserToCommunity(user.id, country, user.grade);
+        } catch (error) {
+          console.error("Error joining system community:", error);
+        }
+      }
+    }
+
+    // Grade change logic with 24-hour pending period
+    if (grade !== undefined && grade !== user.grade) {
+      // If this is first time setting grade (onboarding)
+      if (!user.grade) {
+        updateData.grade = grade;
+        updateData.lastGradeChange = new Date();
+
+        // Auto-join to system community
+        if (updateData.country || user.country) {
+          try {
+            await autoJoinUserToCommunity(
+              user.id,
+              updateData.country || user.country,
+              grade,
+            );
+          } catch (error) {
+            console.error("Error joining system community:", error);
+          }
+        }
+      } else {
+        // Request grade change with 24-hour delay
+        const result = await requestGradeChange(user.id, grade);
+
+        if (!result.success) {
+          return NextResponse.json(
+            {
+              error: result.message,
+              hoursRemaining: result.hoursRemaining,
+              scheduledFor: result.scheduledFor,
+            },
+            { status: 400 },
+          );
+        }
+
+        // Don't update grade immediately, it will be applied after 24 hours
+        // The pending status is already set by requestGradeChange
+      }
     }
 
     // Language can be updated anytime
@@ -138,6 +203,11 @@ export async function PUT(request: NextRequest) {
         bio: true,
         isVerified: true,
         onboardingComplete: true,
+        countryChangeCount: true,
+        lastCountryChange: true,
+        lastGradeChange: true,
+        pendingGrade: true,
+        pendingGradeDate: true,
         createdAt: true,
       },
     });
