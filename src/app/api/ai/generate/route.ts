@@ -24,7 +24,7 @@ import type {
 } from "../types";
 
 export const runtime = "nodejs";
-export const maxDuration = 600; // 10 minutes max for very large PDFs
+export const maxDuration = 300; // 5 minutes max for Vercel Hobby plan limit
 
 export async function POST(request: NextRequest) {
   try {
