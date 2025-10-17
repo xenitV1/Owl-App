@@ -1,0 +1,7 @@
+name: Owl-App CodeQL Configuration
+disable-default-queries: false
+paths-ignore:
+  - public/pdf.worker.min.mjs
+  - public/**/*.min.js
+  - public/**/*.min.mjs
+

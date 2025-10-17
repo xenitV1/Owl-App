@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const crypto = require("node:crypto");
 const prisma = new PrismaClient();
 
 // Function to generate a unique username
@@ -37,7 +38,8 @@ async function generateUniqueUsername(name, email, existingUsernames) {
   while (attempts < maxAttempts) {
     // Add random suffix if not the first attempt
     if (attempts > 0) {
-      const randomSuffix = Math.floor(Math.random() * 10000);
+      // Use cryptographically secure random integer to prevent predictability
+      const randomSuffix = crypto.randomInt(0, 10000);
       username = `${baseUsername}${randomSuffix}`;
     }
 

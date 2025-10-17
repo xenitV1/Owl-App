@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { db } from "@/lib/db";
 import GoogleProvider from "next-auth/providers/google";
 import { initializeUserVector } from "@/lib/algorithms/stableVectorManager";
+import crypto from "node:crypto";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -31,8 +32,8 @@ export const authOptions: NextAuthOptions = {
               ? user.name.toLowerCase().replace(/\s+/g, "_").substring(0, 15)
               : user.email!.split("@")[0].substring(0, 15);
 
-            // Add random suffix to ensure uniqueness
-            const randomSuffix = Math.floor(Math.random() * 1000);
+            // Add random suffix to ensure uniqueness (cryptographically secure)
+            const randomSuffix = crypto.randomInt(0, 1000);
             const username = `${baseUsername}${randomSuffix}`;
 
             const newUser = await db.user.create({
@@ -45,13 +46,13 @@ export const authOptions: NextAuthOptions = {
                 role: "STUDENT", // Default role
               },
             });
-            console.log("Created new user:", newUser.email);
+            // Avoid verbose logs in production; rely on monitoring instead
 
             // ✅ ALGORITHM: Initialize user interest vector for new user
             // This runs in background, doesn't block login
-            initializeUserVector(newUser.id).catch((err) =>
-              console.error("Failed to initialize user vector:", err),
-            );
+            initializeUserVector(newUser.id).catch(() => {
+              /* swallow non-critical background errors */
+            });
           } else {
             // Update existing user with latest info
             await db.user.update({
@@ -63,7 +64,7 @@ export const authOptions: NextAuthOptions = {
             });
           }
         } catch (error) {
-          console.error("Error creating/updating user in JWT callback:", error);
+          // Non-fatal: continue auth flow even if user persistence fails
           // Continue with authentication even if database update fails
         }
       }
