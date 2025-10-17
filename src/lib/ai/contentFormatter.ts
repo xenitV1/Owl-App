@@ -2,11 +2,11 @@
 import type {
   Flashcard,
   Question,
-  StudyNote,
+  StudyNoteContent,
   GeneratedContent,
   ContentType,
   AgeGroup,
-} from '@/types/ai';
+} from "@/types/ai";
 
 /**
  * Parse and validate AI-generated flashcards from JSON response
@@ -17,28 +17,28 @@ export function parseFlashcardsResponse(aiResponse: string): Flashcard[] {
   try {
     // Clean the response (remove markdown code blocks if present)
     const cleanedResponse = aiResponse
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
       .trim();
 
     const parsed = JSON.parse(cleanedResponse);
 
     if (!parsed.flashcards || !Array.isArray(parsed.flashcards)) {
-      throw new Error('Invalid flashcards format');
+      throw new Error("Invalid flashcards format");
     }
 
     // Validate and format each flashcard
     return parsed.flashcards.map((card: any, index: number) => ({
       id: `flashcard-${Date.now()}-${index}`,
-      front: String(card.front || '').trim(),
-      back: String(card.back || '').trim(),
+      front: String(card.front || "").trim(),
+      back: String(card.back || "").trim(),
       difficulty: Math.max(1, Math.min(5, Number(card.difficulty) || 3)),
       tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
       category: card.category ? String(card.category) : undefined,
     }));
   } catch (error) {
-    console.error('Failed to parse flashcards response:', error);
-    throw new Error('Failed to parse AI-generated flashcards');
+    console.error("Failed to parse flashcards response:", error);
+    throw new Error("Failed to parse AI-generated flashcards");
   }
 }
 
@@ -51,43 +51,50 @@ export function parseQuestionsResponse(aiResponse: string): Question[] {
   try {
     // Clean the response
     const cleanedResponse = aiResponse
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
       .trim();
 
     const parsed = JSON.parse(cleanedResponse);
 
     if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      throw new Error('Invalid questions format');
+      throw new Error("Invalid questions format");
     }
 
     // Validate and format each question
     return parsed.questions
       .map((q: any, index: number) => {
-        const questionType = q.type || 'multiple_choice';
-        const options = Array.isArray(q.options) ? q.options.map(String) : undefined;
-        
+        const questionType = q.type || "multiple_choice";
+        const options = Array.isArray(q.options)
+          ? q.options.map(String)
+          : undefined;
+
         // For multiple choice questions, options are required
-        if (questionType === 'multiple_choice' && (!options || options.length === 0)) {
-          console.warn(`Question ${index + 1} is multiple_choice but has no options. Skipping.`);
+        if (
+          questionType === "multiple_choice" &&
+          (!options || options.length === 0)
+        ) {
+          console.warn(
+            `Question ${index + 1} is multiple_choice but has no options. Skipping.`,
+          );
           return null;
         }
-        
+
         return {
           id: `question-${Date.now()}-${index}`,
           type: questionType,
-          question: String(q.question || '').trim(),
+          question: String(q.question || "").trim(),
           options: options,
-          correctAnswer: String(q.correctAnswer || '').trim(),
-          explanation: String(q.explanation || '').trim(),
+          correctAnswer: String(q.correctAnswer || "").trim(),
+          explanation: String(q.explanation || "").trim(),
           difficulty: Math.max(1, Math.min(5, Number(q.difficulty) || 3)),
-          bloomLevel: q.bloomLevel || 'understand',
+          bloomLevel: q.bloomLevel || "understand",
         };
       })
       .filter((q): q is Question => q !== null); // Remove null entries
   } catch (error) {
-    console.error('Failed to parse questions response:', error);
-    throw new Error('Failed to parse AI-generated questions');
+    console.error("Failed to parse questions response:", error);
+    throw new Error("Failed to parse AI-generated questions");
   }
 }
 
@@ -96,14 +103,14 @@ export function parseQuestionsResponse(aiResponse: string): Question[] {
  * @param aiResponse - Raw AI response text (markdown)
  * @returns Formatted study note
  */
-export function parseNotesResponse(aiResponse: string): StudyNote {
+export function parseNotesResponse(aiResponse: string): StudyNoteContent {
   try {
     // Clean the response
     const cleanedResponse = aiResponse.trim();
 
     // Extract title from first heading
     const titleMatch = cleanedResponse.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : 'Study Notes';
+    const title = titleMatch ? titleMatch[1].trim() : "Study Notes";
 
     // Extract sections (## headings)
     const sections: { heading: string; content: string }[] = [];
@@ -115,11 +122,11 @@ export function parseNotesResponse(aiResponse: string): StudyNote {
       const startIndex = match.index;
       const nextMatch = sectionRegex.exec(cleanedResponse);
       const endIndex = nextMatch ? nextMatch.index : cleanedResponse.length;
-      sectionRegex.lastIndex = nextMatch ? nextMatch.index : cleanedResponse.length;
+      sectionRegex.lastIndex = nextMatch
+        ? nextMatch.index
+        : cleanedResponse.length;
 
-      const content = cleanedResponse
-        .substring(startIndex, endIndex)
-        .trim();
+      const content = cleanedResponse.substring(startIndex, endIndex).trim();
 
       sections.push({ heading, content });
     }
@@ -130,8 +137,8 @@ export function parseNotesResponse(aiResponse: string): StudyNote {
       sections: sections.length > 0 ? sections : undefined,
     };
   } catch (error) {
-    console.error('Failed to parse notes response:', error);
-    throw new Error('Failed to parse AI-generated notes');
+    console.error("Failed to parse notes response:", error);
+    throw new Error("Failed to parse AI-generated notes");
   }
 }
 
@@ -150,25 +157,25 @@ export function formatGeneratedContent(
     language: string;
     subject?: string;
     sourceDocument?: string;
-  }
+  },
 ): GeneratedContent {
-  let content: Flashcard[] | Question[] | StudyNote;
+  let content: Flashcard[] | Question[] | StudyNoteContent;
   let title: string;
 
   switch (contentType) {
-    case 'flashcards':
+    case "flashcards":
       content = parseFlashcardsResponse(aiResponse);
-      title = `Flashcards${metadata.subject ? `: ${metadata.subject}` : ''}`;
+      title = `Flashcards${metadata.subject ? `: ${metadata.subject}` : ""}`;
       break;
 
-    case 'questions':
+    case "questions":
       content = parseQuestionsResponse(aiResponse);
-      title = `Practice Questions${metadata.subject ? `: ${metadata.subject}` : ''}`;
+      title = `Practice Questions${metadata.subject ? `: ${metadata.subject}` : ""}`;
       break;
 
-    case 'notes':
+    case "notes":
       content = parseNotesResponse(aiResponse);
-      title = (content as StudyNote).title;
+      title = (content as StudyNoteContent).title;
       break;
 
     default:
@@ -194,17 +201,17 @@ export function formatGeneratedContent(
  */
 export function generateTitleFromContent(
   documentContent: string,
-  maxLength: number = 60
+  maxLength: number = 60,
 ): string {
   // Take first line or first sentence
-  const firstLine = documentContent.split('\n')[0].trim();
+  const firstLine = documentContent.split("\n")[0].trim();
   const firstSentence = firstLine.split(/[.!?]/)[0].trim();
 
-  let title = firstSentence || firstLine || 'Study Material';
+  let title = firstSentence || firstLine || "Study Material";
 
   // Truncate if too long
   if (title.length > maxLength) {
-    title = title.substring(0, maxLength - 3) + '...';
+    title = title.substring(0, maxLength - 3) + "...";
   }
 
   return title;
@@ -220,7 +227,7 @@ export function validateGeneratedContent(content: GeneratedContent): boolean {
     return false;
   }
 
-  if (content.type === 'flashcards') {
+  if (content.type === "flashcards") {
     const flashcards = content.content as Flashcard[];
     return (
       Array.isArray(flashcards) &&
@@ -229,7 +236,7 @@ export function validateGeneratedContent(content: GeneratedContent): boolean {
     );
   }
 
-  if (content.type === 'questions') {
+  if (content.type === "questions") {
     const questions = content.content as Question[];
     return (
       Array.isArray(questions) &&
@@ -238,11 +245,10 @@ export function validateGeneratedContent(content: GeneratedContent): boolean {
     );
   }
 
-  if (content.type === 'notes') {
-    const note = content.content as StudyNote;
+  if (content.type === "notes") {
+    const note = content.content as StudyNoteContent;
     return !!note.content && note.content.length > 0;
   }
 
   return false;
 }
-
