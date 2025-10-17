@@ -193,3 +193,54 @@ export const formatDate = (dateString: string, t: any): string => {
   const year = date.getFullYear();
   return t("userProfile.dateFormat", { month, day, year });
 };
+
+// Merkezi grade seviyesi çeviri fonksiyonu
+export const getGradeDisplay = (
+  grade: string,
+  locale: string = "en",
+): string => {
+  if (!grade) return "";
+
+  // Önce normalize et
+  const normalizedGrade = normalizeGradeKey(grade);
+  if (!normalizedGrade) return grade;
+
+  // İngilizce çeviriler
+  const gradeTranslationsEn: Record<string, string> = {
+    "9th": "9th Grade",
+    "10th": "10th Grade",
+    "11th": "11th Grade",
+    "12th": "12th Grade",
+    freshman: "Freshman",
+    sophomore: "Sophomore",
+    junior: "Junior",
+    senior: "Senior",
+    highschoolGraduate: "High School Graduate",
+    universityGraduate: "University Graduate",
+    graduateStudent: "Graduate",
+    teacher: "Teacher",
+    other: "Other",
+  };
+
+  // Türkçe çeviriler
+  const gradeTranslationsTr: Record<string, string> = {
+    "9th": "9. Sınıf",
+    "10th": "10. Sınıf",
+    "11th": "11. Sınıf",
+    "12th": "12. Sınıf",
+    freshman: "Hazırlık/1. Sınıf",
+    sophomore: "2. Sınıf",
+    junior: "3. Sınıf",
+    senior: "4. Sınıf",
+    highschoolGraduate: "Lise Mezunu",
+    universityGraduate: "Üniversite Mezunu",
+    graduateStudent: "Yüksek Lisans/Doktora",
+    teacher: "Öğretmen",
+    other: "Diğer",
+  };
+
+  const translations = locale.startsWith("tr")
+    ? gradeTranslationsTr
+    : gradeTranslationsEn;
+  return translations[normalizedGrade] || grade;
+};
