@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = {
       isPublic: true,
+      communityId: null, // Exclude community posts from main feed
     };
 
     // Get current user for block filtering
