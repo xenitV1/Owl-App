@@ -1,9 +1,19 @@
 // AI Content Generation Type Definitions
 
-export type ContentType = 'flashcards' | 'questions' | 'notes';
-export type AgeGroup = 'elementary' | 'middle' | 'high' | 'university';
-export type QuestionType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'open_ended';
-export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+export type ContentType = "flashcards" | "questions" | "notes";
+export type AgeGroup = "elementary" | "middle" | "high" | "university";
+export type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "fill_blank"
+  | "open_ended";
+export type BloomLevel =
+  | "remember"
+  | "understand"
+  | "apply"
+  | "analyze"
+  | "evaluate"
+  | "create";
 
 // Request Types
 export interface AIGenerateRequest {
@@ -40,7 +50,7 @@ export interface Question {
   bloomLevel: BloomLevel;
 }
 
-export interface StudyNote {
+export interface StudyNoteContent {
   title: string;
   content: string; // Markdown format
   sections?: {
@@ -53,7 +63,7 @@ export interface StudyNote {
 export interface GeneratedContent {
   type: ContentType;
   title: string;
-  content: Flashcard[] | Question[] | StudyNote;
+  content: Flashcard[] | Question[] | StudyNoteContent;
   metadata: {
     ageGroup: AgeGroup;
     language: string;
@@ -88,3 +98,80 @@ export interface GeminiGenerationConfig {
   maxOutputTokens?: number;
 }
 
+// PDF Processing Types (Client-Side)
+export interface PDFProcessingOptions {
+  convertToMarkdown?: boolean; // Default: true
+  preserveFormatting?: boolean; // Smart formatting
+  optimizeSize?: boolean; // Remove duplicates, whitespace
+  extractImages?: boolean; // Future: image extraction
+  enableOCR?: boolean; // If true, try OCR when text extraction is empty
+  ocrLanguages?: string; // Tesseract language(s), e.g., 'eng+tur'
+  onProgress?: (progress: PDFProcessingProgress) => void;
+}
+
+export interface PDFProcessingProgress {
+  stage:
+    | "loading"
+    | "extracting"
+    | "ocr"
+    | "converting"
+    | "optimizing"
+    | "complete"
+    | "error";
+  currentPage: number;
+  totalPages: number;
+  percentage: number;
+  message: string;
+  estimatedTimeRemaining?: number; // seconds
+}
+
+export interface PDFProcessingResult {
+  success: boolean;
+  content: string; // Markdown or plain text
+  metadata: PDFMetadata;
+  originalSize: number; // bytes
+  processedSize: number; // bytes
+  compressionRatio: number; // percentage
+  processingTime: number; // milliseconds
+  error?: string;
+}
+
+export interface PDFMetadata {
+  fileName: string;
+  fileType: string;
+  totalPages: number;
+  extractedAt: Date;
+  format: "markdown" | "text";
+  structure: {
+    hasHeadings: boolean;
+    hasLists: boolean;
+    hasTables: boolean;
+    paragraphCount: number;
+  };
+}
+
+// Markdown Conversion Types
+export interface MarkdownStructure {
+  headings: HeadingInfo[];
+  lists: ListInfo[];
+  tables: TableInfo[];
+  paragraphs: string[];
+}
+
+export interface HeadingInfo {
+  level: number; // 1-6
+  text: string;
+  pageNumber: number;
+}
+
+export interface ListInfo {
+  type: "bullet" | "numbered";
+  items: string[];
+  pageNumber: number;
+}
+
+export interface TableInfo {
+  headers: string[];
+  rows: string[][];
+  pageNumber: number;
+}
