@@ -24,6 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useLocale } from "next-intl";
+import { getCountryFlagUrl } from "@/lib/utils";
 import {
   Search,
   Users,
@@ -42,6 +44,9 @@ interface Community {
   avatar?: string;
   isPublic: boolean;
   createdAt: string;
+  country?: string | null;
+  grade?: string | null;
+  isSystemGenerated?: boolean;
   members: Array<{
     id: string;
     role: string;
@@ -80,6 +85,7 @@ interface PrivateGroup {
 
 export default function CommunitiesPage() {
   const { user, dbUser, isGuest } = useAuth();
+  const locale = useLocale();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [myCommunities, setMyCommunities] = useState<Community[]>([]);
   const [myGroups, setMyGroups] = useState<PrivateGroup[]>([]);
@@ -491,6 +497,7 @@ export default function CommunitiesPage() {
                           onJoin={handleJoinCommunity}
                           onLeave={handleLeaveCommunity}
                           onView={handleViewCommunity}
+                          locale={locale}
                         />
                       ))}
                     </div>
@@ -525,6 +532,7 @@ export default function CommunitiesPage() {
                               isMember={true}
                               onLeave={handleLeaveCommunity}
                               onView={handleViewCommunity}
+                              locale={locale}
                             />
                           ))}
                         </div>
@@ -627,9 +635,15 @@ export default function CommunitiesPage() {
                             key={community.id}
                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
                           >
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                              {community.name.charAt(0).toUpperCase()}
-                            </div>
+                            <img
+                              src={
+                                getCountryFlagUrl(community.country) ||
+                                community.avatar ||
+                                ""
+                              }
+                              alt={community.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">
                                 {community.name}
