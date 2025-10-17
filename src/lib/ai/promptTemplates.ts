@@ -1,5 +1,5 @@
 // AI Prompt Templates for Educational Content Generation
-import type { ContentType, AgeGroup } from '@/types/ai';
+import type { ContentType, AgeGroup } from "@/types/ai";
 
 interface PromptParams {
   documentContent: string;
@@ -11,31 +11,103 @@ interface PromptParams {
 
 // Language display names for better AI context
 const LANGUAGE_NAMES: Record<string, string> = {
-  'tr': 'Turkish',
-  'en': 'English',
-  'de': 'German',
-  'fr': 'French',
-  'es': 'Spanish',
-  'ar': 'Arabic',
-  'ja': 'Japanese',
-  'zh': 'Chinese',
-  'ru': 'Russian',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'ko': 'Korean',
+  tr: "Turkish",
+  en: "English",
+  de: "German",
+  fr: "French",
+  es: "Spanish",
+  ar: "Arabic",
+  ja: "Japanese",
+  zh: "Chinese",
+  ru: "Russian",
+  it: "Italian",
+  pt: "Portuguese",
+  ko: "Korean",
 };
 
-// Age group descriptions for better AI context
+// Age group descriptions with specific note-taking requirements
 const AGE_GROUP_CONTEXT = {
-  elementary: 'Elementary school students (ages 6-11), requiring simple language and visual examples',
-  middle: 'Middle school students (ages 12-14), capable of abstract thinking and complex concepts',
-  high: 'High school students (ages 15-18), advanced comprehension and analytical skills',
-  university: 'University students (ages 18+), sophisticated understanding and critical thinking',
+  elementary:
+    "Elementary school students (ages 6-11), requiring simple language, visual examples, and basic concepts",
+  middle:
+    "Middle school students (ages 12-14), capable of abstract thinking, structured learning, and organized notes",
+  high: "High school students (ages 15-18), advanced comprehension, analytical skills, and exam-focused content",
+  university:
+    "University students (ages 18+), sophisticated understanding, critical thinking, and academic rigor",
+};
+
+// Content type specific formatting rules
+const CONTENT_FORMATTING_RULES = {
+  programming: {
+    codeBlocks: true,
+    syntaxHighlighting: true,
+    examples: "practical code examples",
+    focus: "implementation and best practices",
+  },
+  mathematics: {
+    codeBlocks: false,
+    formulas: true,
+    examples: "step-by-step solutions",
+    focus: "problem-solving methodology",
+  },
+  science: {
+    codeBlocks: false,
+    formulas: true,
+    examples: "real-world applications",
+    focus: "concepts and experiments",
+  },
+  language: {
+    codeBlocks: false,
+    formulas: false,
+    examples: "usage examples and exercises",
+    focus: "grammar and vocabulary",
+  },
+  history: {
+    codeBlocks: false,
+    formulas: false,
+    examples: "historical events and timelines",
+    focus: "chronological understanding",
+  },
+  general: {
+    codeBlocks: "context-dependent",
+    formulas: "context-dependent",
+    examples: "relevant examples",
+    focus: "comprehensive understanding",
+  },
+};
+
+// Age-specific note-taking characteristics
+const AGE_SPECIFIC_REQUIREMENTS = {
+  elementary: {
+    language: "Simple sentences, basic vocabulary, visual cues",
+    structure: "Short sections, lots of examples, colorful formatting",
+    examples: "Everyday examples, simple analogies",
+    length: "Concise, 2-3 sentences per concept",
+  },
+  middle: {
+    language: "Clear explanations, moderate complexity, organized structure",
+    structure: "Logical flow, bullet points, clear headings",
+    examples: "Relevant examples, step-by-step explanations",
+    length: "Moderate detail, 3-4 sentences per concept",
+  },
+  high: {
+    language: "Academic language, technical terms with explanations",
+    structure: "Comprehensive sections, detailed analysis, exam preparation",
+    examples: "Complex examples, case studies, problem sets",
+    length: "Detailed explanations, 4-6 sentences per concept",
+  },
+  university: {
+    language: "Sophisticated academic language, specialized terminology",
+    structure: "Research-oriented, critical analysis, multiple perspectives",
+    examples:
+      "Advanced applications, theoretical frameworks, research findings",
+    length: "Comprehensive coverage, 5-8 sentences per concept",
+  },
 };
 
 /**
  * Generate prompt for Flashcards (Bilgi Kartları)
- * Based on: Active Recall & Spaced Repetition principles
+ * Based on: Active Recall & Spaced Repetition principles with age-specific optimization
  * Format: Topic/Concept → Explanation (NOT Question → Answer)
  */
 export function generateFlashcardPrompt(params: PromptParams): string {
@@ -43,11 +115,19 @@ export function generateFlashcardPrompt(params: PromptParams): string {
   const languageName = LANGUAGE_NAMES[language] || language;
   const targetCount = cardCount || 15;
 
+  // Get age-specific requirements
+  const ageRequirements = AGE_SPECIFIC_REQUIREMENTS[ageGroup];
+
   return `You are an expert educational content creator specializing in information flashcard design using Active Recall and Spaced Repetition principles.
 
 TARGET AUDIENCE: ${AGE_GROUP_CONTEXT[ageGroup]}
 OUTPUT LANGUAGE: ${languageName} (ALL content must be in ${languageName})
-${subject ? `SUBJECT: ${subject}` : ''}
+${subject ? `SUBJECT: ${subject}` : ""}
+
+AGE-SPECIFIC REQUIREMENTS FOR ${ageGroup.toUpperCase()}:
+- LANGUAGE COMPLEXITY: ${ageRequirements.language}
+- EXPLANATION LENGTH: ${ageRequirements.length}
+- EXAMPLE STYLE: ${ageRequirements.examples}
 
 EDUCATIONAL PRINCIPLES:
 1. Atomic Principle - One concept per card
@@ -64,21 +144,29 @@ IMPORTANT - FLASHCARD FORMAT:
 CONTENT TO PROCESS:
 ${documentContent}
 
-TASK: Generate exactly ${targetCount} high-quality information flashcards in JSON format.
+🚨 STRICT CARD COUNT REQUIREMENT - ABSOLUTE LIMIT 🚨
+TASK: Generate EXACTLY ${targetCount} information flashcards - NO MORE, NO LESS
+- MAXIMUM ALLOWED: ${targetCount} cards
+- DO NOT EXCEED: ${targetCount} cards
+- IF YOU GENERATE MORE THAN ${targetCount} CARDS, THEY WILL BE REJECTED
+- COUNT YOUR OUTPUT: Must be exactly ${targetCount} items in the flashcards array
 
-IMPORTANT RULES:
+IMPORTANT RULES - AGE-APPROPRIATE:
 - CRITICAL: Use ${languageName} language throughout - ALL text must be in ${languageName}
+- CRITICAL: Generate EXACTLY ${targetCount} cards - this is MANDATORY
 - Front side: Topic/concept name only (1-5 words, NO questions)
-- Back side: Clear, informative explanation (2-4 sentences)
+- Back side: Clear, informative explanation following ${ageRequirements.length}
 - Difficulty scale: 1 (very easy) to 5 (very difficult)
+- Language must be appropriate for ${ageGroup} level: ${ageRequirements.language}
 - Add relevant tags for categorization (also in ${languageName})
+- Focus on essential concepts, avoid unnecessary details
 
 OUTPUT FORMAT (JSON only, no additional text):
 {
   "flashcards": [
     {
       "front": "Topic or concept name in ${languageName}",
-      "back": "Clear explanation or information in ${languageName}",
+      "back": "Clear explanation or information in ${languageName} (${ageRequirements.length})",
       "difficulty": 3,
       "tags": ["tag1", "tag2"],
       "category": "optional category"
@@ -102,7 +190,7 @@ export function generateQuestionPrompt(params: PromptParams): string {
 
 TARGET AUDIENCE: ${AGE_GROUP_CONTEXT[ageGroup]}
 OUTPUT LANGUAGE: ${languageName} (ALL content must be in ${languageName})
-${subject ? `SUBJECT: ${subject}` : ''}
+${subject ? `SUBJECT: ${subject}` : ""}
 
 BLOOM'S TAXONOMY DISTRIBUTION:
 - Remember/Understand (30%): Basic recall and comprehension
@@ -118,9 +206,15 @@ QUESTION TYPES (Choose dynamically based on content):
 CONTENT TO PROCESS:
 ${documentContent}
 
-TASK: Generate exactly ${targetCount} diverse questions in JSON format.
+🚨 STRICT QUESTION COUNT REQUIREMENT - ABSOLUTE LIMIT 🚨
+TASK: Generate EXACTLY ${targetCount} questions - NO MORE, NO LESS
+- MAXIMUM ALLOWED: ${targetCount} questions
+- DO NOT EXCEED: ${targetCount} questions
+- IF YOU GENERATE MORE THAN ${targetCount} QUESTIONS, THEY WILL BE REJECTED
+- COUNT YOUR OUTPUT: Must be exactly ${targetCount} items in the questions array
 
 CRITICAL RULES - NO EXCEPTIONS:
+- MANDATORY: Generate EXACTLY ${targetCount} questions - this is MANDATORY
 - MANDATORY: Use ${languageName} language throughout - ALL text must be in ${languageName}
 - MANDATORY: For EVERY multiple_choice question, you MUST include an "options" array with exactly 5 options
 - MANDATORY: ALL multiple_choice questions MUST have the "options" field - NO EXCEPTIONS
@@ -169,62 +263,118 @@ Return ONLY valid JSON, no markdown code blocks, no explanations.`;
 
 /**
  * Generate prompt for Study Notes (Ders Notları)
- * Based on: Cornell Method & Structured Learning
+ * Based on: Cornell Method & Structured Learning with age-specific optimization
  */
 export function generateNotesPrompt(params: PromptParams): string {
   const { documentContent, ageGroup, language, subject } = params;
   const languageName = LANGUAGE_NAMES[language] || language;
 
-  return `You are an expert note-taker and educational content organizer using Cornell Method principles.
+  // Detect content type for appropriate formatting
+  const isProgramming =
+    documentContent.toLowerCase().includes("function") ||
+    documentContent.toLowerCase().includes("class") ||
+    documentContent.toLowerCase().includes("html") ||
+    documentContent.toLowerCase().includes("css") ||
+    documentContent.toLowerCase().includes("javascript") ||
+    documentContent.toLowerCase().includes("python") ||
+    documentContent.toLowerCase().includes("java") ||
+    documentContent.toLowerCase().includes("code");
+
+  const isMathematics =
+    documentContent.toLowerCase().includes("formula") ||
+    documentContent.toLowerCase().includes("equation") ||
+    documentContent.toLowerCase().includes("solve") ||
+    documentContent.toLowerCase().includes("calculate") ||
+    documentContent.toLowerCase().includes("math") ||
+    documentContent.toLowerCase().includes("algebra") ||
+    documentContent.toLowerCase().includes("geometry");
+
+  const isScience =
+    documentContent.toLowerCase().includes("experiment") ||
+    documentContent.toLowerCase().includes("hypothesis") ||
+    documentContent.toLowerCase().includes("theory") ||
+    documentContent.toLowerCase().includes("physics") ||
+    documentContent.toLowerCase().includes("chemistry") ||
+    documentContent.toLowerCase().includes("biology");
+
+  // Get age-specific requirements
+  const ageRequirements = AGE_SPECIFIC_REQUIREMENTS[ageGroup];
+
+  // Determine content type and formatting rules
+  let contentType = "general";
+  if (isProgramming) contentType = "programming";
+  else if (isMathematics) contentType = "mathematics";
+  else if (isScience) contentType = "science";
+
+  const formattingRules = CONTENT_FORMATTING_RULES[contentType];
+
+  return `You are an expert note-taker specializing in ${ageGroup} education using Cornell Method principles.
 
 TARGET AUDIENCE: ${AGE_GROUP_CONTEXT[ageGroup]}
 OUTPUT LANGUAGE: ${languageName} (ALL content must be in ${languageName})
-${subject ? `SUBJECT: ${subject}` : ''}
+${subject ? `SUBJECT: ${subject}` : ""}
+DETECTED CONTENT TYPE: ${contentType.toUpperCase()}
 
-NOTE-TAKING PRINCIPLES:
-1. Clear Hierarchical Structure - Use headings and subheadings
-2. Key Concepts Highlighted - Bold important terms
-3. Organized Information - Bullet points and numbered lists
-4. Examples Included - Real-world applications
-5. Summary Sections - Brief overviews after major sections
-6. Visual Formatting - Use appropriate markdown for clarity
+AGE-SPECIFIC REQUIREMENTS FOR ${ageGroup.toUpperCase()}:
+- LANGUAGE: ${ageRequirements.language}
+- STRUCTURE: ${ageRequirements.structure}
+- EXAMPLES: ${ageRequirements.examples}
+- LENGTH: ${ageRequirements.length}
+
+CONTENT TYPE FORMATTING RULES:
+- CODE BLOCKS: ${formattingRules.codeBlocks ? "REQUIRED for programming examples" : "NOT NEEDED - use mathematical notation or regular text"}
+- FORMULAS: ${formattingRules.formulas ? "REQUIRED - use LaTeX notation or clear mathematical formatting" : "Not applicable"}
+- EXAMPLES: ${formattingRules.examples}
+- FOCUS: ${formattingRules.focus}
+
+CRITICAL CONTENT OPTIMIZATION RULES:
+🚨 AVOID UNNECESSARY CONTENT:
+- DO NOT include generic introductions like "This document covers..." or "In this lesson we will learn..."
+- DO NOT add redundant explanations that repeat the same information
+- DO NOT include obvious statements or filler content
+- DO NOT write lengthy theoretical introductions without practical value
+- DO NOT add unnecessary code comments or verbose explanations
+
+🚨 CONTENT QUALITY REQUIREMENTS:
+- Focus on ESSENTIAL concepts and practical applications
+- Include only RELEVANT examples that add educational value
+- Use CONCISE language appropriate for ${ageGroup} level
+- Structure content for EASY learning and review
+- Prioritize ACTIONABLE information over theoretical discussions
 
 CONTENT TO PROCESS:
 ${documentContent}
 
-TASK: Transform this content into well-structured study notes in Markdown format.
+TASK: Transform this content into well-structured, concise study notes optimized for ${ageGroup} students.
 
-MARKDOWN STRUCTURE:
+MARKDOWN STRUCTURE (${ageGroup}-appropriate):
 # Main Title
-Brief introduction or overview
+${ageGroup === "elementary" ? "Simple overview (1-2 sentences)" : "Brief introduction (2-3 sentences)"}
 
-## Major Section
-Key concepts and explanations
+## Key Concept
+${ageRequirements.length}
+- **Important Term**: Clear definition
+- Practical example or application
+${ageGroup === "high" || ageGroup === "university" ? "- Additional context or implications" : ""}
 
-### Subsection
-Detailed information
-- Bullet point for lists
-- **Bold** for key terms
-- *Italic* for emphasis
+### Detailed Explanation
+${ageRequirements.length}
+${formattingRules.codeBlocks && isProgramming ? "- Include code examples when relevant\n```language\n// Practical code example\n```" : ""}
+${formattingRules.formulas && (isMathematics || isScience) ? "- Use clear mathematical notation\n- Show step-by-step solutions" : ""}
 
-> Important notes in blockquotes
+**Key Takeaways**: 
+${ageGroup === "elementary" ? "Simple summary (1-2 points)" : ageGroup === "middle" ? "Clear summary (2-3 points)" : "Comprehensive summary (3-4 points)"}
 
-**Key Concept**: Definition
-
-### Examples
-1. Example one
-2. Example two
-
-**Summary**: Brief recap of the section
-
-IMPORTANT RULES:
+IMPORTANT RULES - STRICT ADHERENCE:
 - CRITICAL: Use ${languageName} language throughout - ALL text must be in ${languageName}
-- Structure should be appropriate for ${ageGroup} level
-- Include definitions for technical terms (in ${languageName})
-- Add examples where helpful (in ${languageName})
-- Use code blocks \`\`\` for formulas or technical content
-- Keep sections organized and easy to navigate
-- End major sections with a brief summary (in ${languageName})
+- CRITICAL: Follow ${ageGroup} language complexity - ${ageRequirements.language}
+- CRITICAL: Keep sections concise - ${ageRequirements.length}
+- CRITICAL: Include only ESSENTIAL information - avoid redundancy
+- CRITICAL: ${formattingRules.codeBlocks ? "Include code blocks for programming examples" : "DO NOT use code blocks unless absolutely necessary"}
+- CRITICAL: ${formattingRules.formulas ? "Use clear mathematical notation for formulas" : "Focus on conceptual understanding"}
+- Structure must be appropriate for ${ageGroup} learning style
+- End major sections with brief, actionable summaries
+- Avoid unnecessary theoretical discussions or verbose introductions
 
 OUTPUT: Return ONLY the formatted Markdown text in ${languageName}, no JSON, no explanations, no meta-commentary.`;
 }
@@ -234,17 +384,16 @@ OUTPUT: Return ONLY the formatted Markdown text in ${languageName}, no JSON, no 
  */
 export function getPromptForContentType(
   contentType: ContentType,
-  params: PromptParams
+  params: PromptParams,
 ): string {
   switch (contentType) {
-    case 'flashcards':
+    case "flashcards":
       return generateFlashcardPrompt(params);
-    case 'questions':
+    case "questions":
       return generateQuestionPrompt(params);
-    case 'notes':
+    case "notes":
       return generateNotesPrompt(params);
     default:
       throw new Error(`Unknown content type: ${contentType}`);
   }
 }
-
