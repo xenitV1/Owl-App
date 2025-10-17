@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -22,6 +22,9 @@ import { Save, X } from "lucide-react";
 import { EditForm } from "@/types/userProfile";
 import { SUBJECTS_EN, SUBJECTS_TR } from "@/constants/userProfile";
 import { translateGrade, translateSubject } from "@/utils/userProfile";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { COUNTRIES } from "@/constants/countries";
 
 interface UserProfileEditProps {
   isOpen: boolean;
@@ -47,6 +50,9 @@ export const UserProfileEdit: React.FC<UserProfileEditProps> = ({
   onFormChange,
 }) => {
   const tOnb = useTranslations("onboarding");
+  const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const GRADES = [
     { value: "9th Grade", key: "9th" },
@@ -65,7 +71,7 @@ export const UserProfileEdit: React.FC<UserProfileEditProps> = ({
   ];
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[min(92vw,560px)] sm:w-[min(92vw,640px)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("profile.editProfile")}</DialogTitle>
           <DialogDescription>{t("profile.basicInfo")}</DialogDescription>
@@ -81,6 +87,118 @@ export const UserProfileEdit: React.FC<UserProfileEditProps> = ({
               onChange={(e) => onFormChange({ name: e.target.value })}
               placeholder={t("profile.displayName")}
             />
+          </div>
+
+          {/* Danger Zone */}
+          <div className="mt-6 border-t pt-4">
+            <div className="mb-2 text-sm font-medium text-red-600">
+              {t("profile.deleteAccount")}
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              {t("profile.deleteAccountWarning")}
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              {t("profile.deleteAccount")}
+            </Button>
+          </div>
+
+          {/* Site-level confirmation modal (no browser alert) */}
+          <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <DialogContent className="w-[min(92vw,520px)] max-h-[75vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{t("profile.deleteAccount")}</DialogTitle>
+                <DialogDescription>
+                  {t("profile.deleteAccountWarning")}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm">{t("profile.confirmDelete")}</p>
+                <div>
+                  <label className="text-xs text-muted-foreground">
+                    Type DELETE to confirm
+                  </label>
+                  <Input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteConfirmText !== "DELETE"}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/users", {
+                          method: "DELETE",
+                        });
+                        if (!res.ok) {
+                          throw new Error("Failed to delete account");
+                        }
+                        await signOut({ redirect: true, callbackUrl: "/" });
+                      } catch (err) {
+                        router.refresh();
+                      }
+                    }}
+                  >
+                    {t("profile.deleteAccount")}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div>
+            <label className="text-sm font-medium">
+              {t("profile.username")}
+            </label>
+            <Input
+              value={editForm.username}
+              onChange={(e) => onFormChange({ username: e.target.value })}
+              placeholder={t("profile.usernamePlaceholder")}
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              {t("profile.usernameHelp")}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">
+              {t("profile.country")}
+            </label>
+            <Select
+              value={editForm.country || ""}
+              onValueChange={(value) => onFormChange({ country: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("profile.country")} />
+              </SelectTrigger>
+              <SelectContent className="max-h-[60vh]">
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    <div className="flex items-center gap-2">
+                      {c.flag && <span className="text-lg">{c.flag}</span>}
+                      <span>{c.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-muted-foreground mt-1">
+              {t("profile.countryChangeNote", {
+                default:
+                  "You can change your country a limited number of times.",
+              })}
+            </div>
           </div>
 
           <div>
