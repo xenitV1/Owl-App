@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const posts = await db.post.findMany({
       where: {
         isPublic: true,
+        communityId: null, // Exclude community posts from main feed
       },
       include: {
         author: {
