@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+/**
+ * Join Community API
+ * POST /api/communities/[id]/join
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { autoJoinUserToChatRoom } from "@/lib/services/systemCommunityService";
 
 interface RouteContext {
   params: Promise<{
@@ -9,175 +15,128 @@ interface RouteContext {
   }>;
 }
 
-// POST /api/communities/[id]/join - Join a community
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
-
-    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { error: "Authentication required" },
+        { status: 401 },
       );
     }
 
-    // Get user from database
     const user = await db.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: session.user.email },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Check if community exists
     const community = await db.community.findUnique({
-      where: { id: params.id }
+      where: { id: params.id },
     });
 
     if (!community) {
       return NextResponse.json(
-        { error: 'Community not found' },
-        { status: 404 }
+        { error: "Community not found" },
+        { status: 404 },
       );
     }
 
-    // Check if user is already a member
-    const existingMembership = await db.communityMember.findUnique({
+    // Add user as member
+    await db.communityMember.upsert({
       where: {
         userId_communityId: {
           userId: user.id,
-          communityId: params.id
-        }
-      }
-    });
-
-    if (existingMembership) {
-      return NextResponse.json(
-        { error: 'You are already a member of this community' },
-        { status: 400 }
-      );
-    }
-
-    // Join community
-    const membership = await db.communityMember.create({
-      data: {
+          communityId: params.id,
+        },
+      },
+      create: {
         userId: user.id,
         communityId: params.id,
-        role: 'member'
+        role: "member",
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true
-          }
-        },
-        community: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            avatar: true
-          }
-        }
-      }
+      update: {},
     });
 
-    return NextResponse.json(membership, { status: 201 });
+    // Auto-join user to community main chat room
+    try {
+      await autoJoinUserToChatRoom(user.id, params.id);
+    } catch (e) {
+      console.error("[API] Auto-join to chat failed:", e);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Joined community successfully",
+    });
   } catch (error) {
-    console.error('Error joining community:', error);
+    console.error("[API] Error joining community:", error);
     return NextResponse.json(
-      { error: 'Failed to join community' },
-      { status: 500 }
+      { error: "Failed to join community" },
+      { status: 500 },
     );
   }
 }
 
-// DELETE /api/communities/[id]/join - Leave a community
+/**
+ * Leave Community API
+ * DELETE /api/communities/[id]/join
+ */
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
-
-    // Use NextAuth session instead of Firebase tokens
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { error: "Authentication required" },
+        { status: 401 },
       );
     }
 
-    // Get user from database
     const user = await db.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: session.user.email },
     });
 
     if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Ensure community exists
+    const community = await db.community.findUnique({
+      where: { id: params.id },
+      select: { id: true },
+    });
+
+    if (!community) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: "Community not found" },
+        { status: 404 },
       );
     }
 
-    // Check if user is a member
-    const membership = await db.communityMember.findUnique({
+    // Remove membership if exists
+    await db.communityMember.deleteMany({
       where: {
-        userId_communityId: {
-          userId: user.id,
-          communityId: params.id
-        }
-      }
+        userId: user.id,
+        communityId: params.id,
+      },
     });
 
-    if (!membership) {
-      return NextResponse.json(
-        { error: 'You are not a member of this community' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user is the only admin
-    if (membership.role === 'admin') {
-      const adminCount = await db.communityMember.count({
-        where: {
-          communityId: params.id,
-          role: 'admin'
-        }
-      });
-
-      if (adminCount === 1) {
-        return NextResponse.json(
-          { error: 'Cannot leave community as the only admin. Please promote another member to admin first.' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Leave community
-    await db.communityMember.delete({
-      where: {
-        userId_communityId: {
-          userId: user.id,
-          communityId: params.id
-        }
-      }
+    return NextResponse.json({
+      success: true,
+      message: "Left community successfully",
     });
-
-    return NextResponse.json({ message: 'Left community successfully' });
   } catch (error) {
-    console.error('Error leaving community:', error);
+    console.error("[API] Error leaving community:", error);
     return NextResponse.json(
-      { error: 'Failed to leave community' },
-      { status: 500 }
+      { error: "Failed to leave community" },
+      { status: 500 },
     );
   }
 }
