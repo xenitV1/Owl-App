@@ -2,6 +2,8 @@
 
 /* Base styles and utilities */
 @import "./styles/base.css";
+/* KaTeX styles for math rendering */
+@import "katex/dist/katex.min.css";
 
 /* Animations */
 @import "./styles/animations.css";
