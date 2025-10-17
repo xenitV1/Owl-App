@@ -26,11 +26,21 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             // Create new user
+            // Generate a unique username based on name or email
+            const baseUsername = user.name
+              ? user.name.toLowerCase().replace(/\s+/g, "_").substring(0, 15)
+              : user.email!.split("@")[0].substring(0, 15);
+
+            // Add random suffix to ensure uniqueness
+            const randomSuffix = Math.floor(Math.random() * 1000);
+            const username = `${baseUsername}${randomSuffix}`;
+
             const newUser = await db.user.create({
               data: {
                 id: user.id,
                 email: user.email!,
                 name: user.name || user.email!.split("@")[0],
+                username: username, // Add username field
                 avatar: user.image,
                 role: "STUDENT", // Default role
               },
@@ -77,6 +87,7 @@ export const authOptions: NextAuthOptions = {
               id: true,
               email: true,
               name: true,
+              username: true, // Add username field
               avatar: true,
               role: true,
               school: true,
