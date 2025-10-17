@@ -16,11 +16,29 @@ export function useWorkspaceConnections(
 
   const addConnection = useCallback(
     async (conn: Connection) => {
-      playConnectionAddSound();
+      // Check for duplicate connection before adding
       setConnections((prev) => {
+        const isDuplicate = prev.some(
+          (existingConn) =>
+            existingConn.id === conn.id ||
+            (existingConn.sourceCardId === conn.sourceCardId &&
+              existingConn.targetCardId === conn.targetCardId &&
+              existingConn.sourceAnchor === conn.sourceAnchor &&
+              existingConn.targetAnchor === conn.targetAnchor),
+        );
+
+        if (isDuplicate) {
+          console.warn(
+            `[Workspace] Duplicate connection prevented: ${conn.id}`,
+          );
+          return prev; // Don't add duplicate
+        }
+
+        playConnectionAddSound();
         const next = [...prev, conn];
         return next;
       });
+
       try {
         await saveConnection(isIndexedDBReady, conn);
       } catch (e) {
@@ -257,9 +275,23 @@ export function useWorkspaceConnections(
     [connections],
   );
 
-  // Set connections (for loading from database)
+  // Set connections (for loading from database) with duplicate prevention
   const setConnectionsData = useCallback((newConnections: Connection[]) => {
-    setConnections(newConnections);
+    // Remove duplicates based on connection ID
+    const uniqueConnections = newConnections.reduce((acc, current) => {
+      const existingIndex = acc.findIndex((conn) => conn.id === current.id);
+      if (existingIndex === -1) {
+        acc.push(current);
+      } else {
+        // If duplicate found, keep the most recent one (or could merge properties)
+        console.warn(
+          `[Workspace] Duplicate connection detected: ${current.id}`,
+        );
+      }
+      return acc;
+    }, [] as Connection[]);
+
+    setConnections(uniqueConnections);
   }, []);
 
   return {
