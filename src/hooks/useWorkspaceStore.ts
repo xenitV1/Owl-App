@@ -278,11 +278,16 @@ export function WorkspaceStoreProvider({
     initializeOnly();
   }, [initializeDB]);
 
+  // Load workspace only once when IndexedDB is ready and no cards are loaded
+  const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
+
   useEffect(() => {
-    if (isIndexedDBReady && cardsHook.cards.length === 0) {
-      loadWorkspace();
+    if (isIndexedDBReady && !hasLoadedWorkspace) {
+      loadWorkspace().then(() => {
+        setHasLoadedWorkspace(true);
+      });
     }
-  }, [isIndexedDBReady, cardsHook.cards.length, loadWorkspace]);
+  }, [isIndexedDBReady, hasLoadedWorkspace, loadWorkspace]);
 
   const value: WorkspaceStoreValue = {
     cards: cardsHook.cards,
