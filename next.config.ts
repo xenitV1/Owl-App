@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  reactStrictMode: process.env.NODE_ENV === "production",
+  reactStrictMode: false,
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-*"],
   },
