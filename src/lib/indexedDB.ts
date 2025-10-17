@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface IDBConfig {
   name: string;
@@ -29,9 +29,9 @@ class IndexedDBManager {
 
       request.onerror = () => {
         const error = request.error;
-        
+
         // If it's a version error, try to delete and recreate
-        if (error?.name === 'VersionError') {
+        if (error?.name === "VersionError") {
           this.recreateDatabase().then(resolve).catch(reject);
         } else {
           reject(new Error(`IndexedDB error: ${error}`));
@@ -45,18 +45,18 @@ class IndexedDBManager {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
-        this.config.stores.forEach(storeConfig => {
+
+        this.config.stores.forEach((storeConfig) => {
           if (!db.objectStoreNames.contains(storeConfig.name)) {
-            const store = db.createObjectStore(storeConfig.name, { 
-              keyPath: storeConfig.keyPath 
+            const store = db.createObjectStore(storeConfig.name, {
+              keyPath: storeConfig.keyPath,
             });
-            
-            storeConfig.indexes?.forEach(indexConfig => {
+
+            storeConfig.indexes?.forEach((indexConfig) => {
               store.createIndex(
-                indexConfig.name, 
-                indexConfig.keyPath, 
-                indexConfig.options
+                indexConfig.name,
+                indexConfig.keyPath,
+                indexConfig.options,
               );
             });
           }
@@ -75,12 +75,12 @@ class IndexedDBManager {
 
       // Delete existing database
       const deleteRequest = indexedDB.deleteDatabase(this.config.name);
-      
+
       deleteRequest.onsuccess = () => {
         // Now create new database
         this.init().then(resolve).catch(reject);
       };
-      
+
       deleteRequest.onerror = () => {
         reject(new Error(`Failed to delete database: ${deleteRequest.error}`));
       };
@@ -91,7 +91,7 @@ class IndexedDBManager {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
+      const transaction = this.db!.transaction([storeName], "readonly");
       const store = transaction.objectStore(storeName);
       const request = store.get(key);
 
@@ -109,7 +109,7 @@ class IndexedDBManager {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
+      const transaction = this.db!.transaction([storeName], "readonly");
       const store = transaction.objectStore(storeName);
       const request = store.getAll();
 
@@ -123,11 +123,15 @@ class IndexedDBManager {
     });
   }
 
-  async put<T>(storeName: string, data: T, silent: boolean = false): Promise<void> {
+  async put<T>(
+    storeName: string,
+    data: T,
+    silent: boolean = false,
+  ): Promise<void> {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
+      const transaction = this.db!.transaction([storeName], "readwrite");
       const store = transaction.objectStore(storeName);
       const request = store.put(data);
 
@@ -145,7 +149,7 @@ class IndexedDBManager {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
+      const transaction = this.db!.transaction([storeName], "readwrite");
       const store = transaction.objectStore(storeName);
       const request = store.delete(key);
 
@@ -163,7 +167,7 @@ class IndexedDBManager {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readwrite');
+      const transaction = this.db!.transaction([storeName], "readwrite");
       const store = transaction.objectStore(storeName);
       const request = store.clear();
 
@@ -181,7 +185,7 @@ class IndexedDBManager {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
+      const transaction = this.db!.transaction([storeName], "readonly");
       const store = transaction.objectStore(storeName);
       const request = store.count();
 
@@ -198,99 +202,163 @@ class IndexedDBManager {
 
 // Workspace için IndexedDB konfigürasyonu
 const workspaceConfig: IDBConfig = {
-  name: 'owl-workspace',
+  name: "owl-workspace",
   version: 5, // bumped for connections store
   stores: [
     {
-      name: 'workspace',
-      keyPath: 'id',
+      name: "workspace",
+      keyPath: "id",
       indexes: [
-        { name: 'lastModified', keyPath: 'lastModified' },
-        { name: 'version', keyPath: 'version' }
-      ]
+        { name: "lastModified", keyPath: "lastModified" },
+        { name: "version", keyPath: "version" },
+      ],
     },
     {
-      name: 'cards',
-      keyPath: 'id',
+      name: "cards",
+      keyPath: "id",
       indexes: [
-        { name: 'type', keyPath: 'type' },
-        { name: 'zIndex', keyPath: 'zIndex' },
-        { name: 'createdAt', keyPath: 'createdAt' }
-      ]
+        { name: "type", keyPath: "type" },
+        { name: "zIndex", keyPath: "zIndex" },
+        { name: "createdAt", keyPath: "createdAt" },
+      ],
     },
     {
-      name: 'progress',
-      keyPath: 'id',
+      name: "progress",
+      keyPath: "id",
       indexes: [
-        { name: 'lastUpdated', keyPath: 'lastUpdated' },
-        { name: 'cardId', keyPath: 'cardId' }
-      ]
+        { name: "lastUpdated", keyPath: "lastUpdated" },
+        { name: "cardId", keyPath: "cardId" },
+      ],
     },
     {
-      name: 'flashcards',
-      keyPath: 'id',
+      name: "flashcards",
+      keyPath: "id",
       indexes: [
-        { name: 'nextReview', keyPath: 'nextReview' },
-        { name: 'category', keyPath: 'category' },
-        { name: 'type', keyPath: 'type' },
-        { name: 'createdAt', keyPath: 'createdAt' }
-      ]
+        { name: "nextReview", keyPath: "nextReview" },
+        { name: "category", keyPath: "category" },
+        { name: "type", keyPath: "type" },
+        { name: "createdAt", keyPath: "createdAt" },
+      ],
     },
     {
-      name: 'flashcardStats',
-      keyPath: 'id',
-      indexes: [
-        { name: 'lastUpdated', keyPath: 'lastUpdated' }
-      ]
+      name: "flashcardStats",
+      keyPath: "id",
+      indexes: [{ name: "lastUpdated", keyPath: "lastUpdated" }],
     },
     {
-      name: 'studySessions',
-      keyPath: 'id',
+      name: "studySessions",
+      keyPath: "id",
       indexes: [
-        { name: 'startTime', keyPath: 'startTime' },
-        { name: 'sessionDate', keyPath: 'sessionDate' }
-      ]
+        { name: "startTime", keyPath: "startTime" },
+        { name: "sessionDate", keyPath: "sessionDate" },
+      ],
     },
     {
-      name: 'richNotes',
-      keyPath: 'id',
+      name: "richNotes",
+      keyPath: "id",
       indexes: [
-        { name: 'cardId', keyPath: 'cardId' },
-        { name: 'lastModified', keyPath: 'lastModified' },
-        { name: 'folder', keyPath: 'folder' }
-      ]
+        { name: "cardId", keyPath: "cardId" },
+        { name: "lastModified", keyPath: "lastModified" },
+        { name: "folder", keyPath: "folder" },
+      ],
     },
     {
-      name: 'connections',
-      keyPath: 'id',
+      name: "connections",
+      keyPath: "id",
       indexes: [
-        { name: 'sourceCardId', keyPath: 'sourceCardId' },
-        { name: 'targetCardId', keyPath: 'targetCardId' }
-      ]
-    }
-  ]
+        { name: "sourceCardId", keyPath: "sourceCardId" },
+        { name: "targetCardId", keyPath: "targetCardId" },
+      ],
+    },
+  ],
 };
 
 // Singleton instance
 export const workspaceDB = new IndexedDBManager(workspaceConfig);
 
-
 // IndexedDB desteği kontrolü
 export function isIndexedDBSupported(): boolean {
-  return typeof window !== 'undefined' && 'indexedDB' in window;
+  return typeof window !== "undefined" && "indexedDB" in window;
 }
 
-
 // Debug utility: IndexedDB'deki flashcard sayısını kontrol et
-export async function checkIndexedDBFlashcards(): Promise<{ count: number; error?: string }> {
+export async function checkIndexedDBFlashcards(): Promise<{
+  count: number;
+  error?: string;
+}> {
   try {
     if (!isIndexedDBSupported()) {
-      return { count: 0, error: 'IndexedDB desteklenmiyor' };
+      return { count: 0, error: "IndexedDB desteklenmiyor" };
     }
 
-    const count = await workspaceDB.count('flashcards');
+    const count = await workspaceDB.count("flashcards");
     return { count };
   } catch (error) {
-    return { count: 0, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
+    return {
+      count: 0,
+      error: error instanceof Error ? error.message : "Bilinmeyen hata",
+    };
+  }
+}
+
+// Clear entire workspace IndexedDB by deleting the database
+export async function clearWorkspaceIndexedDB(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    if (!isIndexedDBSupported()) {
+      return { success: false, error: "IndexedDB desteklenmiyor" };
+    }
+
+    // Close existing connection if any
+    try {
+      // access internal field carefully
+      const anyDB = workspaceDB as unknown as { db?: IDBDatabase | null };
+      if (anyDB.db) {
+        anyDB.db.close();
+        anyDB.db = null;
+      }
+    } catch {}
+
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.deleteDatabase(workspaceConfig.name);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error("IndexedDB delete blocked"));
+    });
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Bilinmeyen hata",
+    };
+  }
+}
+
+// Clear ALL local caches: localStorage + IndexedDB workspace
+export async function clearAllLocalCaches(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.clear();
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    }
+
+    const res = await clearWorkspaceIndexedDB();
+    return res.success
+      ? { success: true }
+      : { success: false, error: res.error };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Bilinmeyen hata",
+    };
   }
 }
